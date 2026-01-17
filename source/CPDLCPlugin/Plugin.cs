@@ -187,13 +187,16 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
 
     static void TryAddErrorInternal(Exception exception)
     {
-        // Don't flood the error window with the same message over and over again
-        if (ErrorMessages.TryGetValue(exception.Message, out var lastShown) &&
-            DateTimeOffset.Now - lastShown <= TimeSpan.FromMinutes(1))
-            return;
+        lock (ErrorMessages)
+        {
+            // Don't flood the error window with the same message over and over again
+            if (ErrorMessages.TryGetValue(exception.Message, out var lastShown) &&
+                DateTimeOffset.Now - lastShown <= TimeSpan.FromMinutes(1))
+                return;
 
-        Errors.Add(exception, Name);
-        ErrorMessages.Add(exception.Message, DateTimeOffset.Now);
+            Errors.Add(exception, Name);
+            ErrorMessages.Add(exception.Message, DateTimeOffset.Now);
+        }
     }
 
     void ConfigureTheme()
