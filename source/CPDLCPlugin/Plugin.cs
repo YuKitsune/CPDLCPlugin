@@ -175,14 +175,14 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
 
     public static void AddError(Exception exception)
     {
-        TryAddErrorInternal(exception);
         Log.Error(exception, "An error has occurred");
+        TryAddErrorInternal(exception);
     }
 
     public static void AddError(Exception exception, string message)
     {
-        TryAddErrorInternal(exception);
         Log.Error(exception, message);
+        TryAddErrorInternal(exception);
     }
 
     static void TryAddErrorInternal(Exception exception)
