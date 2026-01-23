@@ -195,7 +195,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
                 return;
 
             Errors.Add(exception, Name);
-            ErrorMessages.Add(exception.Message, DateTimeOffset.Now);
+            ErrorMessages[exception.Message] = DateTimeOffset.Now;
         }
     }
 
