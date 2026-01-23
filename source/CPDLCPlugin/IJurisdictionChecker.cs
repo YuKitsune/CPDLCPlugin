@@ -55,7 +55,7 @@ public class JurisdictionChecker(ControllerConnectionStore controllerConnectionS
 
         // If nobody has jurisdiction, and we're the next owner, show the message
         var track = MMI.FindTrack(fdr);
-        if (!fdr.IsTracked && track.State == MMI.HMIStates.Announced)
+        if (!fdr.IsTracked && track?.State == MMI.HMIStates.Announced)
         {
             return true;
         }
