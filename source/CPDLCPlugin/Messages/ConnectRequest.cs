@@ -33,7 +33,7 @@ public class ConnectRequestHandler(Plugin plugin, IMediator mediator, ILogger lo
             throw new Exception("Not connected to VATSIM");
         }
 
-        logger.Debug("Creating SignalR connection");
+        logger.Verbose("Creating SignalR connection");
         var downlinkHandler = new MediatorMessageHandler(mediator);
         plugin.ConnectionManager = new SignalRConnectionManager(
             request.ServerEndpoint,
@@ -41,14 +41,14 @@ public class ConnectRequestHandler(Plugin plugin, IMediator mediator, ILogger lo
             logger.ForContext<SignalRConnectionManager>());
 
         // Initialize the connection with the station ID and current callsign
-        logger.Debug("Initializing SignalR connection");
+        logger.Verbose("Initializing SignalR connection");
         await plugin.ConnectionManager.InitializeAsync(request.StationId, Network.Callsign);
 
         // Start the connection
-        logger.Debug("Starting SignalR connection");
+        logger.Verbose("Starting SignalR connection");
         await plugin.ConnectionManager.StartAsync();
 
-        logger.Debug("Connected to server");
+        logger.Verbose("Connected to server");
         await mediator.Publish(new ConnectedNotification(), cancellationToken);
     }
 }

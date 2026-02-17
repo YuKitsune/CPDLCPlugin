@@ -83,7 +83,7 @@ public class ClientManager : BackgroundService, IClientManager
                 var acarsClientHandle = await CreateAcarsClient(acarsClientId, cancellationToken);
                 _clients.Add(acarsClientId, acarsClientHandle);
 
-                _logger.Information("Successfully created ACARS client {ClientId}", acarsClientId);
+                _logger.Information("Created ACARS client {ClientId}", acarsClientId);
 
                 return;
             }

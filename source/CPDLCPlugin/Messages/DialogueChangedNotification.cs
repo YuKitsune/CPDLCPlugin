@@ -12,7 +12,7 @@ public class DialogueChangedNotificationHandler(DialogueStore dialogueStore, ILo
 {
     public async Task Handle(DialogueChangedNotification notification, CancellationToken cancellationToken)
     {
-        logger.Debug("Upserting dialogue {DialogueId}", notification.Dialogue.Id);
+        logger.Verbose("Upserting dialogue {DialogueId}", notification.Dialogue.Id);
 
         await dialogueStore.Upsert(notification.Dialogue, cancellationToken);
 

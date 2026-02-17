@@ -19,22 +19,22 @@ public class ConnectedNotificationHandler(Plugin plugin, DialogueStore dialogueS
         }
 
         // Load dialogues
-        logger.Debug("Loading all dialogues");
+        logger.Verbose("Loading all dialogues");
         var dialogues = await plugin.ConnectionManager.GetAllDialogues(cancellationToken);
         await dialogueStore.Populate(dialogues, cancellationToken);
-        logger.Debug("Loaded {DialogueCount} dialogue(s)", dialogues.Length);
+        logger.Verbose("Loaded {DialogueCount} dialogue(s)", dialogues.Length);
 
         // Load aircraft connections
-        logger.Debug("Loading all aircraft connections");
+        logger.Verbose("Loading all aircraft connections");
         var connectedAircraft = await plugin.ConnectionManager.GetConnectedAircraft(cancellationToken);
         await aircraftConnectionStore.Populate(connectedAircraft, cancellationToken);
-        logger.Debug("Loaded {ConnectionCount} aircraft connection(s)", connectedAircraft.Length);
+        logger.Verbose("Loaded {ConnectionCount} aircraft connection(s)", connectedAircraft.Length);
 
         // Load controller connections
-        logger.Debug("Loading all controller connections");
+        logger.Verbose("Loading all controller connections");
         var connectedControllers = await plugin.ConnectionManager.GetConnectedControllers(cancellationToken);
         await controllerConnectionStore.Populate(connectedControllers, cancellationToken);
-        logger.Debug("Loaded {ControllerCount} controller connection(s)", connectedControllers.Length);
+        logger.Verbose("Loaded {ControllerCount} controller connection(s)", connectedControllers.Length);
 
         // Relay notification to UI
         WeakReferenceMessenger.Default.Send(notification);

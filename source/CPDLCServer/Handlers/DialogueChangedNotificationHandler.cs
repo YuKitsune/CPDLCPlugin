@@ -17,7 +17,7 @@ public class DialogueChangedNotificationHandler(
     {
         var dialogue = notification.Dialogue;
 
-        logger.Debug(
+        logger.Verbose(
             "Dialogue {DialogueId} changed for {Callsign} - Closed: {Closed}, Archived: {Archived}",
             dialogue.Id,
             dialogue.AircraftCallsign,
@@ -28,7 +28,7 @@ public class DialogueChangedNotificationHandler(
         var controllers = await controllerRepository.All(cancellationToken);
         if (controllers.Length == 0)
         {
-            logger.Debug(
+            logger.Verbose(
                 "No controllers to notify about dialogue change for {Callsign}",
                 dialogue.AircraftCallsign);
             return;

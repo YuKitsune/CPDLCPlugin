@@ -49,12 +49,12 @@ public class SignalRConnectionManager(
     {
         if (_connection != null)
         {
-            logger.Debug("Disposing existing connection before re-initialization");
+            logger.Verbose("Disposing existing connection before re-initialization");
             await DisposeConnectionAsync();
         }
 
         var url = $"{ServerEndpoint}?callsign={callsign}&stationId={stationId}";
-        logger.Debug("Building SignalR connection to {Url}", url);
+        logger.Verbose("Building SignalR connection to {Url}", url);
 
         var hubConnectionBuilder = new HubConnectionBuilder()
             .WithUrl(url, options =>
@@ -137,7 +137,7 @@ public class SignalRConnectionManager(
     {
         if (_connection == null) return;
 
-        logger.Debug("Registering SignalR message handlers");
+        logger.Verbose("Registering SignalR message handlers");
         _connection.On<DialogueDto>("DialogueChanged", downlink =>
             WithCancellationToken<DialogueDto>(downlinkHandlerDelegate.DialogueChanged)(downlink));
         _connection.On<AircraftConnectionDto>("AircraftConnectionUpdated", connectedAircraftInfo =>
@@ -252,7 +252,7 @@ public class SignalRConnectionManager(
     {
         if (_connection == null) return;
 
-        logger.Debug("Registering SignalR connection lifecycle event handlers");
+        logger.Verbose("Registering SignalR connection lifecycle event handlers");
 
         _connection.Closed += async error =>
         {
@@ -263,7 +263,7 @@ public class SignalRConnectionManager(
             }
             else
             {
-                logger.Debug("SignalR connection closed");
+                logger.Verbose("SignalR connection closed");
             }
 
             OnConnectionStateChanged(HubConnectionState.Disconnected);
@@ -296,7 +296,7 @@ public class SignalRConnectionManager(
 
     void OnConnectionStateChanged(HubConnectionState newState)
     {
-        logger.Debug("Connection state changed to {State}", newState);
+        logger.Verbose("Connection state changed to {State}", newState);
         ConnectionStateChanged?.Invoke(this, newState);
     }
 
@@ -327,10 +327,10 @@ public class SignalRConnectionManager(
     {
         if (_isDisposed) return;
 
-        logger.Debug("Disposing SignalR connection manager");
+        logger.Verbose("Disposing SignalR connection manager");
         DisposeConnectionAsync().GetAwaiter().GetResult();
         _isDisposed = true;
-        logger.Debug("SignalR connection manager disposed");
+        logger.Verbose("SignalR connection manager disposed");
         GC.SuppressFinalize(this);
     }
 
@@ -340,12 +340,12 @@ public class SignalRConnectionManager(
         {
             try
             {
-                logger.Debug("Stopping connection during disposal");
+                logger.Verbose("Stopping connection during disposal");
                 await _connection.StopAsync();
             }
             catch (Exception ex)
             {
-                logger.Debug(ex, "Error stopping connection during disposal (ignoring)");
+                logger.Verbose(ex, "Error stopping connection during disposal (ignoring)");
                 // Ignore errors during disposal
             }
             finally

@@ -10,7 +10,7 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
     : BackgroundService
 {
     readonly TimeSpan _timeoutCheckInterval = TimeSpan.FromSeconds(5);
-    
+
     readonly TimeSpan _pilotLateTimeout = TimeSpan.FromMinutes(2);
     readonly TimeSpan _controllerLateTimeout = TimeSpan.FromMinutes(2);
     private readonly TimeSpan _archiveDelay = TimeSpan.FromSeconds(10);
@@ -25,15 +25,15 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
                 try
                 {
                     // TODO: Time out entire dialogues when they take too long
-                    
-                    logger.Debug("Running message monitor iteration");
+
+                    logger.Verbose("Running message monitor iteration");
                     await PurgeOldDialogues(stoppingToken);
                     await CheckForTimeouts(stoppingToken);
                     await ArchiveCompletedDialogues(stoppingToken);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
-                    logger.Debug("Message monitor task cancellation requested");
+                    logger.Verbose("Message monitor task cancellation requested");
                 }
                 catch (Exception ex)
                 {
@@ -80,13 +80,13 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
         var now = clock.UtcNow();
         var dialogues = await repository.All(cancellationToken);
 
-        logger.Debug("Checking for timeouts in {DialogueCount} dialogues", dialogues.Length);
+        logger.Verbose("Checking for timeouts in {DialogueCount} dialogues", dialogues.Length);
 
         foreach (var dialogue in dialogues)
         {
             if (dialogue.IsClosed)
                 continue;
-            
+
             var anyChanges = false;
             foreach (var message in dialogue.Messages)
             {
@@ -120,7 +120,7 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
         var now = clock.UtcNow();
         var dialogues = await repository.All(cancellationToken);
 
-        logger.Debug("Checking for completed dialogues to archive");
+        logger.Verbose("Checking for completed dialogues to archive");
 
         foreach (var dialogue in dialogues)
         {
@@ -144,7 +144,7 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
             if (now < archiveTime)
                 continue;
 
-            logger.Debug("Archiving dialogue for {Callsign}", dialogue.AircraftCallsign);
+            logger.Verbose("Archiving dialogue for {Callsign}", dialogue.AircraftCallsign);
             dialogue.Archive(now);
 
             await publisher.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
@@ -165,7 +165,7 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
         if (timeSinceSent < _pilotLateTimeout)
             return false;
 
-        logger.Debug("Uplink message {UplinkId} marked as pilot late (time since sent: {TimeSinceSent}s)",
+        logger.Verbose("Uplink message {UplinkId} marked as pilot late (time since sent: {TimeSinceSent}s)",
             uplink.MessageId, timeSinceSent.TotalSeconds);
         uplink.IsPilotLate = true;
         return true;
@@ -184,7 +184,7 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
         if (timeSinceReceived < _controllerLateTimeout)
             return false;
 
-        logger.Debug("Downlink message {DownlinkId} marked as controller late (time since received: {TimeSinceReceived}s)",
+        logger.Verbose("Downlink message {DownlinkId} marked as controller late (time since received: {TimeSinceReceived}s)",
             downlink.MessageId, timeSinceReceived.TotalSeconds);
         downlink.IsControllerLate = true;
         return true;

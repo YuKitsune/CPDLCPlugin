@@ -10,7 +10,7 @@ public class ControllerConnectionRemovedNotificationHandler(ControllerConnection
 {
     public async Task Handle(ControllerConnectionRemovedNotification notification, CancellationToken cancellationToken)
     {
-        logger.Debug("Controller {Callsign} disconnected", notification.Callsign);
+        logger.Verbose("Controller {Callsign} disconnected", notification.Callsign);
 
         if (!await controllerConnectionStore.Remove(notification.Callsign, cancellationToken))
         {

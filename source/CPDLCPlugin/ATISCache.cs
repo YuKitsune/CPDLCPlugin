@@ -24,12 +24,12 @@ public class AtisCache(IClock clock, IErrorReporter errorReporter, ILogger logge
             {
                 if (cacheEntry.Expiry < now)
                 {
-                    _logger.Verbose("Cache ATIS for {callsign} was used", callsign);
+                    _logger.Verbose("Cache ATIS for {callsign} hit", callsign);
                     return cacheEntry.Lines;
                 }
 
                 _cache.Remove(callsign);
-                _logger.Information("ATIS for {callsign} was stale", callsign);
+                _logger.Information("ATIS for {callsign} is stale", callsign);
             }
 
             var controller = Network.GetOnlineATCs.FirstOrDefault(c => c.Callsign == callsign);

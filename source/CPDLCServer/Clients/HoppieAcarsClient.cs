@@ -79,11 +79,12 @@ public class HoppieAcarsClient : IAcarsClient
 
         try
         {
+            _logger.Verbose("Sending uplink to {Recipient} with packet {Packet}", message.Recipient, packet)
             var response = await _httpClient.PostAsync(_configuration.Url, content, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.Debug("Send response: {Response}", responseText);
+            _logger.Verbose("Send response: {Response}", responseText);
 
             _lastSendTime = _clock.UtcNow();
         }
@@ -116,11 +117,12 @@ public class HoppieAcarsClient : IAcarsClient
 
         try
         {
+            _logger.Verbose("Listing connections")
             var response = await _httpClient.PostAsync(_configuration.Url, content, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.Debug("ListConnections response: {Response}", responseText);
+            _logger.Verbose("ListConnections response: {Response}", responseText);
 
             // Parse the response to extract callsigns
             if (string.IsNullOrWhiteSpace(responseText))
@@ -187,7 +189,7 @@ public class HoppieAcarsClient : IAcarsClient
             {
                 try
                 {
-                    _logger.Debug("Polling for messages");
+                    _logger.Verbose("Polling for messages");
 
                     var parameters = new Dictionary<string, string>
                     {
@@ -224,7 +226,7 @@ public class HoppieAcarsClient : IAcarsClient
                 }
 
                 var pollInterval = GetPollInterval();
-                _logger.Debug("Poll completed, waiting {PollInterval}", pollInterval);
+                _logger.Verbose("Poll completed, waiting {PollInterval}", pollInterval);
                 await Task.Delay(pollInterval, cancellationToken);
             }
         }
@@ -258,7 +260,7 @@ public class HoppieAcarsClient : IAcarsClient
 
             var messages = ExtractMessages(responseText);
 
-            _logger.Debug("Extracted {Count} messages", messages.Count);
+            _logger.Verbose("Extracted {Count} messages", messages.Count);
 
             foreach (var messageText in messages)
             {
@@ -273,8 +275,8 @@ public class HoppieAcarsClient : IAcarsClient
 
                 if (message is not null)
                 {
-                    _messageChannel.Writer.TryWrite(message);
                     _logger.Information("Received {MessageType} from {From}", type, from);
+                    _messageChannel.Writer.TryWrite(message);
                 }
                 else
                 {

@@ -12,7 +12,7 @@ public class AircraftConnectedNotificationHandler(AircraftConnectionStore aircra
 {
     public async Task Handle(AircraftConnectionUpdatedNotification notification, CancellationToken cancellationToken)
     {
-        logger.Debug("Upserting connection for {Callsign} ({DataAuthorityState})",
+        logger.Verbose("Upserting connection for {Callsign} ({DataAuthorityState})",
             notification.AircraftConnectionDto.Callsign,
             notification.AircraftConnectionDto.DataAuthorityState);
 

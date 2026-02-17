@@ -19,7 +19,7 @@ public class AcknowledgeMessageRequestHandler(Plugin plugin, ILogger logger)
 
         await plugin.ConnectionManager.AcknowledgeUplink(request.DialogueId, request.MessageId, cancellationToken);
 
-        logger.Debug("Acknowledged uplink with id {MessageId} in dialogue {DialogueId}",
+        logger.Verbose("Acknowledged uplink with id {MessageId} in dialogue {DialogueId}",
             request.MessageId,
             request.DialogueId);
     }

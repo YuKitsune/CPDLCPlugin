@@ -24,7 +24,7 @@ public class ArchiveDialogueCommandHandler(
 
         if (dialogue.IsArchived)
         {
-            logger.Debug("Dialogue {DialogueId} is already archived", request.DialogueId);
+            logger.Verbose("Dialogue {DialogueId} is already archived", request.DialogueId);
             return; // Idempotent - already archived
         }
 

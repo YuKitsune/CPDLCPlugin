@@ -14,13 +14,13 @@ public class DisconnectedNotificationBridge(
 {
     public async Task Handle(DisconnectedNotification notification, CancellationToken cancellationToken)
     {
-        logger.Debug("Clearing dialogue store");
+        logger.Verbse("Clearing dialogue store");
         await dialogueStore.Clear(cancellationToken);
 
-        logger.Debug("Clearing aircraft connection store");
+        logger.Verbose("Clearing aircraft connection store");
         await aircraftConnectionStore.Clear(cancellationToken);
 
-        logger.Debug("Clearing controller connection store");
+        logger.Verbose("Clearing controller connection store");
         await controllerConnectionStore.Clear(cancellationToken);
 
         WeakReferenceMessenger.Default.Send(notification);

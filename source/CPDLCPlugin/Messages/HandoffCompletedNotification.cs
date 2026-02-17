@@ -29,7 +29,7 @@ public class TrackingControllerChangedNotificationHandler(
         if (string.IsNullOrEmpty(notification.NextControllerCallsign))
         {
             // Handoff to none, logoff
-            logger.Information("{Callsign} handoff accepted by {NextControllerCallsign}, sending LOGOFF uplink", aircraftConnection.Callsign, notification.NextControllerCallsign);
+            logger.Information("{Callsign} handoff accepted by {NextControllerCallsign}, sending END SERVICE uplink", aircraftConnection.Callsign, notification.NextControllerCallsign);
             await SendLogoffUplink(notification.Callsign, cancellationToken);
             return;
         }
@@ -38,7 +38,7 @@ public class TrackingControllerChangedNotificationHandler(
         if (fdr is null)
         {
             // FDR is missing???
-            logger.Information("{Callsign} FDR not found, sending LOGOFF uplink", aircraftConnection.Callsign);
+            logger.Information("{Callsign} FDR not found, sending END SERVICE uplink", aircraftConnection.Callsign);
             await SendLogoffUplink(notification.Callsign, cancellationToken);
             return;
         }

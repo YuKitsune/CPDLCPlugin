@@ -21,6 +21,8 @@ public class DownlinkReceivedNotificationHandler(
 {
     public async Task Handle(DownlinkReceivedNotification notification, CancellationToken cancellationToken)
     {
+        logger.Information("Downlink message received from {Callsign}", notification.Callsign);
+
         // Intercept logon requests and automatically respond
         Dialogue? dialogue;
         if (ControlMessages.IsLogonRequest(notification.Downlink))
@@ -46,6 +48,8 @@ public class DownlinkReceivedNotificationHandler(
 
         if (aircraftConnection is null)
         {
+            logger.Information("{Callsign} is not known by this ATSU, sending error uplink", notification.Callsign);
+
             // Connection not known, reject.
             await mediator.Send(
                 new SendUplinkCommand(
@@ -75,6 +79,7 @@ public class DownlinkReceivedNotificationHandler(
         if (aircraftConnection.DataAuthorityState == DataAuthorityState.NextDataAuthority)
         {
             aircraftConnection.PromoteToCurrentDataAuthority();
+            logger.Information("{Callsign} promoted to CurrentDataAuthority", notification.Callsign);
 
             // Notify all controllers that the aircraft has been promoted to CurrentDataAuthority
             var controllers = await controllerRepository.All(cancellationToken);
@@ -111,11 +116,13 @@ public class DownlinkReceivedNotificationHandler(
         if (dialogue is null)
         {
             dialogue = new Dialogue(notification.Downlink.Sender, notification.Downlink);
+            logger.Information("Dialogue {DialogueId} created for downlink from {Callsign}", dialogue.Id, notification.Callsign);
             await dialogueRepository.Add(dialogue, cancellationToken);
         }
         else
         {
             dialogue.AddMessage(notification.Downlink);
+            logger.Information("Downlink from {Callsign} appended to dialogue {DialogueId}", notification.Callsign, dialogue.Id);
         }
 
         // Publish DialogueChangedNotification instead of broadcasting directly

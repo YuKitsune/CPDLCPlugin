@@ -21,6 +21,8 @@ public class SendUplinkCommandHandler(
 {
     public async Task<SendUplinkResult> Handle(SendUplinkCommand request, CancellationToken cancellationToken)
     {
+        logger.Information("Sending uplink message to {Callsign}", request.Callsign);
+
         var allAircraft = await aircraftRepository.All(cancellationToken);
         var aircraftConnection =
             allAircraft.FirstOrDefault(a => a.Callsign == request.Recipient && a.DataAuthorityState == DataAuthorityState.CurrentDataAuthority) // Prefer the CDA connection
@@ -57,10 +59,12 @@ public class SendUplinkCommandHandler(
         {
             dialogue = new Dialogue(request.Recipient, uplinkMessage);
             await dialogueRepository.Add(dialogue, cancellationToken);
+            logger.Information("Dialogue {DialogueId} created for uplink message to {Callsign}", dialogue.Id, request.Callsign);
         }
         else
         {
             dialogue.AddMessage(uplinkMessage);
+            logger.Information("Uplink message to {Callsign} added to dialogue {DialogueId}", request.Callsign, dialogue.Id);
         }
 
         // Publish dialogue change notification
