@@ -425,19 +425,26 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         // Left-click to open the CPDLC Menu
         textLabelItem.OnMouseClick = args =>
         {
-            if (args.Button != CustomLabelItemMouseButton.Left)
-                return;
-
-            if (lastTextMessage is not null)
+            try
             {
-                MMI.OpenCPDLCMenu(lastTextMessage);
-            }
-            else
-            {
-                MMI.OpenCPDLCWindow(flightDataRecord);
-            }
+                if (args.Button != CustomLabelItemMouseButton.Left)
+                    return;
 
-            args.Handled = true;
+                if (lastTextMessage is not null)
+                {
+                    MMI.OpenCPDLCMenu(lastTextMessage);
+                }
+                else
+                {
+                    MMI.OpenCPDLCWindow(flightDataRecord);
+                }
+
+                args.Handled = true;
+            }
+            catch (Exception ex)
+            {
+                AddError(ex, "Failed to handle label item click");
+            }
         };
 
         return textLabelItem;
@@ -487,11 +494,18 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
 
         labelItem.OnMouseClick = args =>
         {
-            if (args.Button != CustomLabelItemMouseButton.Left)
-                return;
+            try
+            {
+                if (args.Button != CustomLabelItemMouseButton.Left)
+                    return;
 
-            customItem.LeftClickCallback();
-            args.Handled = true;
+                customItem.LeftClickCallback();
+                args.Handled = true;
+            }
+            catch (Exception ex)
+            {
+                AddError(ex, "Failed to handle CPDLC status label click");
+            }
         };
 
         return labelItem;
