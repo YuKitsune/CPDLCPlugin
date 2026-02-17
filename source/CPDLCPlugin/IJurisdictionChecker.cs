@@ -15,19 +15,21 @@ public class JurisdictionChecker(ControllerConnectionStore controllerConnectionS
 {
     // Need to keep track of which controller last had ownership of each FDR
     // vatSys will set the owner to `null` when the tag is relinquished, and there's no reference to who "previously" owned it
-    // Key = aircraft callsign
-    // Value = controller callsign
-    readonly ConcurrentDictionary<string, List<string>> _lastKnownOwners = new();
+    readonly ConcurrentDictionary<string, OwnershipRecord> _ownershipRecords = new();
 
     readonly ControllerConnectionStore _controllerConnectionStore = controllerConnectionStore;
 
     public void RecordFdrOwner(string callsign, string controllerCallsign)
     {
-        _lastKnownOwners.AddOrUpdate(
+        _ownershipRecords.AddOrUpdate(
             callsign,
-            [controllerCallsign],
-            (_, list) => [..list, controllerCallsign]);
+            new OwnershipRecord(controllerCallsign, null),
+            (_, existing) => existing.CurrentOwner == controllerCallsign
+                ? existing
+                : new OwnershipRecord(controllerCallsign, existing.CurrentOwner));
     }
+
+    record OwnershipRecord(string CurrentOwner, string? PreviousOwner);
 
     public bool ShouldDisplayDialogue(DialogueDto dialogue)
     {
@@ -60,21 +62,22 @@ public class JurisdictionChecker(ControllerConnectionStore controllerConnectionS
             return true;
         }
 
-        if (!_lastKnownOwners.TryGetValue(fdr.Callsign, out var owners))
+        if (!_ownershipRecords.TryGetValue(fdr.Callsign, out var record))
             return false;
 
         // If nobody has jurisdiction, and we were the last owner, show the message
-        if (!fdr.IsTracked && owners.Last() == Network.Callsign)
+        if (!fdr.IsTracked && record.CurrentOwner == Network.Callsign)
         {
             return true;
         }
 
-        // VATSIM-ism: If the controlling sector isn't connected to the ATSU server, and we were the last owner, then show the message
-        if (fdr.ControllerTracking is not null && fdr.ControllerTracking.Callsign != Network.Callsign && owners.Count > 2)
+        // VATSIM-ism: If the controlling sector isn't connected to the ATSU server, and we were the previous owner, then show the message
+        if (fdr.ControllerTracking is not null &&
+            fdr.ControllerTracking.Callsign != Network.Callsign &&
+            record.PreviousOwner == Network.Callsign)
         {
             var trackingControllerIsConnected = _controllerConnectionStore.IsConnected(fdr.ControllerTracking.Callsign);
-            var weWereTheLastControllerBeforeThisOne = owners[owners.Count - 2] == Network.Callsign;
-            if (!trackingControllerIsConnected && weWereTheLastControllerBeforeThisOne)
+            if (!trackingControllerIsConnected)
             {
                 return true;
             }
