@@ -69,8 +69,15 @@ public class ControllerConnectionStore
 
     public bool IsConnected(string callsign)
     {
-        var isConnected = _connectedControllers.Any(c => c.Callsign == callsign);
-        return isConnected;
+        _semaphore.Wait();
+        try
+        {
+            return _connectedControllers.Any(c => c.Callsign == callsign);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     public async Task<bool> Remove(string callsign, CancellationToken cancellationToken = default)
