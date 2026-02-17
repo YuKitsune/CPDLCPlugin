@@ -50,30 +50,23 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
 
     public Plugin()
     {
-        try
-        {
-            DpiAwareness.EnsureDpiAwareness();
+        DpiAwareness.EnsureDpiAwareness();
 
-            ConfigureTheme();
-            _colourCache = CacheLabelColours();
+        ConfigureTheme();
+        _colourCache = CacheLabelColours();
 
-            var configuration = ConfigurationLoader.Load();
-            ConfigureServices(configuration);
+        var configuration = ConfigurationLoader.Load();
+        ConfigureServices(configuration);
 
-            AddToolbarItems();
+        AddToolbarItems();
 
-            Network.Connected += NetworkConnected;
-            Network.Disconnected += NetworkDisconnected;
+        Network.Connected += NetworkConnected;
+        Network.Disconnected += NetworkDisconnected;
 
-            WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
-            WeakReferenceMessenger.Default.Register<ConnectedAircraftChanged>(this);
+        WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
+        WeakReferenceMessenger.Default.Register<ConnectedAircraftChanged>(this);
 
-            _worker = Worker(CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            AddError(ex);
-        }
+        _worker = Worker(CancellationToken.None);
     }
 
     async Task Worker(CancellationToken cancellationToken)
