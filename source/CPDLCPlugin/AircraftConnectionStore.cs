@@ -26,27 +26,15 @@ public class AircraftConnectionStore
         await _semaphore.WaitAsync(cancellationToken);
         try
         {
-            var existing = _connectedAircraft.FirstOrDefault(c => c.Callsign == connection.Callsign);
+            // Match by both callsign and stationId to support multiple connections per aircraft
+            var existing = _connectedAircraft.FirstOrDefault(c =>
+                c.Callsign == connection.Callsign && c.StationId == connection.StationId);
             if (existing is not null)
             {
                 _connectedAircraft.Remove(existing);
             }
 
             _connectedAircraft.Add(connection);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-    }
-
-    public async Task<AircraftConnectionDto?> Find(string callsign, CancellationToken cancellationToken = default)
-    {
-        await _semaphore.WaitAsync(cancellationToken);
-        try
-        {
-            var connection = _connectedAircraft.FirstOrDefault(a => a.Callsign == callsign);
-            return connection;
         }
         finally
         {
@@ -81,7 +69,26 @@ public class AircraftConnectionStore
         }
     }
 
-    public async Task<bool> Remove(string callsign, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Removes the specific connection for the callsign and stationId.
+    /// </summary>
+    public async Task<bool> Remove(string callsign, string stationId, CancellationToken cancellationToken = default)
+    {
+        await _semaphore.WaitAsync(cancellationToken);
+        try
+        {
+            return _connectedAircraft.RemoveAll(c => c.Callsign == callsign && c.StationId == stationId) > 0;
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Removes all connections for the callsign.
+    /// </summary>
+    public async Task<bool> RemoveAll(string callsign, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken);
         try

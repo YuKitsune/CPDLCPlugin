@@ -142,8 +142,8 @@ public class SignalRConnectionManager(
             WithCancellationToken<DialogueDto>(downlinkHandlerDelegate.DialogueChanged)(downlink));
         _connection.On<AircraftConnectionDto>("AircraftConnectionUpdated", connectedAircraftInfo =>
             WithCancellationToken<AircraftConnectionDto>(downlinkHandlerDelegate.AircraftConnectionUpdated)(connectedAircraftInfo));
-        _connection.On<string>("AircraftConnectionRemoved", callsign =>
-            WithCancellationToken<string>(downlinkHandlerDelegate.AircraftConnectionRemoved)(callsign));
+        _connection.On<string, string>("AircraftConnectionRemoved", (callsign, stationId) =>
+            WithCancellationToken<string, string>(downlinkHandlerDelegate.AircraftConnectionRemoved)(callsign, stationId));
         _connection.On<ControllerConnectionDto>("ControllerConnectionUpdated", connectedAircraftInfo =>
             WithCancellationToken<ControllerConnectionDto>(downlinkHandlerDelegate.ControllerConnectionUpdated)(connectedAircraftInfo));
         _connection.On<string>("ControllerConnectionRemoved", callsign =>
@@ -157,6 +157,16 @@ public class SignalRConnectionManager(
         {
             using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await action(x, cancellationTokenSource.Token);
+        };
+    }
+
+    Func<T1, T2, Task> WithCancellationToken<T1, T2>(Func<T1, T2, CancellationToken, Task> action)
+    {
+        // TODO: Make configurable
+        return async (x, y) =>
+        {
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await action(x, y, cancellationTokenSource.Token);
         };
     }
 

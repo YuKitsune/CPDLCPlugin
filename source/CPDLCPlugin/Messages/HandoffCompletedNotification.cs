@@ -21,7 +21,8 @@ public class TrackingControllerChangedNotificationHandler(
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
             return;
 
-        var aircraftConnection = await aircraftConnectionStore.Find(notification.Callsign, cancellationToken);
+        var aircraftConnections = await aircraftConnectionStore.All(cancellationToken);
+        var aircraftConnection = aircraftConnections.FirstOrDefault(c => c.Callsign == notification.Callsign && c.DataAuthorityState == DataAuthorityState.CurrentDataAuthority);
         if (aircraftConnection is null)
             return;
 

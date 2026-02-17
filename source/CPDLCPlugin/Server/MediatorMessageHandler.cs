@@ -38,11 +38,11 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
     }
 
-    public async Task AircraftConnectionRemoved(string callsign, CancellationToken cancellationToken)
+    public async Task AircraftConnectionRemoved(string callsign, string stationId, CancellationToken cancellationToken)
     {
         try
         {
-            await mediator.Publish(new AircraftConnectionRemovedNotification(callsign), cancellationToken);
+            await mediator.Publish(new AircraftConnectionRemovedNotification(callsign, stationId), cancellationToken);
         }
         catch (OperationCanceledException)
         {

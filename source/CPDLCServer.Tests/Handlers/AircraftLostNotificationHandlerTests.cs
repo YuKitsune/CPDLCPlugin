@@ -108,10 +108,10 @@ public class AircraftLostNotificationHandlerTests
                 ids.Contains("ConnectionId-1") &&
                 ids.Contains("ConnectionId-2")));
 
-        // Assert - disconnection notification is sent
+        // Assert - disconnection notification is sent with callsign and stationId
         await clientProxy.Received(1).SendCoreAsync(
             "AircraftConnectionRemoved",
-            Arg.Is<object[]>(args => args.Length == 1 && args[0].ToString() == "UAL123"),
+            Arg.Is<object[]>(args => args.Length == 2 && args[0].ToString() == "UAL123" && args[1].ToString() == "YBBB"),
             Arg.Any<CancellationToken>());
 
         // Assert - DialogueChangedNotification is published

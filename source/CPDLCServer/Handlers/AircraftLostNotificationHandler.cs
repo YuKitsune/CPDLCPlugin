@@ -137,7 +137,7 @@ public class AircraftLostNotificationHandler(
         var controllerConnectionIds = controllers.Select(c => c.ConnectionId).ToArray();
         await hubContext.Clients
             .Clients(controllerConnectionIds)
-            .SendAsync("AircraftConnectionRemoved", notification.Callsign, cancellationToken);
+            .SendAsync("AircraftConnectionRemoved", notification.Callsign, aircraft.StationId, cancellationToken);
 
         logger.Information(
             "Notified {ControllerCount} controller(s) about lost aircraft {Callsign}",

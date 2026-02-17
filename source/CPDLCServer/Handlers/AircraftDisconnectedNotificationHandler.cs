@@ -33,7 +33,7 @@ public class AircraftDisconnectedNotificationHandler(
         // Notify all controllers that an aircraft has disconnected
         await hubContext.Clients
             .Clients(controllers.Select(c => c.ConnectionId))
-            .SendAsync("AircraftConnectionRemoved", notification.Callsign, cancellationToken);
+            .SendAsync("AircraftConnectionRemoved", notification.Callsign, notification.StationId, cancellationToken);
 
         logger.Information(
             "Notified {ControllerCount} controller(s) about disconnected aircraft {Callsign}",

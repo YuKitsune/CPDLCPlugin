@@ -40,7 +40,7 @@ public class AircraftDisconnectedNotificationHandlerTests
             hubContext,
             Logger.None);
 
-        var notification = new AircraftDisconnected("hoppies-ybbb", "UAL123");
+        var notification = new AircraftDisconnected("hoppies-ybbb", "YBBB", "UAL123");
 
         // Act
         await handler.Handle(notification, CancellationToken.None);
@@ -54,7 +54,7 @@ public class AircraftDisconnectedNotificationHandlerTests
 
         await clientProxy.Received(1).SendCoreAsync(
             "AircraftConnectionRemoved",
-            Arg.Is<object[]>(args => args.Length == 1 && args[0].ToString() == "UAL123"),
+            Arg.Is<object[]>(args => args.Length == 2 && args[0].ToString() == "UAL123" && args[1].ToString() == "YBBB"),
             Arg.Any<CancellationToken>());
     }
 
@@ -72,7 +72,7 @@ public class AircraftDisconnectedNotificationHandlerTests
             hubContext,
             Logger.None);
 
-        var notification = new AircraftDisconnected("hoppies-ybbb", "UAL123");
+        var notification = new AircraftDisconnected("hoppies-ybbb", "YBBB", "UAL123");
 
         // Act
         await handler.Handle(notification, CancellationToken.None);
