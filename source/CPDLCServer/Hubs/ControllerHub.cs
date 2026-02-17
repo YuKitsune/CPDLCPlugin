@@ -27,11 +27,16 @@ public class ControllerHub(
 
         // Read connection parameters from query string
         var query = httpContext.Request.Query;
-        var callsign = query["callsign"].ToString().ToUpper();
+        var stationId = query["stationId"].ToString().ToUpper();
+        if (string.IsNullOrWhiteSpace(stationId))
+        {
+            throw new HubException("stationId must be provided");
+        }
 
+        var callsign = query["callsign"].ToString().ToUpper();
         if (string.IsNullOrWhiteSpace(callsign))
         {
-            throw new HubException("Required parameters missing: callsign must be provided");
+            throw new HubException("callsign must be provided");
         }
 
         // Validate API key
@@ -45,6 +50,7 @@ public class ControllerHub(
         var controller = new ControllerInfo(
             Guid.NewGuid(),
             Context.ConnectionId,
+            stationId,
             callsign,
             "TEST");
             // validationResult.VatsimCid);
@@ -58,6 +64,7 @@ public class ControllerHub(
         await mediator.Publish(
             new ControllerConnectedNotification(
                 controller.UserId,
+                controller.StationId,
                 controller.Callsign));
 
         await base.OnConnectedAsync();

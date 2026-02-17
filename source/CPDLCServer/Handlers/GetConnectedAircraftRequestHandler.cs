@@ -17,7 +17,7 @@ public class GetConnectedAircraftRequestHandler(IAircraftRepository aircraftRepo
         var aircraftInfo = aircraft
             .Select(a => new AircraftConnectionDto(
                 a.Callsign,
-                a.AcarsClientId,
+                a.StationId,
                 DialogueConverter.ToDto(a.DataAuthorityState)))
             .ToArray();
 

@@ -15,6 +15,8 @@ public partial class SetupViewModel : ObservableObject,
     readonly IWindowHandle _windowHandle;
 
     [ObservableProperty] string serverEndpoint;
+    [ObservableProperty] string[] availableStationIdentifiers;
+    [ObservableProperty] string selectedStationIdentifier;
     [ObservableProperty] bool connected;
 
     public SetupViewModel(
@@ -22,12 +24,16 @@ public partial class SetupViewModel : ObservableObject,
         IErrorReporter errorReporter,
         IWindowHandle windowHandle,
         string serverEndpoint,
+        string[] availableStationIdentifiers,
+        string selectedStationIdentifier,
         bool connected)
     {
         _mediator = mediator;
         _errorReporter = errorReporter;
         _windowHandle = windowHandle;
         ServerEndpoint = serverEndpoint;
+        AvailableStationIdentifiers = availableStationIdentifiers;
+        SelectedStationIdentifier = selectedStationIdentifier;
         Connected = connected;
 
         // Register for connection notifications
@@ -46,7 +52,7 @@ public partial class SetupViewModel : ObservableObject,
             }
             else
             {
-                await _mediator.Send(new ConnectRequest(ServerEndpoint));
+                await _mediator.Send(new ConnectRequest(ServerEndpoint, SelectedStationIdentifier));
             }
         }
         catch (Exception e)

@@ -9,7 +9,10 @@ public class LogoffCommandHandler(IAircraftRepository aircraftRepository, IMedia
 {
     public async Task Handle(LogoffCommand request, CancellationToken cancellationToken)
     {
-        var didRemove = await aircraftRepository.Remove(request.Callsign, cancellationToken);
+        var didRemove = await aircraftRepository.Remove(
+            new AircraftKey(request.Callsign, request.AcarsClientId),
+            cancellationToken);
+
         if (!didRemove)
             return;
 

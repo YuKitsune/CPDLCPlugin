@@ -5,7 +5,7 @@ using vatsys;
 
 namespace CPDLCPlugin.Messages;
 
-public record ConnectRequest(string ServerEndpoint) : IRequest;
+public record ConnectRequest(string ServerEndpoint, string StationId) : IRequest;
 
 public class ConnectRequestHandler(Plugin plugin, IMediator mediator, ILogger logger) : IRequestHandler<ConnectRequest>
 {
@@ -42,7 +42,7 @@ public class ConnectRequestHandler(Plugin plugin, IMediator mediator, ILogger lo
 
         // Initialize the connection with the station ID and current callsign
         logger.Debug("Initializing SignalR connection");
-        await plugin.ConnectionManager.InitializeAsync(Network.Callsign);
+        await plugin.ConnectionManager.InitializeAsync(request.StationId, Network.Callsign);
 
         // Start the connection
         logger.Debug("Starting SignalR connection");

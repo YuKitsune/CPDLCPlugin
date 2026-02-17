@@ -26,4 +26,12 @@ public class LabelItemCache
             _items = newItems;
         }
     }
+
+    public void Clear()
+    {
+        lock (_gate)
+        {
+            _items.Clear();
+        }
+    }
 }

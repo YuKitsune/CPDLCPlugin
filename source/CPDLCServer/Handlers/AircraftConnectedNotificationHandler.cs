@@ -1,3 +1,4 @@
+using CPDLCServer.Clients;
 using CPDLCServer.Contracts;
 using CPDLCServer.Hubs;
 using CPDLCServer.Messages;
@@ -38,7 +39,7 @@ public class AircraftConnectedNotificationHandler(
             .Clients(controllers.Select(c => c.ConnectionId))
             .SendAsync(
                 "AircraftConnectionUpdated",
-                new AircraftConnectionDto(notification.Callsign, notification.AcarsClientId, DialogueConverter.ToDto(notification.DataAuthorityState)),
+                new AircraftConnectionDto(notification.Callsign, notification.StationId, DialogueConverter.ToDto(notification.DataAuthorityState)),
                 cancellationToken);
 
         logger.Information(

@@ -114,6 +114,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             .AddSingleton<WindowManager>()
             .AddSingleton<DialogueStore>()
             .AddSingleton<SuspendedMessageStore>()
+            .AddSingleton<AtisCache>()
             .AddSingleton(_labelItemCache)
             .AddSingleton(_colourCache)
             .AddMediatR(c => c.RegisterServicesFromAssemblies(typeof(Plugin).Assembly))
@@ -294,15 +295,19 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         try
         {
             // Record the last known owner of each FDR
-            _workQueue.Writer.TryWrite(() =>
+            _workQueue.Writer.TryWrite(async () =>
             {
-                if (updated.ControllerTracking is not null)
-                {
-                    var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
-                    jurisdictionChecker.RecordFdrOwner(updated.Callsign, updated.ControllerTracking.Callsign);
-                }
+                var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
+                jurisdictionChecker.RecordFdrOwner(updated.Callsign, updated.ControllerTracking?.Callsign);
 
-                return Task.CompletedTask;
+                // We were the previous owner, try to hand this aircraft off to the next data authority
+                var record = jurisdictionChecker.GetOwnershipRecord(updated.Callsign);
+                if (record.PreviousOwner == Network.Callsign)
+                {
+                    Log.Information("{Callsign} handoff to {NextController}", updated.Callsign, record.CurrentOwner);
+                    var mediator = ServiceProvider.GetRequiredService<IMediator>();
+                    await mediator.Send(new HandoffCompletedNotification(updated.Callsign, record.CurrentOwner));
+                }
             });
 
             // Re-build the label item cache
@@ -323,6 +328,13 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
                     var mediator = ServiceProvider.GetRequiredService<IMediator>();
                     await mediator.Send(new OpenCurrentMessagesWindowRequest());
                 }
+            });
+
+            _workQueue.Writer.TryWrite(async () =>
+            {
+
+                await Task.CompletedTask;
+                Log.Information("{Callsign} went from {PreviousState} to {CurrentState}", updated.Callsign, updated.PreviousState, updated.State);
             });
         }
         catch (Exception ex)

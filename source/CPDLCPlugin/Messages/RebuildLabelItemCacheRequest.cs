@@ -22,7 +22,8 @@ public class RebuildLabelItemCacheRequestHandler(
     IJurisdictionChecker jurisdictionChecker,
     IMediator mediator,
     IGuiInvoker guiInvoker,
-    IErrorReporter errorReporter) : IRequestHandler<RebuildLabelItemCacheRequest>
+    IErrorReporter errorReporter,
+    Plugin plugin) : IRequestHandler<RebuildLabelItemCacheRequest>
 {
     public async Task Handle(RebuildLabelItemCacheRequest request, CancellationToken cancellationToken)
     {
@@ -32,6 +33,12 @@ public class RebuildLabelItemCacheRequestHandler(
 
             var connectedAircraft = await aircraftConnectionStore.All(cancellationToken);
 
+            if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
+            {
+                labelItemCache.Clear();
+                return;
+            }
+
             foreach (var flightDataRecord in FDP2.GetFDRs)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -40,7 +47,7 @@ public class RebuildLabelItemCacheRequestHandler(
                 if (flightDataRecord is null)
                     continue;
 
-                var connection = connectedAircraft.FirstOrDefault(c => c.Callsign == flightDataRecord.Callsign);
+                var connection = connectedAircraft.FirstOrDefault(c => c.Callsign == flightDataRecord.Callsign && c.StationId == plugin.ConnectionManager.StationIdentifier);
 
                 var openDialogues = (await dialogueStore.All(cancellationToken))
                     .Where(d => d.AircraftCallsign == flightDataRecord.Callsign && !d.IsClosed)

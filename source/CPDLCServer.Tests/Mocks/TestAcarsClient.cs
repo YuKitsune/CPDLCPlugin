@@ -9,6 +9,7 @@ public class TestAcarsClient : IAcarsClient
     private readonly Channel<DownlinkMessage> _channel = Channel.CreateUnbounded<DownlinkMessage>();
 
     public ChannelReader<DownlinkMessage> MessageReader => _channel.Reader;
+    public string StationId => "TEST";
 
     public List<string> Connections { get; } = [];
     public List<UplinkMessage> SentMessages { get; } = new();

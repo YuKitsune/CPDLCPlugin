@@ -37,6 +37,7 @@ public class ControllerConnectedNotificationHandler(
             .SendAsync(
                 "ControllerConnectionUpdated",
                 new ControllerConnectionDto(
+                    notification.StationId,
                     notification.Callsign,
                     controllers.First(c => c.UserId == notification.UserId).VatsimCid),
                 cancellationToken);

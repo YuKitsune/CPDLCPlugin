@@ -5,6 +5,7 @@ namespace CPDLCPlugin.Configuration;
 public class PluginConfiguration
 {
     public required string ServerEndpoint { get; init; }
+    public required string[] Stations { get; init; }
     public int MaxCurrentMessages { get; init; } = 50;
     public int MaxArchivedMessages { get; init; } = 50;
     public int MaxDisplayMessageLength { get; init; } = 40;

@@ -21,7 +21,12 @@ public class SendUplinkCommandHandler(
 {
     public async Task<SendUplinkResult> Handle(SendUplinkCommand request, CancellationToken cancellationToken)
     {
-        var aircraftConnection = await aircraftRepository.Find(request.Recipient, cancellationToken);
+        // TODO: Test case - When multiple connections exist, and one is CDA, CDA connection is used
+        // TODO: Test case - When single connection exist, it is used
+        var allAircraft = await aircraftRepository.All(cancellationToken);
+        var aircraftConnection =
+            allAircraft.FirstOrDefault(a => a.Callsign == request.Recipient && a.DataAuthorityState == DataAuthorityState.CurrentDataAuthority) // Prefer the CDA connection
+            ?? allAircraft.FirstOrDefault(a => a.Callsign == request.Recipient && a.DataAuthorityState == DataAuthorityState.NextDataAuthority); // Defer to NDA connection if there's no CDA connection
         if (aircraftConnection is null)
             throw new Exception($"{request.Recipient} is not connected");
 

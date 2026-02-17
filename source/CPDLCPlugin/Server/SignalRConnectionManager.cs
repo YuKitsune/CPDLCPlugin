@@ -5,6 +5,8 @@ using Serilog;
 
 namespace CPDLCPlugin.Server;
 
+// TODO: Register this in the IoC container
+
 /// <summary>
 /// Manages the SignalR connection to the CPDLC server.
 /// </summary>
@@ -38,11 +40,12 @@ public class SignalRConnectionManager(
     public event EventHandler<Exception>? ConnectionError;
 
     public string ServerEndpoint { get; } = serverEndpoint;
+    public string StationIdentifier { get; set; } = string.Empty;
 
     /// <summary>
     /// Initializes the SignalR connection.
     /// </summary>
-    public async Task InitializeAsync(string callsign)
+    public async Task InitializeAsync(string stationId, string callsign)
     {
         if (_connection != null)
         {
@@ -50,7 +53,7 @@ public class SignalRConnectionManager(
             await DisposeConnectionAsync();
         }
 
-        var url = $"{ServerEndpoint}?callsign={callsign}";
+        var url = $"{ServerEndpoint}?callsign={callsign}&stationId={stationId}";
         logger.Debug("Building SignalR connection to {Url}", url);
 
         var hubConnectionBuilder = new HubConnectionBuilder()
@@ -75,6 +78,8 @@ public class SignalRConnectionManager(
 
         RegisterHandlers();
         RegisterConnectionEvents();
+
+        StationIdentifier = stationId;
     }
 
     /// <summary>

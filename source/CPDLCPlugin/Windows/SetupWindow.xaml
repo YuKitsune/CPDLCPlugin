@@ -54,6 +54,20 @@
                 IsEnabled="{Binding Connected, Converter={StaticResource BoolInversionConverter}}"/>
         </Grid>
 
+        <!-- Station Identifier -->
+        <Grid Grid.Row="2" Margin="0,0,0,8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Station Identifier" Margin="0,0,0,4"/>
+            <ComboBox Grid.Row="1"
+                      IsEnabled="{Binding Connected, Converter={StaticResource BoolInversionConverter}}"
+                      ItemsSource="{Binding AvailableStationIdentifiers}"
+                      SelectedItem="{Binding SelectedStationIdentifier}"/>
+        </Grid>
+
         <!-- API Key -->
         <!-- <Grid Grid.Row="1" Margin="0,0,0,8"> -->
         <!--     <Grid.RowDefinitions> -->

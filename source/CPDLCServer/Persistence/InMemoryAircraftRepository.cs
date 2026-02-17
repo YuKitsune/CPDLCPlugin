@@ -7,21 +7,21 @@ public class InMemoryAircraftRepository : IAircraftRepository
 {
     readonly SemaphoreSlim _semaphore = new(1, 1);
 
-    private readonly Dictionary<string, AircraftConnection> _connections = new();
+    private readonly Dictionary<AircraftKey, AircraftConnection> _connections = new();
 
-    public async Task Add(AircraftConnection connection, CancellationToken cancellationToken)
+    public async Task Add(AircraftKey aircraftKey, AircraftConnection connection, CancellationToken cancellationToken)
     {
         using (await _semaphore.LockAsync(cancellationToken))
         {
-            _connections[connection.Callsign] = connection;
+            _connections[aircraftKey] = connection;
         }
     }
 
-    public async Task<AircraftConnection?> Find(string callsign, CancellationToken cancellationToken)
+    public async Task<AircraftConnection?> Find(AircraftKey aircraftKey, CancellationToken cancellationToken)
     {
         using (await _semaphore.LockAsync(cancellationToken))
         {
-            _connections.TryGetValue(callsign, out var connection);
+            _connections.TryGetValue(aircraftKey, out var connection);
             return connection;
         }
     }
@@ -36,11 +36,11 @@ public class InMemoryAircraftRepository : IAircraftRepository
         }
     }
 
-    public async Task<bool> Remove(string callsign, CancellationToken cancellationToken)
+    public async Task<bool> Remove(AircraftKey aircraftKey, CancellationToken cancellationToken)
     {
         using (await _semaphore.LockAsync(cancellationToken))
         {
-            return _connections.Remove(callsign);
+            return _connections.Remove(aircraftKey);
         }
     }
 }

@@ -16,10 +16,10 @@ public class AircraftLostNotificationHandlerTests
     {
         // Arrange
         var aircraftManager = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.CurrentDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
         aircraft.RequestLogon(DateTimeOffset.UtcNow);
         aircraft.AcceptLogon(DateTimeOffset.UtcNow);
-        await aircraftManager.Add(aircraft, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerManager = new TestControllerRepository();
         var dialogueRepository = new TestDialogueRepository();
@@ -43,13 +43,13 @@ public class AircraftLostNotificationHandlerTests
         var notification = new AircraftLost("hoppies-ybbb", "UAL123");
 
         // Assert - aircraft exists before handling
-        Assert.NotNull(await aircraftManager.Find("UAL123", CancellationToken.None));
+        Assert.NotNull(await aircraftManager.Find(new("UAL123", "hoppies-ybbb"), CancellationToken.None));
 
         // Act
         await handler.Handle(notification, CancellationToken.None);
 
         // Assert - aircraft is removed after handling
-        Assert.Null(await aircraftManager.Find("UAL123", CancellationToken.None));
+        Assert.Null(await aircraftManager.Find(new("UAL123", "hoppies-ybbb"), CancellationToken.None));
     }
 
     [Fact]
@@ -57,20 +57,22 @@ public class AircraftLostNotificationHandlerTests
     {
         // Arrange
         var aircraftManager = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.CurrentDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
         aircraft.RequestLogon(DateTimeOffset.UtcNow);
         aircraft.AcceptLogon(DateTimeOffset.UtcNow);
-        await aircraftManager.Add(aircraft, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerManager = new TestControllerRepository();
         var controller1 = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-1",
+            "YBBB",
             "BN-TSN_FSS",
             "1234567");
         var controller2 = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-2",
+            "YBBB",
             "BN-OCN_CTR",
             "7654321");
         await controllerManager.Add(controller1, CancellationToken.None);
@@ -161,10 +163,10 @@ public class AircraftLostNotificationHandlerTests
     {
         // Arrange
         var aircraftManager = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.CurrentDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
         aircraft.RequestLogon(DateTimeOffset.UtcNow);
         aircraft.AcceptLogon(DateTimeOffset.UtcNow);
-        await aircraftManager.Add(aircraft, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerManager = new TestControllerRepository();
         var dialogueRepository = new TestDialogueRepository();
@@ -191,7 +193,7 @@ public class AircraftLostNotificationHandlerTests
         await handler.Handle(notification, CancellationToken.None);
 
         // Assert - aircraft should still be removed
-        Assert.Null(await aircraftManager.Find("UAL123", CancellationToken.None));
+        Assert.Null(await aircraftManager.Find(new("UAL123", "hoppies-ybbb"), CancellationToken.None));
 
         // Assert - no SignalR notification should be sent
         hubContext.Clients.DidNotReceive().Clients(Arg.Any<IReadOnlyList<string>>());
@@ -206,15 +208,16 @@ public class AircraftLostNotificationHandlerTests
     {
         // Arrange
         var aircraftManager = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.CurrentDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
         aircraft.RequestLogon(DateTimeOffset.UtcNow);
         aircraft.AcceptLogon(DateTimeOffset.UtcNow);
-        await aircraftManager.Add(aircraft, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerManager = new TestControllerRepository();
         var controller = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-1",
+            "YBBB",
             "BN-TSN_FSS",
             "1234567");
         await controllerManager.Add(controller, CancellationToken.None);

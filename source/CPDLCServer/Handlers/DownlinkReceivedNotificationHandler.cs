@@ -40,7 +40,9 @@ public class DownlinkReceivedNotificationHandler(
             return;
         }
 
-        var aircraftConnection = await aircraftRepository.Find(notification.Downlink.Sender, cancellationToken);
+        var aircraftConnection = await aircraftRepository.Find(
+            new (notification.Downlink.Sender, notification.AcarsClientId),
+            cancellationToken);
 
         if (aircraftConnection is null)
         {
@@ -85,7 +87,7 @@ public class DownlinkReceivedNotificationHandler(
                         "AircraftConnectionUpdated",
                         new Contracts.AircraftConnectionDto(
                             aircraftConnection.Callsign,
-                            aircraftConnection.AcarsClientId,
+                            notification.StationId,
                             DialogueConverter.ToDto(aircraftConnection.DataAuthorityState)),
                         cancellationToken);
 

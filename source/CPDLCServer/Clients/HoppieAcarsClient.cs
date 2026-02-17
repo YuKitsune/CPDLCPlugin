@@ -30,6 +30,7 @@ public class HoppieAcarsClient : IAcarsClient
     bool _disposed;
 
     public ChannelReader<DownlinkMessage> MessageReader => _messageChannel.Reader;
+    public string StationId => _configuration.StationIdentifier;
 
     public HoppieAcarsClient(HoppiesConfiguration configuration, HttpClient httpClient, IClock clock, ILogger logger)
     {

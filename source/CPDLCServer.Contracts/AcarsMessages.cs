@@ -18,7 +18,7 @@ public enum CpdlcUplinkResponseType
 
 public record AircraftConnectionDto(
     string Callsign,
-    string AcarsClientId,
+    string StationId,
     DataAuthorityState DataAuthorityState);
 
 public enum DataAuthorityState
@@ -35,7 +35,7 @@ public enum AlertType
     None
 }
 
-public record ControllerConnectionDto(string Callsign, string VatsimCid);
+public record ControllerConnectionDto(string StationId, string Callsign, string VatsimCid);
 
 // Dialogue DTOs for SignalR API
 

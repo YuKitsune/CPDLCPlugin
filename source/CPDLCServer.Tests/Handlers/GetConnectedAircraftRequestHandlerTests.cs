@@ -18,25 +18,28 @@ public class GetConnectedAircraftRequestHandlerTests
         var aircraft1 = new AircraftConnection(
             "UAL123",
             "hoppies-ybbb",
+            "YBBB",
             DataAuthorityState.CurrentDataAuthority);
         aircraft1.RequestLogon(DateTimeOffset.UtcNow);
         aircraft1.AcceptLogon(DateTimeOffset.UtcNow);
-        await aircraftManager.Add(aircraft1, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft1.Callsign, aircraft1.AcarsClientId), aircraft1, CancellationToken.None);
 
         var aircraft2 = new AircraftConnection(
             "QFA456",
             "hoppies-ybbb",
+            "YBBB",
             DataAuthorityState.CurrentDataAuthority);
         aircraft2.RequestLogon(DateTimeOffset.UtcNow);
-        await aircraftManager.Add(aircraft2, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft2.Callsign, aircraft2.AcarsClientId), aircraft2, CancellationToken.None);
 
         // Aircraft on different ACARS client - should also be returned
         var aircraft3 = new AircraftConnection(
             "AAL789",
             "hoppies-ymmm",
+            "YMMM",
             DataAuthorityState.CurrentDataAuthority);
         aircraft3.RequestLogon(DateTimeOffset.UtcNow);
-        await aircraftManager.Add(aircraft3, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft3.Callsign, aircraft3.AcarsClientId), aircraft3, CancellationToken.None);
 
         var query = new GetConnectedAircraftRequest();
 
@@ -78,10 +81,11 @@ public class GetConnectedAircraftRequestHandlerTests
         var aircraft = new AircraftConnection(
             "UAL123",
             "hoppies-ybbb",
+            "YBBB",
             DataAuthorityState.CurrentDataAuthority);
         aircraft.RequestLogon(DateTimeOffset.UtcNow);
         aircraft.AcceptLogon(DateTimeOffset.UtcNow);
-        await aircraftManager.Add(aircraft, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var query = new GetConnectedAircraftRequest();
 
@@ -91,7 +95,7 @@ public class GetConnectedAircraftRequestHandlerTests
         // Assert
         var aircraftInfo = Assert.Single(result.Aircraft);
         Assert.Equal("UAL123", aircraftInfo.Callsign);
-        Assert.Equal("hoppies-ybbb", aircraftInfo.AcarsClientId);
+        Assert.Equal("YBBB", aircraftInfo.StationId);
         Assert.Equal(Contracts.DataAuthorityState.CurrentDataAuthority, aircraftInfo.DataAuthorityState);
     }
 }

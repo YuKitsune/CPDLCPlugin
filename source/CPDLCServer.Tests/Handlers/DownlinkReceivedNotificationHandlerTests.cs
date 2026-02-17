@@ -18,20 +18,22 @@ public class DownlinkReceivedNotificationHandlerTests
         // Arrange
         var clock = new TestClock();
         var aircraftManager = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.CurrentDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
         aircraft.RequestLogon(clock.UtcNow());
         aircraft.AcceptLogon(clock.UtcNow());
-        await aircraftManager.Add(aircraft, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerManager = new TestControllerRepository();
         var controller1 = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-1",
+            "YBBB",
             "BN-TSN_FSS",
             "1234567");
         var controller2 = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-2",
+            "YBBB",
             "BN-OCN_CTR",
             "7654321");
         await controllerManager.Add(controller1, CancellationToken.None);
@@ -66,6 +68,7 @@ public class DownlinkReceivedNotificationHandlerTests
 
         var notification = new DownlinkReceivedNotification(
             "hoppies-ybbb",
+            "YBBB",
             downlinkMessage);
 
         // Act
@@ -85,15 +88,16 @@ public class DownlinkReceivedNotificationHandlerTests
         // Arrange
         var clock = new TestClock();
         var aircraftManager = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.CurrentDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
         aircraft.RequestLogon(clock.UtcNow());
         aircraft.AcceptLogon(clock.UtcNow());
-        await aircraftManager.Add(aircraft, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerManager = new TestControllerRepository();
         var controller = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-1",
+            "YMMM",
             "ML-IND_FSS",
             "1234567");
         await controllerManager.Add(controller, CancellationToken.None);
@@ -127,6 +131,7 @@ public class DownlinkReceivedNotificationHandlerTests
 
         var notification = new DownlinkReceivedNotification(
             "hoppies-ybbb",
+            "YBBB",
             downlinkMessage);
 
         // Act
@@ -144,15 +149,16 @@ public class DownlinkReceivedNotificationHandlerTests
         // Arrange
         var clock = new TestClock();
         var aircraftManager = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.NextDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.NextDataAuthority);
         aircraft.RequestLogon(clock.UtcNow());
         aircraft.AcceptLogon(clock.UtcNow());
-        await aircraftManager.Add(aircraft, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerManager = new TestControllerRepository();
         var controller = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-1",
+            "YBBB",
             "BN-TSN_FSS",
             "1234567");
         await controllerManager.Add(controller, CancellationToken.None);
@@ -186,6 +192,7 @@ public class DownlinkReceivedNotificationHandlerTests
 
         var notification = new DownlinkReceivedNotification(
             "hoppies-ybbb",
+            "YBBB",
             downlinkMessage);
 
         // Assert - aircraft starts as NextDataAuthority
@@ -213,7 +220,7 @@ public class DownlinkReceivedNotificationHandlerTests
         var dto = eventArgs[0] as Contracts.AircraftConnectionDto;
         Assert.NotNull(dto);
         Assert.Equal("UAL123", dto.Callsign);
-        Assert.Equal("hoppies-ybbb", dto.AcarsClientId);
+        Assert.Equal("YBBB", dto.StationId);
         Assert.Equal(Contracts.DataAuthorityState.CurrentDataAuthority, dto.DataAuthorityState);
     }
 
@@ -226,15 +233,16 @@ public class DownlinkReceivedNotificationHandlerTests
         clock.SetUtcNow(logonTime);
 
         var aircraftManager = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.NextDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.NextDataAuthority);
         aircraft.RequestLogon(logonTime);
         aircraft.AcceptLogon(logonTime);
-        await aircraftManager.Add(aircraft, CancellationToken.None);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerManager = new TestControllerRepository();
         var controller = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-1",
+            "YBBB",
             "BN-TSN_FSS",
             "1234567");
         await controllerManager.Add(controller, CancellationToken.None);
@@ -271,6 +279,7 @@ public class DownlinkReceivedNotificationHandlerTests
 
         var notification = new DownlinkReceivedNotification(
             "hoppies-ybbb",
+            "YBBB",
             downlinkMessage);
 
         // Assert
@@ -289,10 +298,10 @@ public class DownlinkReceivedNotificationHandlerTests
         // Arrange
         var clock = new TestClock();
         var aircraftRepository = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.CurrentDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
         aircraft.RequestLogon(clock.UtcNow());
         aircraft.AcceptLogon(clock.UtcNow());
-        await aircraftRepository.Add(aircraft, CancellationToken.None);
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerRepository = new TestControllerRepository();
         var dialogueRepository = new TestDialogueRepository();
@@ -319,7 +328,7 @@ public class DownlinkReceivedNotificationHandlerTests
             "REQUEST CLIMB FL410",
             clock.UtcNow());
 
-        var notification = new DownlinkReceivedNotification("hoppies-ybbb", downlink);
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
 
         // Act
         await handler.Handle(notification, CancellationToken.None);
@@ -341,10 +350,10 @@ public class DownlinkReceivedNotificationHandlerTests
         // Arrange
         var clock = new TestClock();
         var aircraftRepository = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", DataAuthorityState.CurrentDataAuthority);
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
         aircraft.RequestLogon(clock.UtcNow());
         aircraft.AcceptLogon(clock.UtcNow());
-        await aircraftRepository.Add(aircraft, CancellationToken.None);
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
         var controllerRepository = new TestControllerRepository();
         var dialogueRepository = new TestDialogueRepository();
@@ -385,7 +394,7 @@ public class DownlinkReceivedNotificationHandlerTests
             "WILCO",
             clock.UtcNow().AddSeconds(10));
 
-        var notification = new DownlinkReceivedNotification("hoppies-ybbb", downlink);
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
 
         // Act
         await handler.Handle(notification, CancellationToken.None);

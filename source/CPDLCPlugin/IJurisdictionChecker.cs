@@ -6,10 +6,13 @@ namespace CPDLCPlugin;
 
 public interface IJurisdictionChecker
 {
-    void RecordFdrOwner(string callsign, string controllerCallsign);
+    void RecordFdrOwner(string callsign, string? controllerCallsign);
+    OwnershipRecord GetOwnershipRecord(string callsign);
     bool ShouldDisplayDialogue(DialogueDto dialogue);
     bool ShouldDisplayDialogue(DialogueDto dialogue, FDP2.FDR fdr);
 }
+
+public record OwnershipRecord(string? CurrentOwner, string? PreviousOwner);
 
 public class JurisdictionChecker(ControllerConnectionStore controllerConnectionStore) : IJurisdictionChecker
 {
@@ -19,7 +22,7 @@ public class JurisdictionChecker(ControllerConnectionStore controllerConnectionS
 
     readonly ControllerConnectionStore _controllerConnectionStore = controllerConnectionStore;
 
-    public void RecordFdrOwner(string callsign, string controllerCallsign)
+    public void RecordFdrOwner(string callsign, string? controllerCallsign)
     {
         _ownershipRecords.AddOrUpdate(
             callsign,
@@ -29,7 +32,10 @@ public class JurisdictionChecker(ControllerConnectionStore controllerConnectionS
                 : new OwnershipRecord(controllerCallsign, existing.CurrentOwner));
     }
 
-    record OwnershipRecord(string CurrentOwner, string? PreviousOwner);
+    public OwnershipRecord? GetOwnershipRecord(string callsign)
+    {
+        return _ownershipRecords.TryGetValue(callsign, out var record) ? record : null;
+    }
 
     public bool ShouldDisplayDialogue(DialogueDto dialogue)
     {

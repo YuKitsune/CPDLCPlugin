@@ -27,7 +27,7 @@ public class DownlinkMessage(
     public bool IsControllerLate { get; set; }
 
     DateTimeOffset ICpdlcMessage.Time => Received;
-    
+
     public void Close(DateTimeOffset time)
     {
         Closed = time;

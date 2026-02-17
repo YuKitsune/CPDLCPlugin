@@ -7,14 +7,14 @@ public class TestAircraftRepository : IAircraftRepository
 {
     private readonly InMemoryAircraftRepository _inner = new();
 
-    public Task Add(AircraftConnection connection, CancellationToken cancellationToken)
+    public Task Add(AircraftKey aircraftKey, AircraftConnection connection, CancellationToken cancellationToken)
     {
-        return _inner.Add(connection, cancellationToken);
+        return _inner.Add(aircraftKey, connection, cancellationToken);
     }
 
-    public Task<AircraftConnection?> Find(string callsign, CancellationToken cancellationToken)
+    public Task<AircraftConnection?> Find(AircraftKey aircraftKey, CancellationToken cancellationToken)
     {
-        return _inner.Find(callsign, cancellationToken);
+        return _inner.Find(aircraftKey, cancellationToken);
     }
 
     public Task<AircraftConnection[]> All(CancellationToken cancellationToken)
@@ -22,8 +22,8 @@ public class TestAircraftRepository : IAircraftRepository
         return _inner.All(cancellationToken);
     }
 
-    public Task<bool> Remove(string callsign, CancellationToken cancellationToken)
+    public Task<bool> Remove(AircraftKey aircraftKey, CancellationToken cancellationToken)
     {
-        return _inner.Remove(callsign, cancellationToken);
+        return _inner.Remove(aircraftKey, cancellationToken);
     }
 }

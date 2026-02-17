@@ -3,10 +3,12 @@ namespace CPDLCServer.Model;
 public class AircraftConnection(
     string callsign,
     string acarsClientId,
+    string stationId,
     DataAuthorityState dataAuthorityState)
 {
     public string Callsign { get; } = callsign;
     public string AcarsClientId { get; } = acarsClientId;
+    public string StationId { get; } = stationId;
 
     public DataAuthorityState DataAuthorityState { get; private set; } = dataAuthorityState;
     public ConnectionState ConnectionState { get; private set; }

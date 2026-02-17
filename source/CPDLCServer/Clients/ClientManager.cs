@@ -134,9 +134,16 @@ public class ClientManager : BackgroundService, IClientManager
             _ => throw new NotSupportedException($"ACARS configuration type {configuration.GetType().Name} is not supported")
         };
 
+        var stationId = configuration switch
+        {
+            HoppiesConfiguration hoppieConfig => hoppieConfig.StationIdentifier,
+            _ => throw new NotSupportedException($"ACARS configuration type {configuration.GetType().Name} is not supported")
+        };
+
         var subscribeTaskCancellationSource = new CancellationTokenSource();
         var subscribeTask = Subscribe(
             acarsClientId,
+            stationId,
             acarsClient,
             _mediator,
             subscribeTaskCancellationSource.Token);
@@ -162,7 +169,7 @@ public class ClientManager : BackgroundService, IClientManager
             _logger.ForContext<HoppieAcarsClient>());
     }
 
-    async Task Subscribe(string acarsClientId, IAcarsClient acarsClient, IMediator mediator, CancellationToken cancellationToken)
+    async Task Subscribe(string acarsClientId, string stationId, IAcarsClient acarsClient, IMediator mediator, CancellationToken cancellationToken)
     {
         var subscriptionLogger = _logger.ForContext("AcarsClientId", acarsClientId);
         await foreach (var downlinkMessage in acarsClient.MessageReader.ReadAllAsync(cancellationToken))
@@ -176,6 +183,7 @@ public class ClientManager : BackgroundService, IClientManager
                 await mediator.Publish(
                     new DownlinkReceivedNotification(
                         acarsClientId,
+                        stationId,
                         downlinkMessage),
                     publishTimeoutCancellationTokenSource.Token);
             }

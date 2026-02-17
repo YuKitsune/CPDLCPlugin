@@ -20,11 +20,13 @@ public class AircraftConnectedNotificationHandlerTests
         var controller1 = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-1",
+            "YBBB",
             "BN-TSN_FSS",
             "1234567");
         var controller2 = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-2",
+            "YBBB",
             "BN-OCN_CTR",
             "7654321");
         await controllerManager.Add(controller1, CancellationToken.None);
@@ -41,6 +43,7 @@ public class AircraftConnectedNotificationHandlerTests
 
         var notification = new AircraftConnected(
             "hoppies-ybbb",
+            "YBBB",
             "UAL123",
             CPDLCServer.Model.DataAuthorityState.NextDataAuthority);
 
@@ -79,6 +82,7 @@ public class AircraftConnectedNotificationHandlerTests
 
         var notification = new AircraftConnected(
             "hoppies-ybbb",
+            "YBBB",
             "UAL123",
             CPDLCServer.Model.DataAuthorityState.NextDataAuthority);
 

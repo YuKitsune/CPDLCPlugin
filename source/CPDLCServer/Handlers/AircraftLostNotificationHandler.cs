@@ -22,7 +22,9 @@ public class AircraftLostNotificationHandler(
 {
     public async Task Handle(AircraftLost notification, CancellationToken cancellationToken)
     {
-        var aircraft = await aircraftRepository.Find(notification.Callsign, cancellationToken);
+        var aircraft = await aircraftRepository.Find(
+            new(notification.Callsign, notification.AcarsClientId),
+            cancellationToken);
         if (aircraft is null)
         {
             logger.Information(
@@ -33,7 +35,9 @@ public class AircraftLostNotificationHandler(
         }
 
         // Remove aircraft from tracking
-        await aircraftRepository.Remove(notification.Callsign, cancellationToken);
+        await aircraftRepository.Remove(
+            new(notification.Callsign, notification.AcarsClientId),
+            cancellationToken);
 
         logger.Information(
             "Aircraft {Callsign} lost on {AcarsClientId}",
