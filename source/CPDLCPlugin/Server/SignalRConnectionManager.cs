@@ -148,10 +148,11 @@ public class SignalRConnectionManager(
     Func<T, Task> WithCancellationToken<T>(Func<T, CancellationToken, Task> action)
     {
         // TODO: Make configurable
-        var cancellationTokenSource = new CancellationTokenSource();
-        cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(10));
-
-        return x => action(x, cancellationTokenSource.Token);
+        return async x =>
+        {
+            using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await action(x, cancellationTokenSource.Token);
+        };
     }
 
     public async Task<UplinkMessageDto> SendUplink(
