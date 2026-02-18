@@ -49,6 +49,9 @@ app.UseRouting();
 app.MapRazorPages();
 app.MapHub<ControllerHub>("/hubs/controller");
 
+app.MapGet("/health", () => Results.Ok());
+app.MapFallbackToFile("index.html");
+
 app.Run();
 return;
 
@@ -57,7 +60,7 @@ void TryLoadEnvFile()
     // Only load .env file in development
     if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") != "Development")
         return;
-    
+
     // Search for .env file in current directory and parent directories up to git root or filesystem root
     var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
     while (currentDir != null)

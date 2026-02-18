@@ -67,6 +67,7 @@ class Build : NukeBuild
     AbsolutePath PluginTestsProjectPath => RootDirectory / "source" / "CPDLCPlugin.Tests" / "CPDLCPlugin.Tests.csproj";
 
     AbsolutePath ServerProjectPath => RootDirectory / "source" / "CPDLCServer" / "CPDLCServer.csproj";
+    AbsolutePath ServerPublishDirectory => RootDirectory / "source" / "CPDLCServer" / "bin" / Configuration / "net10.0" / "publish";
     AbsolutePath ServerTestsProjectPath => RootDirectory / "source" / "CPDLCServer.Tests" / "CPDLCServer.Tests.csproj";
     
     AbsolutePath BuildOutputDirectory => TemporaryDirectory / "build";
@@ -221,6 +222,27 @@ class Build : NukeBuild
         });
 
     Target Test => _ => _.DependsOn(TestPlugin, TestServer);
+
+    Target PublishServer => _ => _
+        .Executes(() =>
+        {
+            var version = GetSemanticVersion();
+            Log.Information(
+                "Publishing CPDLCServer version {Version} with configuration {Configuration}",
+                version,
+                Configuration);
+
+            DotNetTasks.DotNetPublish(s => s
+                .SetProject(ServerProjectPath)
+                .SetConfiguration(Configuration)
+                .SetOutput(ServerPublishDirectory)
+                .SetVersion(version)
+                .SetAssemblyVersion(GitVersion.MajorMinorPatch)
+                .SetFileVersion(GitVersion.MajorMinorPatch)
+                .SetInformationalVersion(version));
+
+            Log.Information("Server published to {OutputDirectory}", ServerPublishDirectory);
+        });
 
     Target Uninstall => _ => _
         .Requires(() => ProfileName)
