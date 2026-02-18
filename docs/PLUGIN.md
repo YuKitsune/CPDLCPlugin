@@ -2,6 +2,10 @@
 TODO:
 - Installation
 
+- User Interface Overview
+    - Main window layout
+    - Key UI elements (brief, details in usage sections below)
+
 - Connecting to the CPDLC Server
 - Pilot Logon, Logoff and Handover
     - Pilot logons are accepted automatically
