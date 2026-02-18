@@ -33,7 +33,7 @@ Each message template specifies a response type that determines how the recipien
 ### Uplink Message Response Types
 
 | Response Type | Description |
-|:-------------:|-------------|
+| :-----------: | ----------- |
 | `WU` | Pilot responds with WILCO or UNABLE |
 | `AN` | Pilot responds with AFFIRM or NEGATIVE |
 | `R` | Pilot responds with ROGER |
@@ -42,7 +42,7 @@ Each message template specifies a response type that determines how the recipien
 ### Downlink Message Response Types
 
 | Response Type | Description |
-|:-------------:|-------------|
+| :-----------: | ----------- |
 | `Y` | ATC must respond to the message |
 | `N` | ATC is not required to respond |
 
@@ -58,7 +58,7 @@ When multiple uplink messages are joined together, the response type for the ent
 For example:
 
 | Message | Individual Response Type |
-|:-------:|:------------------------:|
+| :-----: | :----------------------: |
 | `CLIMB TO FL370` | `WU` |
 | `REPORT PASSING FL350` | `R` |
 | **Concatenated Message** | **`WU`** |
@@ -93,7 +93,7 @@ sequenceDiagram
 ```
 
 | Step | Message | Response Type | Uplink State | Downlink State | Dialogue State |
-|:----:|---------|:-------------:|:------------:|:--------------:|:--------------:|
+| :--: | ------- | :-----------: | :----------: | :------------: | :------------: |
 | 1 | Pilot: REQUEST CLIMB TO FL370 | `Y` | | Open | Open |
 | 2 | ATC: CLIMB TO FL370 | `WU` | Open | Closed | Open |
 | 3 | Pilot: WILCO | `N` | Closed | Closed | Closed |
@@ -112,7 +112,7 @@ sequenceDiagram
 ```
 
 | Step | Message | Response Type | Uplink State | Downlink State | Dialogue State |
-|------|---------|:-------------:|:------------:|:--------------:|:--------------:|
+| :--: | ------- | :-----------: | :----------: | :------------: | :------------: |
 | 1 | Pilot: REQUEST CLIMB TO FL370 | `Y` | | Open | Open |
 | 2 | ATC: STANDBY | `NE` | | Open | Open |
 | 3 | ATC: CLIMB TO FL370 | `WU` | Open | Closed | Open |
