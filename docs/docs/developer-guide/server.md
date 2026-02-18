@@ -1,6 +1,6 @@
 # CPDLC Server
 
-<img src="../diagram.png" />
+![Server Diagram](../../static/diagram.png)
 
 The server maintains one or more connections to upstream ACARS networks (i.e. [Hoppies](https://www.hoppie.nl/acars/)).
 Each connection simulates a single air traffic service unit (ATSU), such as Brisbane (YBBB) or Melbourne (YMMM).
@@ -58,8 +58,9 @@ Acars__1__Url=http://www.hoppie.nl/acars/system/connect.html
 Acars__1__AuthenticationCode=your-ymmm-hoppie-code
 ```
 
-> [!NOTE]
-> `Hoppie` is currently the only supported ACARS network type.
+:::note
+`Hoppie` is currently the only supported ACARS network type.
+:::
 
 ## Running
 
