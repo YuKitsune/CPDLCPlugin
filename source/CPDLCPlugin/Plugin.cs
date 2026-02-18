@@ -313,15 +313,16 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             // Re-build the label item cache
             _workQueue.Writer.TryWrite(() => RebuildLabelItemCache());
 
-            // If this flight has any open dialogues, open the current messages window
+            // If this flight has any open dialogues that we have jurisdiction over, open the current messages window
             // Ensures flights handed off to us open the window so we can see their requests
             _workQueue.Writer.TryWrite(async () =>
             {
                 var store = ServiceProvider.GetRequiredService<DialogueStore>();
+                var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
 
                 var hasOpenDialogues = (await store.All(CancellationToken.None))
                     .Where(d => d.AircraftCallsign == updated.Callsign)
-                    .Any(d => !d.IsClosed || !d.IsArchived);
+                    .Any(d => !d.IsClosed && !d.IsArchived && jurisdictionChecker.ShouldDisplayDialogue(d));
 
                 if (hasOpenDialogues)
                 {
