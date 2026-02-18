@@ -306,7 +306,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
                 {
                     Log.Information("{Callsign} handoff to {NextController}", updated.Callsign, record.CurrentOwner);
                     var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                    await mediator.Send(new HandoffCompletedNotification(updated.Callsign, record.CurrentOwner));
+                    await mediator.Publish(new HandoffCompletedNotification(updated.Callsign, record.CurrentOwner));
                 }
             });
 
