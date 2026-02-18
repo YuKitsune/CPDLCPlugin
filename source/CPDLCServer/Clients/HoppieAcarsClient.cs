@@ -79,7 +79,7 @@ public class HoppieAcarsClient : IAcarsClient
 
         try
         {
-            _logger.Verbose("Sending uplink to {Recipient} with packet {Packet}", message.Recipient, packet)
+            _logger.Verbose("Sending uplink to {Recipient} with packet {Packet}", message.Recipient, packet);
             var response = await _httpClient.PostAsync(_configuration.Url, content, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -117,7 +117,7 @@ public class HoppieAcarsClient : IAcarsClient
 
         try
         {
-            _logger.Verbose("Listing connections")
+            _logger.Verbose("Listing connections");
             var response = await _httpClient.PostAsync(_configuration.Url, content, cancellationToken);
             response.EnsureSuccessStatusCode();
 

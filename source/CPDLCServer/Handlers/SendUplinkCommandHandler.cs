@@ -21,7 +21,7 @@ public class SendUplinkCommandHandler(
 {
     public async Task<SendUplinkResult> Handle(SendUplinkCommand request, CancellationToken cancellationToken)
     {
-        logger.Information("Sending uplink message to {Callsign}", request.Callsign);
+        logger.Information("Sending uplink message to {Callsign}", request.Recipient);
 
         var allAircraft = await aircraftRepository.All(cancellationToken);
         var aircraftConnection =
@@ -59,12 +59,12 @@ public class SendUplinkCommandHandler(
         {
             dialogue = new Dialogue(request.Recipient, uplinkMessage);
             await dialogueRepository.Add(dialogue, cancellationToken);
-            logger.Information("Dialogue {DialogueId} created for uplink message to {Callsign}", dialogue.Id, request.Callsign);
+            logger.Information("Dialogue {DialogueId} created for uplink message to {Callsign}", dialogue.Id, request.Recipient);
         }
         else
         {
             dialogue.AddMessage(uplinkMessage);
-            logger.Information("Uplink message to {Callsign} added to dialogue {DialogueId}", request.Callsign, dialogue.Id);
+            logger.Information("Uplink message to {Callsign} added to dialogue {DialogueId}", request.Recipient, dialogue.Id);
         }
 
         // Publish dialogue change notification

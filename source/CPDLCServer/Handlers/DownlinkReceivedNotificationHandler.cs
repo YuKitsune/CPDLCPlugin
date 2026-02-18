@@ -21,7 +21,7 @@ public class DownlinkReceivedNotificationHandler(
 {
     public async Task Handle(DownlinkReceivedNotification notification, CancellationToken cancellationToken)
     {
-        logger.Information("Downlink message received from {Callsign}", notification.Callsign);
+        logger.Information("Downlink message received from {Callsign}", notification.Downlink.Sender);
 
         // Intercept logon requests and automatically respond
         Dialogue? dialogue;
@@ -48,7 +48,7 @@ public class DownlinkReceivedNotificationHandler(
 
         if (aircraftConnection is null)
         {
-            logger.Information("{Callsign} is not known by this ATSU, sending error uplink", notification.Callsign);
+            logger.Information("{Callsign} is not known by this ATSU, sending error uplink", notification.Downlink.Sender);
 
             // Connection not known, reject.
             await mediator.Send(
@@ -79,7 +79,7 @@ public class DownlinkReceivedNotificationHandler(
         if (aircraftConnection.DataAuthorityState == DataAuthorityState.NextDataAuthority)
         {
             aircraftConnection.PromoteToCurrentDataAuthority();
-            logger.Information("{Callsign} promoted to CurrentDataAuthority", notification.Callsign);
+            logger.Information("{Callsign} promoted to CurrentDataAuthority", notification.Downlink.Sender);
 
             // Notify all controllers that the aircraft has been promoted to CurrentDataAuthority
             var controllers = await controllerRepository.All(cancellationToken);
@@ -116,13 +116,13 @@ public class DownlinkReceivedNotificationHandler(
         if (dialogue is null)
         {
             dialogue = new Dialogue(notification.Downlink.Sender, notification.Downlink);
-            logger.Information("Dialogue {DialogueId} created for downlink from {Callsign}", dialogue.Id, notification.Callsign);
+            logger.Information("Dialogue {DialogueId} created for downlink from {Callsign}", dialogue.Id, notification.Downlink.Sender);
             await dialogueRepository.Add(dialogue, cancellationToken);
         }
         else
         {
             dialogue.AddMessage(notification.Downlink);
-            logger.Information("Downlink from {Callsign} appended to dialogue {DialogueId}", notification.Callsign, dialogue.Id);
+            logger.Information("Downlink from {Callsign} appended to dialogue {DialogueId}", notification.Downlink.Sender, dialogue.Id);
         }
 
         // Publish DialogueChangedNotification instead of broadcasting directly

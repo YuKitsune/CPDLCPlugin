@@ -1,0 +1,10 @@
+# Default to LF on checkout
+* text=auto eol=lf
+
+# Force LF for shell scripts
+*.sh text eol=lf
+
+# Force CRLF for Windows-specific files
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.bat text eol=crlf

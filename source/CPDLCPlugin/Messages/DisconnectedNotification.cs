@@ -14,7 +14,7 @@ public class DisconnectedNotificationBridge(
 {
     public async Task Handle(DisconnectedNotification notification, CancellationToken cancellationToken)
     {
-        logger.Verbse("Clearing dialogue store");
+        logger.Verbose("Clearing dialogue store");
         await dialogueStore.Clear(cancellationToken);
 
         logger.Verbose("Clearing aircraft connection store");
