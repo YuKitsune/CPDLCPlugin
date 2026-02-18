@@ -60,8 +60,8 @@ Unacknowledged messages appear with inverted colours. Left-click a message to ac
 
 **Message indicators:**
 
-- `*` — Message is truncated. Right-click to expand.
-- `P` — Message contains free-text.
+- `*`: Message is truncated. Right-click to expand.
+- `P`: Message contains free-text.
 
 <!-- TODO: Screenshot of expanded message -->
 
