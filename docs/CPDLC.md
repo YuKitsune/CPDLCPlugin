@@ -1,84 +1,171 @@
 # CPDLC Overview
 
-TODO:
+Controller-Pilot Data Link Communications (CPDLC) is a method of communication between air traffic controllers and pilots using data link rather than voice. This document provides an overview of CPDLC concepts relevant to controllers using the CPDLC Plugin.
 
-- ATSUs and Aircraft
-    - An ATSU is a ground station connected to an ACARS network that aircraft can communicate with
+## ATSUs and Aircraft
 
-- Uplink and Downlink Messages
-    - Uplink messages are sent from the ground station to the aircraft
-    - Downlink messages are sent from the aircraft to the ground station
-    - Uplink and downlink messages can have different properties
+An Air Traffic Service Unit (ATSU) is a ground station connected to an ACARS network.
+Aircraft connect to ATSUs via an intermediate network (such as ACARS) to exchange CPDLC messages with controllers.
 
-- Message composition
-    - CPDLC messages are typically standardised templates with elements for the pilot or controller to populate
-    - Multiple messages can be joined together and sent in a single uplink message
-    - Free-text messages allow for manual text entry when no message template from the set is appropriate
+## Uplink and Downlink Messages
 
-- Response types
-    - For Uplink Messages:
-        - `WU`: The pilot will be prompted to respond with either "WILCO" or "UNABLE"
-        - `AN`: The pilot will be prompted to respond with either "AFFIRMATIVE" or "NEGATIVE"
-        - `R`: The pilot can only respond with "ROGER"
-        - `NE`: The pilot will not be asked to respond to the message
-    - For Downlink Messages:
-        - `Y`: ATC are required to respond to the message
-        - `N`: ATC are NOT required to respond to the message
-    - Each message template specifies a response type
-    - If multiple uplink message templates are joined together, the response type for the entire concatenated message will be prioritised by:
-        1. `WU` (highest priority)
-        2. `AN`
-        3. `R`
-        4. `NE` (lowest priority)
-        TODO: Include a table with three message templates and their individual response types, then show the resulting response type for the entire message at the end.
+CPDLC messages are categorised by their direction:
 
-- Dialogues
-    - Dialogues represent a conversation between air and ground stations.
-    - Dialogues can be a single message that is a closed message; or
-    - a series of messages beginning with an open message, consisting of any messages related to the original open message and each other through the use of a Message Reference Number (MRN) and ending when all of these messages are closed.
-    - a CPDLC dialogue is open if any of the CPDLC messages in the dialogue are open;
-    - a CPDLC dialogue is closed if all CPDLC messages in the dialogue are closed.
+- **Uplink messages** are sent from the ground station to the aircraft (controller to pilot)
+- **Downlink messages** are sent from the aircraft to the ground station (pilot to controller)
 
-    - Messages that do not require a response (i.e. `NE` for uplinks, and `N` for downlinks) are closed automatically.
-    - Some messages are exempt from closing dialogues (i.e. `STANDBY`, and `REQUEST DEFERRED`)
-    - Responses are correlated to messages by their `MRN` (message response number)
+Uplink and downlink messages have different properties, particularly around response requirements.
 
-TODO: Add a mermaid diagram with an aircraft on the left and the ATSU on the right.
-Pilot -> ATSU: REQUEST CLIMB TO FL370
-ATSU -> Pilot: CLIMB TO FL370
-Pilot -> ATSU: WILCO
+## Message Composition
 
-|Step|Message|Response|Uplink State|Downlink State|Dialogue State|
-|----|-------|--------|------------|--------------|--------------|
-|1|Downlink request|`Y`||Open|Open|
-|2|Uplink response|`WU`|Open|Closed|Open|
-|3|Downlink response|`N`|Closed|Closed|Open|
+CPDLC messages are typically standardised templates with elements for the pilot or controller to populate.
+For example, a climb clearance template might include a placeholder for the flight level.
 
-TODO: Add a mermaid diagram with an aircraft on the left and the ATSU on the right.
-Pilot -> ATSU: REQUEST CLIMB TO FL370
-ATSU -> Pilot: STANDBY
-ATSU -> Pilot: CLIMB TO FL370
-Pilot -> ATSU: WILCO
+Multiple messages can be joined together and sent as a single uplink.
+This is useful when issuing related instructions together.
 
-|Step|Message|Response|Uplink State|Downlink State|Dialogue State|
-|----|-------|--------|------------|--------------|--------------|
-|1|Downlink request|`Y`||Open|Open|
-|2|Standby response|`NE`|Open|Open|Open|
-|3|Uplink response|`WU`|Open|Closed|Open|
-|4|Downlink response|`N`|Closed|Closed|Open|
+Free-text messages allow for manual text entry when no template from the message set is appropriate.
 
-- Data authority
-    - Next Data Authority: The ground system so designated by the current data authority through which an onward transfer of communications and control can take place.
-        - This typically means the aircraft has connected to the ATSU preemptively.
-        - New connections from aircraft will always start as Next Data Authority
-        
-    - Current Data Authority: The designated ground system through which a CPDLC dialogue between a pilot and a controller currently responsible for the flight is permitted to take place.
-        - Aircraft in the Next Data Authority state will be promoted to Current Data Authority on recept of the first downlink message.
-    - Aircraft may reject CPDLC uplinks from an ATSU if they are not the Current Data Authority.
+## Response Types
 
-- CPDLC on VATSIM
-    - VATSIM does not have a bespoke CPDLC solution, though they are actively working on this.
-    - CPDLC for use within Flight Simulation Networks typically happens over Hoppie's ACARS network.
-    - Hoppie's doesn't prescribe a standard protocol or message format for CPDLC messages, so it's up to ATC client and addon aircraft developers to agree on a message format.
-    - Some messages sent between aircraft and ATC may be incompatible due to differences in addon implementation.
-    - Hoppies doesn't allow multiple controllers to utilise a single ATSU. The aggregation server exists to solve this problem, acting as a relay between ATC and the ACARS network.
+Each message template specifies a response type that determines how the recipient should respond.
+
+### Uplink Message Response Types
+
+| Response Type | Description |
+|---------------|-------------|
+| `WU` | Pilot responds with WILCO or UNABLE |
+| `AN` | Pilot responds with AFFIRM or NEGATIVE |
+| `R` | Pilot responds with ROGER |
+| `NE` | No response expected |
+
+### Downlink Message Response Types
+
+| Response Type | Description |
+|---------------|-------------|
+| `Y` | ATC must respond to the message |
+| `N` | ATC is not required to respond |
+
+### Concatenated Message Response Types
+
+When multiple uplink messages are joined together, the response type for the entire message is determined by priority:
+
+1. `WU` (highest priority)
+2. `AN`
+3. `R`
+4. `NE` (lowest priority)
+
+For example:
+
+| Message | Individual Response Type |
+|---------|--------------------------|
+| `CLIMB TO FL370` | `WU` |
+| `REPORT PASSING FL350` | `R` |
+| **Concatenated Message** | **`WU`** |
+
+Because `WU` has the highest priority, the pilot will be prompted to respond with WILCO or UNABLE for the entire concatenated message.
+
+## Dialogues
+
+Dialogues represent a conversation between aircraft and ground stations. A dialogue can be:
+
+- A single message that is immediately closed; or
+- A series of related messages linked through Message Reference Numbers (MRN)
+
+### Dialogue State
+
+- A dialogue is **open** if any message within it is open
+- A dialogue is **closed** when all messages within it are closed
+
+Messages that do not require a response (`NE` for uplinks, `N` for downlinks) are closed automatically.
+Some messages are exempt from closing dialogues, such as `STANDBY` and `REQUEST DEFERRED`.
+
+### Example: Climb Request
+
+```mermaid
+sequenceDiagram
+    participant Pilot
+    participant ATSU
+
+    Pilot->>ATSU: REQUEST CLIMB TO FL370
+    ATSU->>Pilot: CLIMB TO FL370
+    Pilot->>ATSU: WILCO
+```
+
+| Step | Message | Response Type | Uplink State | Downlink State | Dialogue State |
+|------|---------|---------------|--------------|----------------|----------------|
+| 1 | Pilot: REQUEST CLIMB TO FL370 | `Y` | | Open | Open |
+| 2 | ATC: CLIMB TO FL370 | `WU` | Open | Closed | Open |
+| 3 | Pilot: WILCO | `N` | Closed | | Closed |
+
+### Example: Climb Request with STANDBY
+
+```mermaid
+sequenceDiagram
+    participant Pilot
+    participant ATSU
+
+    Pilot->>ATSU: REQUEST CLIMB TO FL370
+    ATSU->>Pilot: STANDBY
+    ATSU->>Pilot: CLIMB TO FL370
+    Pilot->>ATSU: WILCO
+```
+
+| Step | Message | Response Type | Uplink State | Downlink State | Dialogue State |
+|------|---------|---------------|--------------|----------------|----------------|
+| 1 | Pilot: REQUEST CLIMB TO FL370 | `Y` | | Open | Open |
+| 2 | ATC: STANDBY | `NE` | | Open | Open |
+| 3 | ATC: CLIMB TO FL370 | `WU` | Open | Closed | Open |
+| 4 | Pilot: WILCO | `N` | Closed | | Closed |
+
+Note that STANDBY does not close the pilot's request.
+The dialogue remains open until the controller issues a clearance and the pilot responds.
+
+## Data Authority
+
+Data authority determines which ground station is responsible for communicating with an aircraft.
+
+### Current Data Authority
+
+The Current Data Authority (CDA) is the ground station currently responsible for the flight. CPDLC dialogues between the pilot and controller take place through the CDA.
+
+Aircraft may reject uplink messages from stations that are not their Current Data Authority.
+
+### Next Data Authority
+
+The Next Data Authority (NDA) is the ground station designated to take over communications. This typically occurs when an aircraft connects to the next ATSU preemptively before a handoff.
+
+New connections from aircraft always start as Next Data Authority. An aircraft in NDA state is promoted to CDA upon receipt of the first downlink message.
+
+The current ATSU will send a `NEXT DATA AUTHORITY` uplink message to the aircraft when transferring them to a new ATSU.
+This will instruct the pilot to establish a connection with the next ATSU and terminate the connection with the current one.
+
+```mermaid
+sequenceDiagram
+    participant YBBB
+    participant Pilot
+    participant YMMM
+
+    YBBB->>Pilot: NEXT DATA AUTHORITY YMMM
+    Pilot->>YMMM: REQUEST LOGON
+    YMMM->>Pilot: LOGON ACCEPTED
+    Pilot->>YBBB: LOGOFF
+```
+
+## CPDLC on VATSIM
+
+VATSIM does not have an official CPDLC solution, though one is in development. In the meantime, CPDLC for flight simulation networks typically uses Hoppie's ACARS network.
+
+### Hoppie's ACARS Network
+
+Hoppie's network does not prescribe a standard protocol or message format for CPDLC.
+ATC client and aircraft addon developers must agree on message formats.
+This can lead to incompatibilities between different implementations.
+
+Stations connected to Hoppie's network poll for messages at regular intervals.
+Messages are not received instantly by the recipient.
+It may take up to one minute for a message to reach the pilot, and another minute for a response to return.
+
+### Aggregation Server
+
+Hoppie's network does not allow multiple controllers to use a single ATSU callsign. The aggregation server solves this problem by acting as a relay between controllers and the ACARS network, allowing multiple controllers to share a single ATSU connection.
