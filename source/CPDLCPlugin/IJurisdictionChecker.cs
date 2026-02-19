@@ -62,21 +62,26 @@ public class JurisdictionChecker(ControllerConnectionStore controllerConnectionS
         }
 
         // If nobody has jurisdiction, and we're the next owner, show the message
+        // TODO: Don't check for Announced. Calculate the next sector, and if we own that sector, then return true.
+        //  Currently this will display the message to ALL ENR controllers involved with this flight, not just the next one.
         var track = MMI.FindTrack(fdr);
         if (!fdr.IsTracked && track?.State == MMI.HMIStates.Announced)
         {
             return true;
         }
 
+        // TODO: Need a better way to work out ownership history, as this is unreliable.
+        //  TrackingController appears to change mid-handoff, rather than post-handoff.
         if (!_ownershipRecords.TryGetValue(fdr.Callsign, out var record))
             return false;
 
         // If nobody has jurisdiction, and we were the last owner, show the message
-        if (!fdr.IsTracked && record.CurrentOwner == Network.Callsign)
+        if (record.PreviousOwner == Network.Callsign && record.CurrentOwner == null)
         {
             return true;
         }
 
+        // TODO: Figure out the controller CPDLC code using a separate service, combine with ATIS cache.
         // VATSIM-ism: If the controlling sector isn't connected to the ATSU server, and we were the previous owner, then show the message
         if (fdr.ControllerTracking is not null &&
             fdr.ControllerTracking.Callsign != Network.Callsign &&
