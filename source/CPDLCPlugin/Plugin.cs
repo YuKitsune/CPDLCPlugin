@@ -298,6 +298,9 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             _workQueue.Writer.TryWrite(async () =>
             {
                 var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
+
+                // BUG: When a handoff is initiated, the ControllerTracking appears to change, so the notification is
+                //  raised while the aircraft is in the handover-out state.
                 jurisdictionChecker.RecordFdrOwner(updated.Callsign, updated.ControllerTracking?.Callsign);
 
                 // We were the previous owner, try to hand this aircraft off to the next data authority
