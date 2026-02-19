@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CPDLCServer.Model;
 
 public class AircraftConnection(
@@ -16,6 +18,13 @@ public class AircraftConnection(
     public DateTimeOffset LogonRequested { get; private set; }
     public DateTimeOffset? LogonAccepted { get; private set; }
     public DateTimeOffset LastSeen { get; private set; }
+
+    [MemberNotNullWhen(true, nameof(NextDataAuthority))]
+    [MemberNotNullWhen(true, nameof(ExpectedTransferTime))]
+    public bool HasNextDataAuthority => NextDataAuthority != null && ExpectedTransferTime != null;
+    public string? NextDataAuthority { get; private set; }
+    public DateTimeOffset? ExpectedTransferTime { get; private set; }
+    public bool DidSentNextDataAuthorityMessage { get; private set; }
 
     public void RequestLogon(DateTimeOffset now)
     {
@@ -40,5 +49,23 @@ public class AircraftConnection(
     public void PromoteToCurrentDataAuthority()
     {
         DataAuthorityState = DataAuthorityState.CurrentDataAuthority;
+    }
+
+    public void SetNextDataAuthority(string nextDataAuthority, DateTimeOffset expectedTransferTime)
+    {
+        NextDataAuthority = nextDataAuthority;
+        ExpectedTransferTime = expectedTransferTime;
+    }
+
+    public void SentNextDataAuthorityMessage()
+    {
+        DidSentNextDataAuthorityMessage = true;
+    }
+
+    public void ClearNextDataAuthority()
+    {
+        NextDataAuthority = null;
+        ExpectedTransferTime = null;
+        DidSentNextDataAuthorityMessage = false;
     }
 }

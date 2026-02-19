@@ -25,15 +25,16 @@ Copy `example.env` to `.env` and update with your settings:
 # Logging
 Logging__Level=Information
 
-# Database (SQLite by default)
-ConnectionStrings__DefaultConnection=Data Source=cpdlc.db
-
 # ACARS Client Configuration
 Acars__0__Type=Hoppie
 Acars__0__FlightSimulationNetwork=VATSIM
 Acars__0__StationIdentifier=YBBB
 Acars__0__Url=http://www.hoppie.nl/acars/system/connect.html
 Acars__0__AuthenticationCode=your-hoppie-logon-code
+
+# Handoff Configuration
+# How many minutes before the expected transfer time to send the NEXT DATA AUTHORITY message (default: 10)
+Handoff__NotificationLeadTime=10
 ```
 
 ### Multiple ACARS Connections

@@ -39,6 +39,7 @@ builder.Services.AddRazorPages();
 
 builder.Services.AddHostedService<AircraftConnectionWatchdog>();
 builder.Services.AddHostedService<MessageMonitorService>();
+builder.Services.AddHostedService<HandoffService>();
 
 var app = builder.Build();
 
