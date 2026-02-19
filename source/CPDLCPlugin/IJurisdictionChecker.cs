@@ -7,7 +7,7 @@ namespace CPDLCPlugin;
 public interface IJurisdictionChecker
 {
     void RecordFdrOwner(string callsign, string? controllerCallsign);
-    OwnershipRecord GetOwnershipRecord(string callsign);
+    OwnershipRecord? GetOwnershipRecord(string callsign);
     bool ShouldDisplayDialogue(DialogueDto dialogue);
     bool ShouldDisplayDialogue(DialogueDto dialogue, FDP2.FDR fdr);
 }

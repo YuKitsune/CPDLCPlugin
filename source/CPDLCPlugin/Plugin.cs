@@ -312,6 +312,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
                 jurisdictionChecker.RecordFdrOwner(updated.Callsign, updated.ControllerTracking?.Callsign);
 
                 // We were the previous owner, try to hand this aircraft off to the next data authority
+                // TODO: record can be null
                 var record = jurisdictionChecker.GetOwnershipRecord(updated.Callsign);
                 if (record.PreviousOwner == Network.Callsign)
                 {
