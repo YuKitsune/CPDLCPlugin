@@ -14,6 +14,7 @@ TODO:
 
 - [ ] Callsign label item disappears
 - [ ] BUG: When a handoff is initiated, the `ControllerTracking` appears to change, so the notification is raised while the aircraft is in the handover-out state.
+- [ ] BUG: Duplicate NEXT DATA AUTHORITY messages are transmitted for the same flight.
 - [ ] BUG: Message routing appears correct, but messages are displayed inconsistently.
     - Current Messages Window appears, and is blank
     - Message sent to other YMMM ends up opening on YBBB

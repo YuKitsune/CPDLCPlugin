@@ -297,6 +297,14 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             // Record the last known owner of each FDR
             _workQueue.Writer.TryWrite(async () =>
             {
+                Log.Debug(
+                    "{Callsign}: IsTracked {IsTracked}; IsTrackedByMe: {IsTrackedByMe}; Controller Tracking: {CurrentController}; Handoff Controller: {HandoffController}",
+                    updated.Callsign,
+                    updated.IsTracked,
+                    updated.IsTrackedByMe,
+                    updated.ControllerTracking?.Callsign,
+                    updated.HandoffController?.Callsign);
+
                 var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
 
                 // BUG: When a handoff is initiated, the ControllerTracking appears to change, so the notification is
@@ -332,13 +340,6 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
                     var mediator = ServiceProvider.GetRequiredService<IMediator>();
                     await mediator.Send(new OpenCurrentMessagesWindowRequest());
                 }
-            });
-
-            _workQueue.Writer.TryWrite(async () =>
-            {
-
-                await Task.CompletedTask;
-                Log.Information("{Callsign} went from {PreviousState} to {CurrentState}", updated.Callsign, updated.PreviousState, updated.State);
             });
         }
         catch (Exception ex)
