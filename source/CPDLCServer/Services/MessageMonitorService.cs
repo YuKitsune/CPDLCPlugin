@@ -3,6 +3,7 @@ using CPDLCServer.Messages;
 using CPDLCServer.Model;
 using CPDLCServer.Persistence;
 using MediatR;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 
 namespace CPDLCServer.Services;
 

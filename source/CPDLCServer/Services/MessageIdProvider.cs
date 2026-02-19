@@ -8,7 +8,7 @@ public interface IMessageIdProvider
         CancellationToken cancellationToken);
 }
 
-public class MessageIdProvider : IMessageIdProvider
+public class MessageIdProvider : IMessageIdProvider, IDisposable
 {
     private readonly Dictionary<Key, int> _ids = new();
     readonly SemaphoreSlim _semaphore = new(1, 1);
@@ -36,4 +36,9 @@ public class MessageIdProvider : IMessageIdProvider
     }
 
     record Key(string AcarsClientId, string Callsign);
+
+    public void Dispose()
+    {
+        _semaphore.Dispose();
+    }
 }

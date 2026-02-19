@@ -8,7 +8,7 @@ namespace CPDLCServer.Services;
 ///     Periodically dispatches <see cref="ProcessHandoffsCommand"/> to ensure handoff messages are sent to aircraft
 ///     within the configured lead time before their expected transfer.
 /// </summary>
-public class HandoffService(IMediator mediator, ILogger logger) : IHostedService
+public class HandoffService(IMediator mediator, ILogger logger) : IHostedService, IDisposable
 {
     readonly TimeSpan _interval = TimeSpan.FromMinutes(1);
     readonly TimeSpan _errorInterval = TimeSpan.FromSeconds(5);
@@ -83,5 +83,11 @@ public class HandoffService(IMediator mediator, ILogger logger) : IHostedService
         {
             logger.Fatal(exception, "Error sending handoff message");
         }
+    }
+
+    public void Dispose()
+    {
+        _cancellationTokenSource?.Dispose();
+        _task?.Dispose();
     }
 }
