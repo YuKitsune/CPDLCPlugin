@@ -1,0 +1,52 @@
+@model IEnumerable<CPDLCServer.Pages.ViewModels.MessageRowViewModel>
+
+@{
+    string GetAlertBadgeClass(string alertType) => alertType switch
+    {
+        "High" => "bg-danger",
+        "Medium" => "bg-warning text-dark",
+        "Low" => "bg-info",
+        _ => "bg-light text-dark"
+    };
+}
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Dialogue</th>
+                <th>Timestamp</th>
+                <th>Network</th>
+                <th>Dir</th>
+                <th>Sender</th>
+                <th>Receiver</th>
+                <th>Alert</th>
+                <th>Response</th>
+                <th>Content</th>
+                <th>State</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var msg in Model)
+            {
+                <tr>
+                    <td><a href="/dashboard/dialogue/@msg.DialogueId">@msg.DialogueId.ToString()[..8]...</a></td>
+                    <td>@msg.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                    <td>@msg.AcarsNetwork</td>
+                    <td>@(msg.IsUplink ? "↑" : "↓")</td>
+                    <td>@msg.Sender</td>
+                    <td>@msg.Receiver</td>
+                    <td><span class="badge @GetAlertBadgeClass(msg.AlertType)">@msg.AlertType</span></td>
+                    <td>@msg.ResponseType</td>
+                    <td>@msg.Content</td>
+                    <td><span class="badge @(msg.IsClosed ? "bg-secondary" : "bg-success")">@(msg.IsClosed ? "Closed" : "Open")</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">No messages found.</p>
+}

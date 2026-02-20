@@ -1,0 +1,47 @@
+@page "/dashboard/pilot/{callsign}"
+@model CPDLCServer.Pages.Dashboard.Pilot.IndexModel
+@{
+    ViewData["Title"] = $"Pilot {Model.Callsign}";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/dashboard/connections">Connections</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Pilot</li>
+    </ol>
+</nav>
+
+<h2>Pilot: @Model.Callsign</h2>
+
+@if (Model.Aircraft != null)
+{
+    <div class="card mt-3">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Callsign</dt>
+                <dd class="col-sm-9">@Model.Aircraft.Callsign</dd>
+
+                <dt class="col-sm-3">ATSU</dt>
+                <dd class="col-sm-9"><a href="/dashboard/atsu/@Model.Aircraft.StationId">@Model.Aircraft.StationId</a></dd>
+
+                <dt class="col-sm-3">ACARS Network</dt>
+                <dd class="col-sm-9">@Model.Aircraft.AcarsClientId</dd>
+
+                <dt class="col-sm-3">Data Authority</dt>
+                <dd class="col-sm-9">@Model.Aircraft.DataAuthorityState</dd>
+
+                <dt class="col-sm-3">Connection State</dt>
+                <dd class="col-sm-9">@Model.Aircraft.ConnectionState</dd>
+
+                <dt class="col-sm-3">Last Seen</dt>
+                <dd class="col-sm-9">@Model.Aircraft.LastSeen.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+            </dl>
+        </div>
+    </div>
+}
+
+<h3 class="mt-4">Messages</h3>
+
+<div class="mt-3">
+    <partial name="_MessageTable" model="Model.Messages" />
+</div>

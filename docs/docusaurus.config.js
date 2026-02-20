@@ -85,6 +85,11 @@ const config = {
             label: 'Developer Guide',
           },
           {
+            href: '/dashboard',
+            label: 'Dashboard',
+            position: 'right',
+          },
+          {
             href: 'https://github.com/yukitsune/CPDLCPlugin/',
             label: 'GitHub',
             position: 'right',

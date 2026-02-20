@@ -1,0 +1,89 @@
+@page "/dashboard/connections"
+@model CPDLCServer.Pages.Dashboard.Connections.IndexModel
+@{
+    ViewData["Title"] = "Connections";
+}
+
+<h2>Connections</h2>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">ATC Connections</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Controllers.Length == 0)
+                {
+                    <p class="text-muted">No ATC connections.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Callsign</th>
+                                    <th>ATSU Code</th>
+                                    <th>Connection ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var controller in Model.Controllers)
+                                {
+                                    <tr>
+                                        <td><a href="/dashboard/atsu/@controller.StationId">@controller.Callsign</a></td>
+                                        <td>@controller.StationId</td>
+                                        <td><code>@controller.ConnectionId</code></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Pilot Connections</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Aircraft.Length == 0)
+                {
+                    <p class="text-muted">No pilot connections.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Callsign</th>
+                                    <th>ATSU Code</th>
+                                    <th>Data Authority</th>
+                                    <th>ACARS Network</th>
+                                    <th>Last Seen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var aircraft in Model.Aircraft)
+                                {
+                                    <tr>
+                                        <td><a href="/dashboard/pilot/@aircraft.Callsign">@aircraft.Callsign</a></td>
+                                        <td>@aircraft.StationId</td>
+                                        <td>@aircraft.DataAuthorityState</td>
+                                        <td>@aircraft.AcarsClientId</td>
+                                        <td>@aircraft.LastSeen.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
