@@ -86,6 +86,7 @@ const config = {
           },
           {
             href: '/dashboard',
+            target: '_blank',
             label: 'Dashboard',
             position: 'right',
           },
