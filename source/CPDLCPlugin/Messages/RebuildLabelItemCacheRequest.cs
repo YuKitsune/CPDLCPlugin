@@ -47,103 +47,116 @@ public class RebuildLabelItemCacheRequestHandler(
                 if (flightDataRecord is null)
                     continue;
 
-                var connection = connectedAircraft.FirstOrDefault(c => c.Callsign == flightDataRecord.Callsign && c.StationId == plugin.ConnectionManager.StationIdentifier);
-
-                var openDialogues = (await dialogueStore.All(cancellationToken))
-                    .Where(d => d.AircraftCallsign == flightDataRecord.Callsign && !d.IsClosed)
-                    .ToArray();
-
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-
-                var hasOpenDownlinkMessages = openDialogues
-                    .SelectMany(d => d.Messages)
-                    .OfType<DownlinkMessageDto>()
-                    .Any(m => !m.IsClosed);
-
-                // TODO: Check if they're connected to the ACARS network. Equipment flags are unreliable.
-                var isEquipped = new[]
+                try
                 {
-                    "J1",
-                    "J2",
-                    "J3",
-                    "J4",
-                    "J5",
-                    "J6",
-                    "J7",
-                }.Any(s => flightDataRecord.AircraftEquip.Contains(s));
+                    var callsign = flightDataRecord.Callsign;
+                    if (string.IsNullOrEmpty(callsign))
+                        continue;
 
-                var unacknowledgedUnableReceived = openDialogues
-                    .SelectMany(d => d.Messages)
-                    .OfType<DownlinkMessageDto>()
-                    .Any(m => m.Content.Contains("UNABLE") && m.Acknowledged is null);
+                    var connection = connectedAircraft.FirstOrDefault(c => c.Callsign == callsign && c.StationId == plugin.ConnectionManager.StationIdentifier);
 
-                var hasSuspendedMessage = suspendedMessageStore.HasSuspendedMessage(flightDataRecord.Callsign);
+                    var openDialogues = (await dialogueStore.All(cancellationToken))
+                        .Where(d => d.AircraftCallsign == callsign && !d.IsClosed)
+                        .ToArray();
 
-                var text = " ";
-                CustomColour? backgroundColour = null;
-                CustomColour? foregroundColour = null;
-                Action leftClickAction = () => { };
+                    if (cancellationToken.IsCancellationRequested)
+                        return;
 
-                if (isEquipped && connection is null)
-                {
-                    text = ".";
-                    // TODO: Left click will initiate a manual connection
-                }
-                else if (connection is not null && connection.DataAuthorityState == DataAuthorityState.NextDataAuthority)
-                {
-                    text = "-";
-                    leftClickAction = () =>
+                    var hasOpenDownlinkMessages = openDialogues
+                        .SelectMany(d => d.Messages ?? [])
+                        .OfType<DownlinkMessageDto>()
+                        .Any(m => !m.IsClosed);
+
+                    // TODO: Check if they're connected to the ACARS network. Equipment flags are unreliable.
+                    var aircraftEquip = flightDataRecord.AircraftEquip ?? string.Empty;
+                    var isEquipped = new[]
                     {
-                        try
-                        {
-                            mediator.Send(new OpenEditorWindowRequest(flightDataRecord.Callsign));
-                        }
-                        catch (Exception ex)
-                        {
-                            errorReporter.ReportError(ex, "Error opening CPDLC Window");
-                        }
-                    };
-                }
-                else if (connection is not null && connection.DataAuthorityState == DataAuthorityState.CurrentDataAuthority)
-                {
-                    text = "+";
-                    leftClickAction = () =>
-                    {
-                        try
-                        {
-                            mediator.Send(new OpenEditorWindowRequest(flightDataRecord.Callsign));
-                        }
-                        catch (Exception ex)
-                        {
-                            errorReporter.ReportError(ex, "Error opening CPDLC window");
-                        }
-                    };
+                        "J1",
+                        "J2",
+                        "J3",
+                        "J4",
+                        "J5",
+                        "J6",
+                        "J7",
+                    }.Any(s => aircraftEquip.Contains(s));
 
-                    // Color only changes if it's relevent to us
-                    if (openDialogues.Any(jurisdictionChecker.ShouldDisplayDialogue))
+                    var unacknowledgedUnableReceived = openDialogues
+                        .SelectMany(d => d.Messages ?? [])
+                        .OfType<DownlinkMessageDto>()
+                        .Any(m => (m.Content ?? string.Empty).Contains("UNABLE") && m.Acknowledged is null);
+
+                    var hasSuspendedMessage = suspendedMessageStore.HasSuspendedMessage(callsign);
+
+                    var text = " ";
+                    CustomColour? backgroundColour = null;
+                    CustomColour? foregroundColour = null;
+                    Action leftClickAction = () => { };
+
+                    if (isEquipped && connection is null)
                     {
-                        if (unacknowledgedUnableReceived)
+                        text = ".";
+                        // TODO: Left click will initiate a manual connection
+                    }
+                    else if (connection is not null && connection.DataAuthorityState == DataAuthorityState.NextDataAuthority)
+                    {
+                        text = "-";
+                        leftClickAction = () =>
                         {
-                            backgroundColour = colourCache.UnableBackgroundColour;
+                            try
+                            {
+                                mediator.Send(new OpenEditorWindowRequest(callsign));
+                            }
+                            catch (Exception ex)
+                            {
+                                errorReporter.ReportError(ex, "Error opening CPDLC Window");
+                            }
+                        };
+                    }
+                    else if (connection is not null && connection.DataAuthorityState == DataAuthorityState.CurrentDataAuthority)
+                    {
+                        text = "+";
+                        leftClickAction = () =>
+                        {
+                            try
+                            {
+                                mediator.Send(new OpenEditorWindowRequest(callsign));
+                            }
+                            catch (Exception ex)
+                            {
+                                errorReporter.ReportError(ex, "Error opening CPDLC window");
+                            }
+                        };
+
+                        // Color only changes if it's relevent to us
+                        if (openDialogues.Any(jurisdictionChecker.ShouldDisplayDialogue))
+                        {
+                            if (unacknowledgedUnableReceived)
+                            {
+                                backgroundColour = colourCache.UnableBackgroundColour;
+                            }
+                            else if (hasOpenDownlinkMessages)
+                            {
+                                backgroundColour = colourCache.DownlinkBackgroundColour;
+                            }
                         }
-                        else if (hasOpenDownlinkMessages)
+
+                        if (hasSuspendedMessage)
                         {
-                            backgroundColour = colourCache.DownlinkBackgroundColour;
+                            foregroundColour = colourCache.SuspendedForegroundColour;
                         }
                     }
 
-                    if (hasSuspendedMessage)
-                    {
-                        foregroundColour = colourCache.SuspendedForegroundColour;
-                    }
+                    newLabelItems[callsign] = new CustomStripOrLabelItem(
+                        text,
+                        backgroundColour,
+                        foregroundColour,
+                        leftClickAction);
                 }
-
-                newLabelItems[flightDataRecord.Callsign] = new CustomStripOrLabelItem(
-                    text,
-                    backgroundColour,
-                    foregroundColour,
-                    leftClickAction);
+                catch (Exception ex)
+                {
+                    // Log but continue processing other aircraft
+                    errorReporter.ReportError(ex, $"Error processing label for {flightDataRecord.Callsign ?? "unknown"}");
+                }
             }
 
             labelItemCache.Replace(newLabelItems);

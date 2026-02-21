@@ -387,7 +387,8 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         if (flightDataRecord is null)
             return null;
 
-        var lastTextMessage = Network.GetRadioMessages
+        var radioMessages = Network.GetRadioMessages;
+        var lastTextMessage = radioMessages?
             .LastOrDefault(r => r.Address == flightDataRecord.Callsign && !r.Acknowledged);
 
         string? text = null;
@@ -461,7 +462,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         return textLabelItem;
     }
 
-    CustomLabelItem? GetCpdlcStatusLabelItem(string itemType, FDP2.FDR flightDataRecord)
+    CustomLabelItem? GetCpdlcStatusLabelItem(string itemType, FDP2.FDR? flightDataRecord)
     {
         // vatSys bug: Custom background colours can't be drawn selectively.
         // vatSys won't draw the custom background if the original colour (specified in the Labels.xml file) is transparent (or empty).
@@ -475,7 +476,15 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             Text = " "
         };
 
-        var customItem = GetCustomStripOrLabelItem(flightDataRecord);
+        if (flightDataRecord is null)
+        {
+            if (itemType == "CPDLCPLUGIN_CPDLCSTATUS_BG")
+                return null;
+
+            return labelItem;
+        }
+
+        var customItem = GetCustomStripOrLabelItem(flightDataRecord)
         if (customItem is null)
         {
             if (itemType == "CPDLCPLUGIN_CPDLCSTATUS_BG")
@@ -522,11 +531,15 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         return labelItem;
     }
 
-    CustomStripOrLabelItem? GetCustomStripOrLabelItem(FDP2.FDR flightDataRecord)
+    CustomStripOrLabelItem? GetCustomStripOrLabelItem(FDP2.FDR? flightDataRecord)
     {
+        var callsign = flightDataRecord?.Callsign;
+        if (string.IsNullOrEmpty(callsign))
+            return null;
+
         try
         {
-            return _labelItemCache.Find(flightDataRecord.Callsign);
+            return _labelItemCache.Find(callsign);
         }
         catch (Exception ex)
         {
