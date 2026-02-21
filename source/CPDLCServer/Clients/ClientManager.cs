@@ -172,33 +172,42 @@ public class ClientManager : BackgroundService, IClientManager
     async Task Subscribe(string acarsClientId, string stationId, IAcarsClient acarsClient, IMediator mediator, CancellationToken cancellationToken)
     {
         var subscriptionLogger = _logger.ForContext("AcarsClientId", acarsClientId);
-        await foreach (var downlinkMessage in acarsClient.MessageReader.ReadAllAsync(cancellationToken))
-        {
-            // TODO: Make this configurable
-            var publishTimeoutCancellationTokenSource = new CancellationTokenSource();
-            publishTimeoutCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(10));
 
-            try
+        try
+        {
+            await foreach (var downlinkMessage in acarsClient.MessageReader.ReadAllAsync(cancellationToken))
             {
-                await mediator.Publish(
-                    new DownlinkReceivedNotification(
-                        acarsClientId,
-                        stationId,
-                        downlinkMessage),
-                    publishTimeoutCancellationTokenSource.Token);
+                // TODO: Make this configurable
+                var publishTimeoutCancellationTokenSource = new CancellationTokenSource();
+                publishTimeoutCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(10));
+
+                try
+                {
+                    await mediator.Publish(
+                        new DownlinkReceivedNotification(
+                            acarsClientId,
+                            stationId,
+                            downlinkMessage),
+                        publishTimeoutCancellationTokenSource.Token);
+                }
+                catch (OperationCanceledException) when (publishTimeoutCancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    subscriptionLogger.Warning("Timeout handling downlink {Downlink}", downlinkMessage);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    subscriptionLogger.Information("Subscription canceled");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    subscriptionLogger.Error(ex, "Failed to relay {MessageType}", downlinkMessage.GetType());
+                }
             }
-            catch (OperationCanceledException) when (publishTimeoutCancellationTokenSource.Token.IsCancellationRequested)
-            {
-                subscriptionLogger.Warning("Timeout handling downlink {Downlink}", downlinkMessage);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                subscriptionLogger.Information("Subscription canceled");
-            }
-            catch (Exception ex)
-            {
-                subscriptionLogger.Error(ex, "Failed to relay {MessageType}", downlinkMessage.GetType());
-            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            subscriptionLogger.Information("Subscription canceled");
         }
     }
 
@@ -212,7 +221,15 @@ public class ClientManager : BackgroundService, IClientManager
             await Client.DisposeAsync();
 
             await SubscribeCancellationTokenSource.CancelAsync();
-            await SubscribeTask;
+
+            try
+            {
+                await SubscribeTask;
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected during shutdown
+            }
 
             SubscribeCancellationTokenSource.Dispose();
             SubscribeTask.Dispose();
