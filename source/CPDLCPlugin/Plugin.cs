@@ -392,7 +392,9 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             .LastOrDefault(r => r.Address == flightDataRecord.Callsign && !r.Acknowledged);
 
         string? text = null;
-        CustomColour? backgroundColour = null;
+        CustomColour? backgroundColour = lastTextMessage is not null
+            ? _colourCache.DownlinkBackgroundColour
+            : null;
 
         if (flightDataRecord.TextOnly)
         {
@@ -406,7 +408,6 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         {
             // Only show "V" when there is an unacknowledged message
             text = "V";
-            backgroundColour = _colourCache.DownlinkBackgroundColour;
         }
 
         // Don't take up the space if it's not necessary
@@ -484,7 +485,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             return labelItem;
         }
 
-        var customItem = GetCustomStripOrLabelItem(flightDataRecord)
+        var customItem = GetCustomStripOrLabelItem(flightDataRecord);
         if (customItem is null)
         {
             if (itemType == "CPDLCPLUGIN_CPDLCSTATUS_BG")
