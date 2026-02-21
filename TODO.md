@@ -1,5 +1,6 @@
 TODO:
 
+- [ ] Don't return null when text indicator is not required, leave it there so the click-spot remains
 - [ ] Fix jurisdiction checker.
 - [X] Move NDA transmission to server. Plugin tells server what the NDA is, and the server sends it at the appropriate time.
 - [ ] Live NDA handoff test.
