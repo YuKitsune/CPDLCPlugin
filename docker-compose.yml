@@ -6,7 +6,16 @@ services:
       dockerfile: source/CPDLCServer/Dockerfile
     env_file:
       - .env
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
     ports:
       - "5272:8080"
+
+  ngrok:
+    profile: ngrok
+    image: ngrok/ngrok:latest
+    command:
+      - "http"
+      - "http://host.docker.internal:5272"
+    env_file:
+      - .env
+    ports:
+      - 4040:4040
