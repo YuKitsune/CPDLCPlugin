@@ -28,6 +28,10 @@ public class HandoffCompletedNotificationHandler(
         if (aircraftConnection is null)
             return;
 
+        // BUG: There's a race-condition where two FDR updates in quick-succession can cause duplicate logoff uplinks to
+        //  be sent before the server has had the chance to terminate the connection.
+        //  Probably need to pessimistically lock to prevent this from happening.
+
         if (string.IsNullOrEmpty(notification.NextControllerCallsign))
         {
             // Handoff to none, logoff

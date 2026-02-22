@@ -39,8 +39,9 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
     readonly LabelItemCache _labelItemCache = new();
     readonly ColourCache _colourCache;
 
-    readonly Channel<Func<Task>> _workQueue = Channel.CreateUnbounded<Func<Task>>();
-    readonly Task _worker;
+    readonly WorkQueue _workQueue;
+
+    BackgroundWorker? _ndaRecalculationWorker;
 
     string IPlugin.Name => Name;
 
@@ -67,35 +68,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
         WeakReferenceMessenger.Default.Register<ConnectedAircraftChanged>(this);
 
-        _worker = Worker(CancellationToken.None);
-    }
-
-    async Task Worker(CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            try
-            {
-                var work = await _workQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-                await work().ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                // Expected during shutdown
-                break;
-            }
-            catch (Exception ex)
-            {
-                try
-                {
-                    AddError(ex);
-                }
-                catch
-                {
-                    // Ignore errors during error reporting
-                }
-            }
-        }
+        _workQueue = new WorkQueue(AddError);
     }
 
     void ConfigureServices(PluginConfiguration pluginConfiguration)
@@ -143,6 +116,11 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
     void NetworkConnected(object sender, EventArgs e)
     {
         Log.Information("Connected to VATSIM as {Callsign}", Network.Callsign);
+        _workQueue.Enqueue(() =>
+        {
+            StartNdaRecalculationWorker();
+            return Task.CompletedTask;
+        });
 
         // TODO: Connect if auto-connect enabled
     }
@@ -153,7 +131,9 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
 
         try
         {
-            _workQueue.Writer.TryWrite(async () =>
+            _workQueue.Enqueue(StopNdaRecalculationWorker);
+
+            _workQueue.Enqueue(async () =>
             {
                 var mediator =  ServiceProvider.GetService<IMediator>();
                 if (mediator is null)
@@ -172,29 +152,66 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
     {
         try
         {
-            _workQueue.Writer.TryWrite(async () =>
-            {
-                var store = ServiceProvider.GetRequiredService<AircraftConnectionStore>();
-                var connections = await store.All(CancellationToken.None);
-
-                var ourAircraft = connections
-                    .Where(c => c.StationId == ConnectionManager?.StationIdentifier &&
-                               c.DataAuthorityState == CPDLCServer.Contracts.DataAuthorityState.CurrentDataAuthority);
-
-                foreach (var aircraft in ourAircraft)
-                {
-                    var fdr = FDP2.GetFDRs.FirstOrDefault(f => f.Callsign == aircraft.Callsign);
-                    if (fdr is null || !fdr.IsTrackedByMe)
-                        continue;
-
-                    var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                    await mediator.Send(new UpdateHandoffForFdrRequest(fdr));
-                }
-            });
+            // When ATC change, we need to re-calculate the NextDataAuthority
+            _workQueue.Enqueue(RecalculateNextDataAuthorityForAllAircraft);
         }
         catch (Exception ex)
         {
             AddError(ex);
+        }
+    }
+
+    void StartNdaRecalculationWorker()
+    {
+        Log.Information("Starting NDA recalculation worker");
+        _ndaRecalculationWorker = new BackgroundWorker(async cancellationToken =>
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
+                    await RecalculateNextDataAuthorityForAllAircraft();
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    Log.Verbose("NDA recalculation worker cancellation requested");
+                }
+                catch (Exception ex)
+                {
+                    AddError(ex);
+                }
+            }
+        });
+    }
+
+    async Task StopNdaRecalculationWorker()
+    {
+        if (_ndaRecalculationWorker is null)
+            return;
+
+        Log.Information("Stopping NDA recalculation worker");
+        await _ndaRecalculationWorker.DisposeAsync();
+        _ndaRecalculationWorker = null;
+    }
+
+    async Task RecalculateNextDataAuthorityForAllAircraft()
+    {
+        var store = ServiceProvider.GetRequiredService<AircraftConnectionStore>();
+        var connections = await store.All(CancellationToken.None);
+
+        var ourAircraft = connections
+            .Where(c => c.StationId == ConnectionManager?.StationIdentifier &&
+                       c.DataAuthorityState == CPDLCServer.Contracts.DataAuthorityState.CurrentDataAuthority);
+
+        foreach (var aircraft in ourAircraft)
+        {
+            var fdr = FDP2.GetFDRs.FirstOrDefault(f => f.Callsign == aircraft.Callsign);
+            if (fdr is null || !fdr.IsTrackedByMe)
+                continue;
+
+            var mediator = ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Send(new UpdateNextDataAuthorityForFdrRequest(fdr));
         }
     }
 
@@ -279,7 +296,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             new ToolStripMenuItem("Setup"));
         setupMenuItem.Item.Click += (_, _) =>
         {
-            _workQueue.Writer.TryWrite(async () =>
+            _workQueue.Enqueue(async () =>
             {
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
                 await mediator.Send(new OpenSetupWindowRequest());
@@ -294,7 +311,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             new ToolStripMenuItem("Current Messages"));
         currentMessagesMenuItem.Item.Click += (_, _) =>
         {
-            _workQueue.Writer.TryWrite(async () =>
+            _workQueue.Enqueue(async () =>
             {
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
                 await mediator.Send(new OpenCurrentMessagesWindowRequest());
@@ -309,7 +326,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             new ToolStripMenuItem("History"));
         historyMenuItem.Item.Click += (_, _) =>
         {
-            _workQueue.Writer.TryWrite(async () =>
+            _workQueue.Enqueue(async () =>
             {
                 var selectedCallsign = MMI.SelectedTrack?.GetFDR()?.Callsign;
 
@@ -326,7 +343,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         try
         {
             // Record the last known owner of each FDR
-            _workQueue.Writer.TryWrite(async () =>
+            _workQueue.Enqueue(async () =>
             {
                 Log.Debug(
                     "{Callsign}: IsTracked {IsTracked}; IsTrackedByMe: {IsTrackedByMe}; Controller Tracking: {CurrentController}; Handoff Controller: {HandoffController}",
@@ -338,31 +355,31 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
 
                 var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
 
-                // BUG: When a handoff is initiated, the ControllerTracking appears to change, so the notification is
-                //  raised while the aircraft is in the handover-out state.
                 jurisdictionChecker.RecordFdrOwner(updated.Callsign, updated.ControllerTracking?.Callsign);
 
-                // We were the previous owner, try to hand this aircraft off to the next data authority
-                // TODO: record can be null
                 var record = jurisdictionChecker.GetOwnershipRecord(updated.Callsign);
-                if (record.PreviousOwner == Network.Callsign)
-                {
-                    Log.Information("{Callsign} handoff to {NextController}", updated.Callsign, record.CurrentOwner);
-                    var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                    await mediator.Publish(new HandoffCompletedNotification(updated.Callsign, record.CurrentOwner));
-                }
+                if (record?.PreviousOwner != Network.Callsign)
+                    return;
 
-                // Update handoff information for automatic NEXT DATA AUTHORITY
+                // We were the previous owner, process the handoff
+                Log.Information("{Callsign} handoff to {NextController}", updated.Callsign, record.CurrentOwner);
+                var mediator = ServiceProvider.GetRequiredService<IMediator>();
+                await mediator.Publish(new HandoffCompletedNotification(updated.Callsign, record.CurrentOwner));
+            });
+
+            // Ensure the next data authority is up-to-date
+            _workQueue.Enqueue(async () =>
+            {
                 var handoffMediator = ServiceProvider.GetRequiredService<IMediator>();
-                await handoffMediator.Send(new UpdateHandoffForFdrRequest(updated));
+                await handoffMediator.Send(new UpdateNextDataAuthorityForFdrRequest(updated));
             });
 
             // Re-build the label item cache
-            _workQueue.Writer.TryWrite(() => RebuildLabelItemCache());
+            _workQueue.Enqueue(() => RebuildLabelItemCache());
 
             // If this flight has any open dialogues that we have jurisdiction over, open the current messages window
             // Ensures flights handed off to us open the window so we can see their requests
-            _workQueue.Writer.TryWrite(async () =>
+            _workQueue.Enqueue(async () =>
             {
                 var store = ServiceProvider.GetRequiredService<DialogueStore>();
                 var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
@@ -605,7 +622,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
     {
         try
         {
-            _workQueue.Writer.TryWrite(() => RebuildLabelItemCache());
+            _workQueue.Enqueue(() => RebuildLabelItemCache());
         }
         catch (Exception ex)
         {
@@ -617,7 +634,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
     {
         try
         {
-            _workQueue.Writer.TryWrite(async () =>
+            _workQueue.Enqueue(async () =>
             {
                 await RebuildLabelItemCache().ConfigureAwait(false);
 

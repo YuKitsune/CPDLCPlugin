@@ -14,7 +14,7 @@ TODO:
 
 ---
 
-- [ ] BUG: NextDataAuthority check isn't frequent enough.
+- [X] BUG: NextDataAuthority check isn't frequent enough.
     - Needs more triggers, consider a time-based trigger in addition to events.
 - [ ] BUG: Message routing appears correct, but messages are displayed inconsistently.
     - Current Messages Window appears, and is blank

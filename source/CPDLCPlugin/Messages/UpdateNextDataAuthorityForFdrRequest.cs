@@ -6,22 +6,24 @@ using vatsys;
 
 namespace CPDLCPlugin.Messages;
 
-public record UpdateHandoffForFdrRequest(FDP2.FDR Fdr) : IRequest;
+public record UpdateNextDataAuthorityForFdrRequest(FDP2.FDR Fdr) : IRequest;
 
-public class UpdateHandoffForFdrRequestHandler(
+public class UpdateNextDataAuthorityForFdrRequestHandler(
     Plugin plugin,
     AtisCache atisCache,
     AircraftConnectionStore aircraftConnectionStore,
     ControllerConnectionStore controllerConnectionStore,
     ILogger logger)
-    : IRequestHandler<UpdateHandoffForFdrRequest>
+    : IRequestHandler<UpdateNextDataAuthorityForFdrRequest>
 {
-    public async Task Handle(UpdateHandoffForFdrRequest request, CancellationToken cancellationToken)
+    public async Task Handle(UpdateNextDataAuthorityForFdrRequest request, CancellationToken cancellationToken)
     {
         var fdr = request.Fdr;
 
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
             return;
+
+        logger.Verbose("Calculating next data authority for {Callsign}", fdr.Callsign);
 
         var aircraftConnections = await aircraftConnectionStore.All(cancellationToken);
         var ourAircraft = aircraftConnections.FirstOrDefault(
@@ -102,28 +104,13 @@ public class UpdateHandoffForFdrRequestHandler(
         // Handle Valid state
         if (newInfo is ValidNextDataAuthorityInfo validInfo)
         {
-            bool shouldUpdate;
+            var didChange =
+                oldInfo is not ValidNextDataAuthorityInfo oldValidInfo || // Check if transitioning from non-Valid state
+                oldValidInfo.NextDataAuthority != validInfo.NextDataAuthority || // Check if NDA changed
+                Math.Abs((oldValidInfo.ExitTime - validInfo.ExitTime).TotalMinutes) > 1; // Check if exit time changed by more than 1 minute
 
-            // Check if transitioning from non-Valid state
-            if (oldInfo is not ValidNextDataAuthorityInfo oldValidInfo)
-            {
-                shouldUpdate = true;
-            }
-            else
-            {
-                // Check if NDA changed
-                var ndaChanged = oldValidInfo.NextDataAuthority != validInfo.NextDataAuthority;
-
-                // Check if exit time changed by more than 1 minute
-                var exitTimeChanged = Math.Abs((oldValidInfo.ExitTime - validInfo.ExitTime).TotalMinutes) > 1;
-
-                shouldUpdate = ndaChanged || exitTimeChanged;
-            }
-
-            if (!shouldUpdate)
-            {
+            if (!didChange)
                 return;
-            }
 
             logger.Information(
                 "Next data authority for {Callsign}: {NextDataAuthority} at {ExitTime}",
@@ -198,7 +185,7 @@ public class UpdateHandoffForFdrRequestHandler(
             if (cpdlcCode.Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            logger.Information(
+            logger.Verbose(
                 "ATSU boundary found for {Callsign}: sector {SectorId} with code {CpdlcCode} at {ExitTime}",
                 fdr.Callsign,
                 sectorEntry.SectorId,
