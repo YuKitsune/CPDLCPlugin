@@ -14,13 +14,11 @@ public interface IJurisdictionChecker
 
 public record OwnershipRecord(string? CurrentOwner, string? PreviousOwner);
 
-public class JurisdictionChecker(ControllerConnectionStore controllerConnectionStore) : IJurisdictionChecker
+public class JurisdictionChecker : IJurisdictionChecker
 {
     // Need to keep track of which controller last had ownership of each FDR
     // vatSys will set the owner to `null` when the tag is relinquished, and there's no reference to who "previously" owned it
     readonly ConcurrentDictionary<string, OwnershipRecord> _ownershipRecords = new();
-
-    readonly ControllerConnectionStore _controllerConnectionStore = controllerConnectionStore;
 
     public void RecordFdrOwner(string callsign, string? controllerCallsign)
     {
@@ -48,6 +46,14 @@ public class JurisdictionChecker(ControllerConnectionStore controllerConnectionS
 
     public bool ShouldDisplayDialogue(DialogueDto dialogue, FDP2.FDR fdr)
     {
+        // Don't show END SERVICE messages sent by other controllers
+        if (dialogue.Messages.OfType<UplinkMessageDto>().Any(um =>
+                um.SenderCallsign != Network.Callsign &&
+                um.Content.Contains("END SERVICE")))
+        {
+            return false;
+        }
+
         // If we have jurisdiction, show the message
         if (fdr.IsTrackedByMe)
         {
@@ -70,8 +76,6 @@ public class JurisdictionChecker(ControllerConnectionStore controllerConnectionS
             return true;
         }
 
-        // TODO: Need a better way to work out ownership history, as this is unreliable.
-        //  TrackingController appears to change mid-handoff, rather than post-handoff.
         if (!_ownershipRecords.TryGetValue(fdr.Callsign, out var record))
             return false;
 
@@ -79,19 +83,6 @@ public class JurisdictionChecker(ControllerConnectionStore controllerConnectionS
         if (record.PreviousOwner == Network.Callsign && record.CurrentOwner == null)
         {
             return true;
-        }
-
-        // TODO: Figure out the controller CPDLC code using a separate service, combine with ATIS cache.
-        // VATSIM-ism: If the controlling sector isn't connected to the ATSU server, and we were the previous owner, then show the message
-        if (fdr.ControllerTracking is not null &&
-            fdr.ControllerTracking.Callsign != Network.Callsign &&
-            record.PreviousOwner == Network.Callsign)
-        {
-            var trackingControllerIsConnected = _controllerConnectionStore.IsConnected(fdr.ControllerTracking.Callsign);
-            if (!trackingControllerIsConnected)
-            {
-                return true;
-            }
         }
 
         return false;
