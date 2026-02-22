@@ -129,7 +129,9 @@ The plugin handles certain actions automatically without controller input.
 
 **Logon:** Pilot logon requests are automatically accepted by the server.
 
-**Handoff:** When you hand an aircraft off to another controller, the plugin notifies the pilot. If the receiving controller is using CPDLC, a `NEXT DATA AUTHORITY` message instructs the pilot to transfer to the next unit. Otherwise, an `END SERVICE` message instructs the pilot to disconnect from CPDLC.
+**Next Data Authority:** The plugin will automatically calculate the next data authority using the aircrafts route and online ATC. The server will transmit a `NEXT DATA AUTHORITY` uplink message to the aircraft prior to entering their airspace. If their CPDLC logon code cannot be determined due to a conflict, an error will be displayed in the vatSys error window. If no CPDLC code can be found, no `NEXT DATA AUTHORITY` message will be transmitted.
+
+**Handoff:** When you hand an aircraft off to another controller, the plugin will transmit an `END SERVICE` message if the next controller resides within a different ATSU, or does not have CPDLC capabilities.
 
 ## Limitations
 
