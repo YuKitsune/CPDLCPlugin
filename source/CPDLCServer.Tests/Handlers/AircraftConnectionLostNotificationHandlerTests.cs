@@ -9,7 +9,7 @@ using Serilog.Core;
 
 namespace CPDLCServer.Tests.Handlers;
 
-public class AircraftLostNotificationHandlerTests
+public class AircraftConnectionLostNotificationHandlerTests
 {
     [Fact]
     public async Task Handle_RemovesAircraftFromTracking()
@@ -30,7 +30,7 @@ public class AircraftLostNotificationHandlerTests
         var clientProxy = Substitute.For<IClientProxy>();
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
-        var handler = new AircraftLostNotificationHandler(
+        var handler = new AircraftConnectionLostNotificationHandler(
             aircraftManager,
             controllerManager,
             dialogueRepository,
@@ -40,7 +40,7 @@ public class AircraftLostNotificationHandlerTests
             clock,
             Logger.None);
 
-        var notification = new AircraftLost("hoppies-ybbb", "UAL123");
+        var notification = new AircraftConnectionLost("hoppies-ybbb", "UAL123");
 
         // Assert - aircraft exists before handling
         Assert.NotNull(await aircraftManager.Find(new("UAL123", "hoppies-ybbb"), CancellationToken.None));
@@ -86,7 +86,7 @@ public class AircraftLostNotificationHandlerTests
         var clientProxy = Substitute.For<IClientProxy>();
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
-        var handler = new AircraftLostNotificationHandler(
+        var handler = new AircraftConnectionLostNotificationHandler(
             aircraftManager,
             controllerManager,
             dialogueRepository,
@@ -96,7 +96,7 @@ public class AircraftLostNotificationHandlerTests
             clock,
             Logger.None);
 
-        var notification = new AircraftLost("hoppies-ybbb", "UAL123");
+        var notification = new AircraftConnectionLost("hoppies-ybbb", "UAL123");
 
         // Act
         await handler.Handle(notification, CancellationToken.None);
@@ -139,7 +139,7 @@ public class AircraftLostNotificationHandlerTests
         var clock = new TestClock();
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
 
-        var handler = new AircraftLostNotificationHandler(
+        var handler = new AircraftConnectionLostNotificationHandler(
             aircraftManager,
             controllerManager,
             dialogueRepository,
@@ -149,7 +149,7 @@ public class AircraftLostNotificationHandlerTests
             clock,
             Logger.None);
 
-        var notification = new AircraftLost("hoppies-ybbb", "UAL123");
+        var notification = new AircraftConnectionLost("hoppies-ybbb", "UAL123");
 
         // Act & Assert - should not throw
         await handler.Handle(notification, CancellationToken.None);
@@ -177,7 +177,7 @@ public class AircraftLostNotificationHandlerTests
         var clientProxy = Substitute.For<IClientProxy>();
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
-        var handler = new AircraftLostNotificationHandler(
+        var handler = new AircraftConnectionLostNotificationHandler(
             aircraftManager,
             controllerManager,
             dialogueRepository,
@@ -187,7 +187,7 @@ public class AircraftLostNotificationHandlerTests
             clock,
             Logger.None);
 
-        var notification = new AircraftLost("hoppies-ybbb", "UAL123");
+        var notification = new AircraftConnectionLost("hoppies-ybbb", "UAL123");
 
         // Act
         await handler.Handle(notification, CancellationToken.None);
@@ -244,7 +244,7 @@ public class AircraftLostNotificationHandlerTests
         var clientProxy = Substitute.For<IClientProxy>();
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
-        var handler = new AircraftLostNotificationHandler(
+        var handler = new AircraftConnectionLostNotificationHandler(
             aircraftManager,
             controllerManager,
             dialogueRepository,
@@ -254,7 +254,7 @@ public class AircraftLostNotificationHandlerTests
             clock,
             Logger.None);
 
-        var notification = new AircraftLost("hoppies-ybbb", "UAL123");
+        var notification = new AircraftConnectionLost("hoppies-ybbb", "UAL123");
 
         // Act
         await handler.Handle(notification, CancellationToken.None);

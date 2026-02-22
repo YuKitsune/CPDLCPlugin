@@ -1,3 +1,4 @@
+using CPDLCServer.Contracts;
 using CPDLCServer.Handlers;
 using CPDLCServer.Hubs;
 using CPDLCServer.Messages;
@@ -9,7 +10,7 @@ using Serilog.Core;
 
 namespace CPDLCServer.Tests.Handlers;
 
-public class AircraftDisconnectedNotificationHandlerTests
+public class AircraftConnectionEstablishedNotificationHandlerTests
 {
     [Fact]
     public async Task Handle_NotifiesAllConnectedControllers()
@@ -35,12 +36,16 @@ public class AircraftDisconnectedNotificationHandlerTests
         var clientProxy = Substitute.For<IClientProxy>();
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
-        var handler = new AircraftDisconnectedNotificationHandler(
+        var handler = new AircraftConnectionEstablishedNotificationHandler(
             controllerManager,
             hubContext,
             Logger.None);
 
-        var notification = new AircraftDisconnected("hoppies-ybbb", "YBBB", "UAL123");
+        var notification = new AircraftConnectionEstablished(
+            "hoppies-ybbb",
+            "YBBB",
+            "UAL123",
+            CPDLCServer.Model.DataAuthorityState.NextDataAuthority);
 
         // Act
         await handler.Handle(notification, CancellationToken.None);
@@ -53,8 +58,11 @@ public class AircraftDisconnectedNotificationHandlerTests
                 ids.Contains("ConnectionId-2")));
 
         await clientProxy.Received(1).SendCoreAsync(
-            "AircraftConnectionRemoved",
-            Arg.Is<object[]>(args => args.Length == 2 && args[0].ToString() == "UAL123" && args[1].ToString() == "YBBB"),
+            "AircraftConnectionUpdated",
+            Arg.Is<object[]>(args =>
+                args.Length == 1 &&
+                ((AircraftConnectionDto)args[0]).Callsign == "UAL123" &&
+                ((AircraftConnectionDto)args[0]).DataAuthorityState == CPDLCServer.Contracts.DataAuthorityState.NextDataAuthority),
             Arg.Any<CancellationToken>());
     }
 
@@ -67,12 +75,16 @@ public class AircraftDisconnectedNotificationHandlerTests
         var clientProxy = Substitute.For<IClientProxy>();
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
-        var handler = new AircraftDisconnectedNotificationHandler(
+        var handler = new AircraftConnectionEstablishedNotificationHandler(
             controllerManager,
             hubContext,
             Logger.None);
 
-        var notification = new AircraftDisconnected("hoppies-ybbb", "YBBB", "UAL123");
+        var notification = new AircraftConnectionEstablished(
+            "hoppies-ybbb",
+            "YBBB",
+            "UAL123",
+            CPDLCServer.Model.DataAuthorityState.NextDataAuthority);
 
         // Act
         await handler.Handle(notification, CancellationToken.None);

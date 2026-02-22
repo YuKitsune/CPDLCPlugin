@@ -66,8 +66,7 @@ public class DownlinkReceivedNotificationHandler(
         if (ControlMessages.IsLogoffNotice(notification.Downlink))
         {
             await mediator.Send(
-                new LogoffCommand(
-                    notification.Downlink.MessageId,
+                new TerminateConnectionRequest(
                     notification.Downlink.Sender,
                     notification.AcarsClientId),
                 cancellationToken);

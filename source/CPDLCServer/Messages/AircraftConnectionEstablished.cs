@@ -3,7 +3,7 @@ using MediatR;
 
 namespace CPDLCServer.Messages;
 
-public record AircraftConnected(
+public record AircraftConnectionEstablished(
     string AcarsClientId,
     string StationId,
     string Callsign,

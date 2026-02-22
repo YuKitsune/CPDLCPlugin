@@ -235,6 +235,21 @@ public class SignalRConnectionManager(
         await _connection!.InvokeAsync("ArchiveDialogue", dialogueId, cancellationToken);
     }
 
+    public async Task UpdateNextDataAuthority(
+        string callsign,
+        string? nextDataAuthority,
+        DateTimeOffset? expectedTransferTime,
+        CancellationToken cancellationToken)
+    {
+        EnsureConnected();
+        await _connection!.InvokeAsync(
+            "UpdateNextDataAuthority",
+            callsign,
+            nextDataAuthority,
+            expectedTransferTime,
+            cancellationToken: cancellationToken);
+    }
+
     public async Task<DialogueDto[]> GetAllDialogues(CancellationToken cancellationToken)
     {
         EnsureConnected();

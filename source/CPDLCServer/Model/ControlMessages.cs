@@ -11,4 +11,9 @@ public static class ControlMessages
     {
         return downlinkMessage.Content == "LOGOFF";
     }
+
+    public static bool IsEndServiceUplink(UplinkMessage downlinkMessage)
+    {
+        return downlinkMessage.Content == "END SERVICE";
+    }
 }

@@ -6,22 +6,20 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace CPDLCServer.Handlers;
 
-public class AircraftDisconnectedNotificationHandler(
+public class AircraftConnectionTerminatedNotificationHandler(
     IControllerRepository controllerRepository,
     IHubContext<ControllerHub> hubContext,
     ILogger logger)
-    : INotificationHandler<AircraftDisconnected>
+    : INotificationHandler<AircraftConnectionTerminated>
 {
-    public async Task Handle(AircraftDisconnected notification, CancellationToken cancellationToken)
+    public async Task Handle(AircraftConnectionTerminated notification, CancellationToken cancellationToken)
     {
         logger.Information(
             "Aircraft {Callsign} disconnected from {AcarsClientId}",
             notification.Callsign,
             notification.AcarsClientId);
 
-        // Find all controllers on the same network and station
         var controllers = await controllerRepository.All(cancellationToken);
-
         if (!controllers.Any())
         {
             logger.Information(

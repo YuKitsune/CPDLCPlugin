@@ -167,6 +167,33 @@ public class ControllerHub(
             dialogueId);
     }
 
+    public async Task UpdateNextDataAuthority(
+        string callsign,
+        string? nextDataAuthority,
+        DateTimeOffset? expectedTransferTime)
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
+
+        var command = new UpdateNextDataAuthorityCommand(
+            controller.StationId,
+            callsign,
+            nextDataAuthority,
+            expectedTransferTime);
+
+        await mediator.Send(command);
+
+        _logger.Information(
+            "Controller {Callsign} updated next data authority for {AircraftCallsign} to {NextDataAuthority}",
+            controller.Callsign,
+            callsign,
+            nextDataAuthority ?? "(none)");
+    }
+
     public async Task<DialogueDto[]> GetAllDialogues()
     {
         var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);

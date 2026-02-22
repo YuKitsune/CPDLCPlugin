@@ -30,7 +30,7 @@ public class CheckLostAircraftConnectionsRequestHandler(
                 timeSinceLastSeen);
 
             await mediator.Publish(
-                new AircraftLost(connection.AcarsClientId, connection.Callsign),
+                new AircraftConnectionLost(connection.AcarsClientId, connection.Callsign),
                 cancellationToken);
         }
     }

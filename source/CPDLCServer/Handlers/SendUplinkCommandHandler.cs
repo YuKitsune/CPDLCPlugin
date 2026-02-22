@@ -14,7 +14,7 @@ public class SendUplinkCommandHandler(
     IClientManager clientManager,
     IMessageIdProvider messageIdProvider,
     IDialogueRepository dialogueRepository,
-    IPublisher publisher,
+    IMediator mediator,
     IClock clock,
     ILogger logger)
     : IRequestHandler<SendUplinkCommand, SendUplinkResult>
@@ -68,7 +68,12 @@ public class SendUplinkCommandHandler(
         }
 
         // Publish dialogue change notification
-        await publisher.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
+        await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
+
+        if (ControlMessages.IsEndServiceUplink(uplinkMessage))
+        {
+            await mediator.Send(new TerminateConnectionRequest(uplinkMessage.Recipient, aircraftConnection.AcarsClientId), cancellationToken);
+        }
 
         await client.Send(uplinkMessage, cancellationToken);
         logger.Information(

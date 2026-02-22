@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace CPDLCServer.Handlers;
 
-public class AircraftLostNotificationHandler(
+public class AircraftConnectionLostNotificationHandler(
     IAircraftRepository aircraftRepository,
     IControllerRepository controllerRepository,
     IDialogueRepository dialogueRepository,
@@ -18,9 +18,9 @@ public class AircraftLostNotificationHandler(
     IPublisher publisher,
     IClock clock,
     ILogger logger)
-    : INotificationHandler<AircraftLost>
+    : INotificationHandler<AircraftConnectionLost>
 {
-    public async Task Handle(AircraftLost notification, CancellationToken cancellationToken)
+    public async Task Handle(AircraftConnectionLost notification, CancellationToken cancellationToken)
     {
         var aircraft = await aircraftRepository.Find(
             new(notification.Callsign, notification.AcarsClientId),

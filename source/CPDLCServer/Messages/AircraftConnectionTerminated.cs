@@ -2,7 +2,8 @@ using MediatR;
 
 namespace CPDLCServer.Messages;
 
-public record AircraftLost(
+public record AircraftConnectionTerminated(
     string AcarsClientId,
+    string StationId,
     string Callsign)
     : INotification;

@@ -4,7 +4,7 @@ namespace CPDLCPlugin;
 
 public class AircraftConnectionStore
 {
-    readonly List<AircraftConnectionDto> _connectedAircraft = new();
+    readonly List<AircraftConnection> _connectedAircraft = new();
     readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public async Task Populate(AircraftConnectionDto[] connections, CancellationToken cancellationToken = default)
@@ -13,7 +13,10 @@ public class AircraftConnectionStore
         try
         {
             _connectedAircraft.Clear();
-            _connectedAircraft.AddRange(connections);
+            foreach (var dto in connections)
+            {
+                _connectedAircraft.Add(new AircraftConnection(dto));
+            }
         }
         finally
         {
@@ -21,20 +24,22 @@ public class AircraftConnectionStore
         }
     }
 
-    public async Task Upsert(AircraftConnectionDto connection, CancellationToken cancellationToken = default)
+    public async Task Upsert(AircraftConnectionDto connectionDto, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken);
         try
         {
             // Match by both callsign and stationId to support multiple connections per aircraft
             var existing = _connectedAircraft.FirstOrDefault(c =>
-                c.Callsign == connection.Callsign && c.StationId == connection.StationId);
+                c.Callsign == connectionDto.Callsign && c.StationId == connectionDto.StationId);
             if (existing is not null)
             {
-                _connectedAircraft.Remove(existing);
+                existing.UpdateDto(connectionDto);
             }
-
-            _connectedAircraft.Add(connection);
+            else
+            {
+                _connectedAircraft.Add(new AircraftConnection(connectionDto));
+            }
         }
         finally
         {
@@ -42,7 +47,7 @@ public class AircraftConnectionStore
         }
     }
 
-    public async Task<IReadOnlyCollection<AircraftConnectionDto>> All(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<AircraftConnection>> All(CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken);
         try

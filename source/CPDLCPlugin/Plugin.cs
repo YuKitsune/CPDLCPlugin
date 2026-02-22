@@ -62,6 +62,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
 
         Network.Connected += NetworkConnected;
         Network.Disconnected += NetworkDisconnected;
+        Network.OnlineATCChanged += NetworkOnlineATCChanged;
 
         WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
         WeakReferenceMessenger.Default.Register<ConnectedAircraftChanged>(this);
@@ -159,6 +160,36 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
                     return;
 
                 await mediator.Send(new DisconnectRequest()).ConfigureAwait(false);
+            });
+        }
+        catch (Exception ex)
+        {
+            AddError(ex);
+        }
+    }
+
+    void NetworkOnlineATCChanged(object sender, EventArgs e)
+    {
+        try
+        {
+            _workQueue.Writer.TryWrite(async () =>
+            {
+                var store = ServiceProvider.GetRequiredService<AircraftConnectionStore>();
+                var connections = await store.All(CancellationToken.None);
+
+                var ourAircraft = connections
+                    .Where(c => c.StationId == ConnectionManager?.StationIdentifier &&
+                               c.DataAuthorityState == CPDLCServer.Contracts.DataAuthorityState.CurrentDataAuthority);
+
+                foreach (var aircraft in ourAircraft)
+                {
+                    var fdr = FDP2.GetFDRs.FirstOrDefault(f => f.Callsign == aircraft.Callsign);
+                    if (fdr is null || !fdr.IsTrackedByMe)
+                        continue;
+
+                    var mediator = ServiceProvider.GetRequiredService<IMediator>();
+                    await mediator.Send(new UpdateHandoffForFdrRequest(fdr));
+                }
             });
         }
         catch (Exception ex)
@@ -320,6 +351,10 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
                     var mediator = ServiceProvider.GetRequiredService<IMediator>();
                     await mediator.Publish(new HandoffCompletedNotification(updated.Callsign, record.CurrentOwner));
                 }
+
+                // Update handoff information for automatic NEXT DATA AUTHORITY
+                var handoffMediator = ServiceProvider.GetRequiredService<IMediator>();
+                await handoffMediator.Send(new UpdateHandoffForFdrRequest(updated));
             });
 
             // Re-build the label item cache

@@ -9,13 +9,13 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace CPDLCServer.Handlers;
 
-public class AircraftConnectedNotificationHandler(
+public class AircraftConnectionEstablishedNotificationHandler(
     IControllerRepository controllerRepository,
     IHubContext<ControllerHub> hubContext,
     ILogger logger)
-    : INotificationHandler<AircraftConnected>
+    : INotificationHandler<AircraftConnectionEstablished>
 {
-    public async Task Handle(AircraftConnected notification, CancellationToken cancellationToken)
+    public async Task Handle(AircraftConnectionEstablished notification, CancellationToken cancellationToken)
     {
         logger.Information(
             "Aircraft {Callsign} connected on {AcarsClientId} with data authority state {DataAuthorityState}",

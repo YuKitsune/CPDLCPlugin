@@ -45,7 +45,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
 
         // Assert
         await mediator.Received(1).Publish(
-            Arg.Is<AircraftLost>(n => n.AcarsClientId == "hoppies-ybbb" && n.Callsign == "UAL123"),
+            Arg.Is<AircraftConnectionLost>(n => n.AcarsClientId == "hoppies-ybbb" && n.Callsign == "UAL123"),
             Arg.Any<CancellationToken>());
     }
 
@@ -83,7 +83,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
 
         // Assert
         await mediator.DidNotReceive().Publish(
-            Arg.Any<AircraftLost>(),
+            Arg.Any<AircraftConnectionLost>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -126,11 +126,11 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
 
         // Assert
         await mediator.Received(1).Publish(
-            Arg.Is<AircraftLost>(n => n.AcarsClientId == "hoppies-ybbb" && n.Callsign == "UAL123"),
+            Arg.Is<AircraftConnectionLost>(n => n.AcarsClientId == "hoppies-ybbb" && n.Callsign == "UAL123"),
             Arg.Any<CancellationToken>());
 
         await mediator.Received(1).Publish(
-            Arg.Is<AircraftLost>(n => n.AcarsClientId == "hoppies-ymmm" && n.Callsign == "QFA456"),
+            Arg.Is<AircraftConnectionLost>(n => n.AcarsClientId == "hoppies-ymmm" && n.Callsign == "QFA456"),
             Arg.Any<CancellationToken>());
     }
 
@@ -175,11 +175,11 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
 
         // Assert - only old aircraft should be published
         await mediator.Received(1).Publish(
-            Arg.Is<AircraftLost>(n => n.Callsign == "UAL123"),
+            Arg.Is<AircraftConnectionLost>(n => n.Callsign == "UAL123"),
             Arg.Any<CancellationToken>());
 
         await mediator.DidNotReceive().Publish(
-            Arg.Is<AircraftLost>(n => n.Callsign == "QFA456"),
+            Arg.Is<AircraftConnectionLost>(n => n.Callsign == "QFA456"),
             Arg.Any<CancellationToken>());
     }
 }

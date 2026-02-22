@@ -2,6 +2,8 @@ using CPDLCServer.Handlers;
 using CPDLCServer.Messages;
 using CPDLCServer.Model;
 using CPDLCServer.Tests.Mocks;
+using MediatR;
+using NSubstitute;
 using Serilog.Core;
 
 namespace CPDLCServer.Tests.Handlers;
@@ -15,7 +17,7 @@ public class SendUplinkCommandHandlerTests
         var clientManager = new TestClientManager();
         var messageIdProvider = new TestMessageIdProvider();
         var dialogueRepository = new TestDialogueRepository();
-        var publisher = new TestPublisher();
+        var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
         var aircraftRepository = new TestAircraftRepository();
 
@@ -30,7 +32,7 @@ public class SendUplinkCommandHandlerTests
             clientManager,
             messageIdProvider,
             dialogueRepository,
-            publisher,
+            mediator,
             clock,
             Logger.None);
 
@@ -67,7 +69,7 @@ public class SendUplinkCommandHandlerTests
         var clientManager = new TestClientManager();
         var messageIdProvider = new TestMessageIdProvider();
         var dialogueRepository = new TestDialogueRepository();
-        var publisher = new TestPublisher();
+        var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
         var aircraftRepository = new TestAircraftRepository();
 
@@ -82,7 +84,7 @@ public class SendUplinkCommandHandlerTests
             clientManager,
             messageIdProvider,
             dialogueRepository,
-            publisher,
+            mediator,
             clock,
             Logger.None);
 
@@ -119,7 +121,7 @@ public class SendUplinkCommandHandlerTests
         var clientManager = new TestClientManager();
         var messageIdProvider = new TestMessageIdProvider();
         var dialogueRepository = new TestDialogueRepository();
-        var publisher = new TestPublisher();
+        var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
         var aircraftRepository = new TestAircraftRepository();
 
@@ -134,7 +136,7 @@ public class SendUplinkCommandHandlerTests
             clientManager,
             messageIdProvider,
             dialogueRepository,
-            publisher,
+            mediator,
             clock,
             Logger.None);
 
@@ -188,13 +190,13 @@ public class SendUplinkCommandHandlerTests
         var existingDialogue = new Dialogue("UAL123", downlink);
         await dialogueRepository.Add(existingDialogue, CancellationToken.None);
 
-        var publisher = new TestPublisher();
+        var mediator = Substitute.For<IMediator>();
         var handler = new SendUplinkCommandHandler(
             aircraftRepository,
             clientManager,
             messageIdProvider,
             dialogueRepository,
-            publisher,
+            mediator,
             clock,
             Logger.None);
 
@@ -226,7 +228,7 @@ public class SendUplinkCommandHandlerTests
         var clientManager = new TestClientManager();
         var messageIdProvider = new TestMessageIdProvider();
         var dialogueRepository = new TestDialogueRepository();
-        var publisher = new TestPublisher();
+        var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
         var aircraftRepository = new TestAircraftRepository();
 
@@ -246,7 +248,7 @@ public class SendUplinkCommandHandlerTests
             clientManager,
             messageIdProvider,
             dialogueRepository,
-            publisher,
+            mediator,
             clock,
             Logger.None);
 
@@ -287,7 +289,7 @@ public class SendUplinkCommandHandlerTests
         var clientManager = new TestClientManager();
         var messageIdProvider = new TestMessageIdProvider();
         var dialogueRepository = new TestDialogueRepository();
-        var publisher = new TestPublisher();
+        var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
         var aircraftRepository = new TestAircraftRepository();
 
@@ -307,7 +309,7 @@ public class SendUplinkCommandHandlerTests
             clientManager,
             messageIdProvider,
             dialogueRepository,
-            publisher,
+            mediator,
             clock,
             Logger.None);
 
@@ -335,5 +337,51 @@ public class SendUplinkCommandHandlerTests
         Assert.Null(sentMessage.MessageReference);
         Assert.Equal(CpdlcUplinkResponseType.WilcoUnable, sentMessage.ResponseType);
         Assert.Equal("CLIMB TO @FL410@", sentMessage.Content);
+    }
+
+    [Fact]
+    public async Task Handle_EndServiceUplink_TerminatesConnection()
+    {
+        // Arrange
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+
+        // Create aircraft connection
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
+
+        var handler = new SendUplinkCommandHandler(
+            aircraftRepository,
+            clientManager,
+            messageIdProvider,
+            dialogueRepository,
+            mediator,
+            clock,
+            Logger.None);
+
+        var command = new SendUplinkCommand(
+            "BN-TSN_FSS",
+            "UAL123",
+            null,
+            CpdlcUplinkResponseType.NoResponse,
+            "END SERVICE");
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.UplinkMessage.MessageId);
+
+        await mediator.Received(1)
+            .Send(
+                Arg.Is(new TerminateConnectionRequest("UAL123", "hoppies-ybbb")),
+                Arg.Any<CancellationToken>());
     }
 }

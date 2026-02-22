@@ -55,6 +55,7 @@ public class AircraftConnection(
     {
         NextDataAuthority = nextDataAuthority;
         ExpectedTransferTime = expectedTransferTime;
+        DidSentNextDataAuthorityMessage = false;
     }
 
     public void SentNextDataAuthorityMessage()

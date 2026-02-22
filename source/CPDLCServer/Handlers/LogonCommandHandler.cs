@@ -43,7 +43,7 @@ public class LogonCommandHandler(IClientManager clientManager, IAircraftReposito
             cancellationToken);
 
         await mediator.Publish(
-            new AircraftConnected(
+            new AircraftConnectionEstablished(
                 request.AcarsClientId,
                 aircraft.StationId,
                 request.Callsign,
