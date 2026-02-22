@@ -443,8 +443,8 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         var lastTextMessage = radioMessages?
             .LastOrDefault(r => r.Address == flightDataRecord.Callsign && !r.Acknowledged);
 
-        string? text = null;
-        CustomColour? backgroundColour = lastTextMessage is not null
+        var text = " ";
+        var backgroundColour = lastTextMessage is not null
             ? _colourCache.DownlinkBackgroundColour
             : null;
 
@@ -462,10 +462,6 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             text = "V";
         }
 
-        // Don't take up the space if it's not necessary
-        if (text is null)
-            return null;
-
         // vatSys bug: custom background colours can't be drawn selectively.
         // To work around this, we define two label items. One with the background, and one without.
         if (backgroundColour is not null && itemType != "CPDLCPLUGIN_TEXTSTATUS_BG")
@@ -478,7 +474,9 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         {
             Type = itemType,
             Text = text,
-            Border = BorderFlags.All
+            Border = string.IsNullOrWhiteSpace(text)
+                ? BorderFlags.None
+                : BorderFlags.All,
         };
 
         if (backgroundColour is not null)
