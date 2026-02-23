@@ -1,15 +1,10 @@
-﻿using CPDLCServer.Contracts;
+using CPDLCPlugin.LabelItems;
+using CPDLCServer.Contracts;
 using MediatR;
 using vatsys;
 using vatsys.Plugin;
 
 namespace CPDLCPlugin.Messages;
-
-public record CustomStripOrLabelItem(
-    string Text,
-    CustomColour? BackgroundColour,
-    CustomColour? ForegroundColour,
-    Action LeftClickCallback);
 
 public record RebuildLabelItemCacheRequest : IRequest;
 

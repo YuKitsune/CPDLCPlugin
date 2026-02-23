@@ -7,6 +7,7 @@ using System.Windows.Media;
 using CommunityToolkit.Mvvm.Messaging;
 using CPDLCPlugin.Configuration;
 using CPDLCPlugin.Extensions;
+using CPDLCPlugin.LabelItems;
 using CPDLCPlugin.Messages;
 using CPDLCPlugin.Server;
 using CPDLCPlugin.Windows;
@@ -92,6 +93,9 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             .AddSingleton<AtisCache>()
             .AddSingleton(_labelItemCache)
             .AddSingleton(_colourCache)
+            .AddSingleton<ILabelItemProvider, CpdlcStatusLabelItemProvider>()
+            .AddSingleton<ILabelItemProvider, TextStatusLabelItemProvider>()
+            .AddSingleton<LabelItemProviderRegistry>()
             .AddMediatR(c => c.RegisterServicesFromAssemblies(typeof(Plugin).Assembly))
             .BuildServiceProvider();
     }
@@ -412,15 +416,33 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
     {
         try
         {
-            if (itemType.StartsWith("CPDLCPLUGIN_TEXTSTATUS"))
-            {
-                return GetTextStatusLabelItem(itemType, flightDataRecord);
-            }
+            var registry = ServiceProvider.GetRequiredService<LabelItemProviderRegistry>();
+            var provider = registry.GetProvider(itemType);
+            if (provider is null)
+                return null;
 
-            if (itemType.StartsWith("CPDLCPLUGIN_CPDLCSTATUS"))
+            var item = provider.GetLabelItem(flightDataRecord);
+            var labelItem = LabelItemConverter.ToVatSysLabelItem(item, itemType, provider.ItemTypePrefix);
+            if (labelItem is null)
+                return null;
+
+            labelItem.OnMouseClick = args =>
             {
-                return GetCpdlcStatusLabelItem(itemType, flightDataRecord);
-            }
+                try
+                {
+                    if (args.Button != CustomLabelItemMouseButton.Left)
+                        return;
+
+                    item?.LeftClickCallback();
+                    args.Handled = true;
+                }
+                catch (Exception ex)
+                {
+                    AddError(ex, "Failed to handle label item click");
+                }
+            };
+
+            return labelItem;
         }
         catch (Exception ex)
         {
@@ -428,176 +450,6 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
         }
 
         return null;
-    }
-
-    CustomLabelItem? GetTextStatusLabelItem(string itemType, FDP2.FDR? flightDataRecord)
-    {
-        // vatSys bug: Custom background colours can't be drawn selectively.
-        // vatSys won't draw the custom background if the original colour (specified in the Labels.xml file) is transparent (or empty).
-        // To work around this, we define two label items. One with the background, and one without.
-        // If we need to draw a custom background colour, we return `null` for the one without the background.
-
-        if (flightDataRecord is null)
-            return null;
-
-        var radioMessages = Network.GetRadioMessages;
-        var lastTextMessage = radioMessages?
-            .LastOrDefault(r => r.Address == flightDataRecord.Callsign && !r.Acknowledged);
-
-        var text = " ";
-        var backgroundColour = lastTextMessage is not null
-            ? _colourCache.DownlinkBackgroundColour
-            : null;
-
-        if (flightDataRecord.TextOnly)
-        {
-            text = "T";
-        }
-        else if (flightDataRecord.ReceiveOnly)
-        {
-            text = "R";
-        }
-        else if (lastTextMessage is not null)
-        {
-            // Only show "V" when there is an unacknowledged message
-            text = "V";
-        }
-
-        // vatSys bug: custom background colours can't be drawn selectively.
-        // To work around this, we define two label items. One with the background, and one without.
-        if (backgroundColour is not null && itemType != "CPDLCPLUGIN_TEXTSTATUS_BG")
-            return null;
-
-        if (backgroundColour is null && itemType != "CPDLCPLUGIN_TEXTSTATUS")
-            return null;
-
-        var textLabelItem = new CustomLabelItem
-        {
-            Type = itemType,
-            Text = text,
-            Border = string.IsNullOrWhiteSpace(text)
-                ? BorderFlags.None
-                : BorderFlags.All,
-        };
-
-        if (backgroundColour is not null)
-        {
-            textLabelItem.BackColourIdentity = Colours.Identities.Custom;
-            textLabelItem.CustomBackColour = backgroundColour;
-        }
-
-        // Left-click to open the CPDLC Menu
-        textLabelItem.OnMouseClick = args =>
-        {
-            try
-            {
-                if (args.Button != CustomLabelItemMouseButton.Left)
-                    return;
-
-                if (lastTextMessage is not null)
-                {
-                    MMI.OpenCPDLCMenu(lastTextMessage);
-                }
-                else
-                {
-                    MMI.OpenCPDLCWindow(flightDataRecord);
-                }
-
-                args.Handled = true;
-            }
-            catch (Exception ex)
-            {
-                AddError(ex, "Failed to handle label item click");
-            }
-        };
-
-        return textLabelItem;
-    }
-
-    CustomLabelItem? GetCpdlcStatusLabelItem(string itemType, FDP2.FDR? flightDataRecord)
-    {
-        // vatSys bug: Custom background colours can't be drawn selectively.
-        // vatSys won't draw the custom background if the original colour (specified in the Labels.xml file) is transparent (or empty).
-        // To work around this, we define two label items. One with the background, and one without.
-        // If we need to draw a custom background colour, we return `null` for the one without the background.
-
-        // Blank by default
-        var labelItem = new CustomLabelItem
-        {
-            Type = itemType,
-            Text = " "
-        };
-
-        if (flightDataRecord is null)
-        {
-            if (itemType == "CPDLCPLUGIN_CPDLCSTATUS_BG")
-                return null;
-
-            return labelItem;
-        }
-
-        var customItem = GetCustomStripOrLabelItem(flightDataRecord);
-        if (customItem is null)
-        {
-            if (itemType == "CPDLCPLUGIN_CPDLCSTATUS_BG")
-                return null;
-
-            return labelItem;
-        }
-
-        labelItem.Text = customItem.Text;
-        if (customItem.BackgroundColour is not null && itemType != "CPDLCPLUGIN_CPDLCSTATUS_BG")
-            return null;
-
-        if (customItem.BackgroundColour is null && itemType != "CPDLCPLUGIN_CPDLCSTATUS")
-            return null;
-
-        if (customItem.BackgroundColour is not null)
-        {
-            labelItem.BackColourIdentity = Colours.Identities.Custom;
-            labelItem.CustomBackColour = customItem.BackgroundColour;
-        }
-
-        if (customItem.ForegroundColour is not null)
-        {
-            labelItem.ForeColourIdentity = Colours.Identities.Custom;
-            labelItem.CustomForeColour = customItem.ForegroundColour;
-        }
-
-        labelItem.OnMouseClick = args =>
-        {
-            try
-            {
-                if (args.Button != CustomLabelItemMouseButton.Left)
-                    return;
-
-                customItem.LeftClickCallback();
-                args.Handled = true;
-            }
-            catch (Exception ex)
-            {
-                AddError(ex, "Failed to handle CPDLC status label click");
-            }
-        };
-
-        return labelItem;
-    }
-
-    CustomStripOrLabelItem? GetCustomStripOrLabelItem(FDP2.FDR? flightDataRecord)
-    {
-        var callsign = flightDataRecord?.Callsign;
-        if (string.IsNullOrEmpty(callsign))
-            return null;
-
-        try
-        {
-            return _labelItemCache.Find(callsign);
-        }
-        catch (Exception ex)
-        {
-            AddError(ex);
-            return null;
-        }
     }
 
     public CustomColour? SelectASDTrackColour(Track track) => null;
