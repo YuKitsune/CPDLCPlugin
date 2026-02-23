@@ -84,6 +84,7 @@ public class Plugin : ILabelPlugin, IRecipient<DialogueChangedNotification>, IRe
             .AddSingleton<IErrorReporter, ErrorReporter>()
             .AddSingleton<IJurisdictionChecker, JurisdictionChecker>()
             .AddSingleton<AircraftConnectionStore>()
+            .AddSingleton<AcarsConnectedCallsignStore>()
             .AddSingleton<ControllerConnectionStore>()
             .AddSingleton<WindowManager>()
             .AddSingleton<DialogueStore>()

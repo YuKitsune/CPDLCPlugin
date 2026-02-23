@@ -18,6 +18,7 @@ public class RebuildLabelItemCacheRequestHandler(
     ColourCache colourCache,
     DialogueStore dialogueStore,
     AircraftConnectionStore aircraftConnectionStore,
+    AcarsConnectedCallsignStore acarsConnectedCallsignStore,
     SuspendedMessageStore suspendedMessageStore,
     IJurisdictionChecker jurisdictionChecker,
     IMediator mediator,
@@ -67,18 +68,7 @@ public class RebuildLabelItemCacheRequestHandler(
                         .OfType<DownlinkMessageDto>()
                         .Any(m => !m.IsClosed);
 
-                    // TODO: Check if they're connected to the ACARS network. Equipment flags are unreliable.
-                    var aircraftEquip = flightDataRecord.AircraftEquip ?? string.Empty;
-                    var isEquipped = new[]
-                    {
-                        "J1",
-                        "J2",
-                        "J3",
-                        "J4",
-                        "J5",
-                        "J6",
-                        "J7",
-                    }.Any(s => aircraftEquip.Contains(s));
+                    var isOnAcarsNetwork = await acarsConnectedCallsignStore.IsConnected(callsign, cancellationToken);
 
                     var unacknowledgedUnableReceived = openDialogues
                         .SelectMany(d => d.Messages ?? [])
@@ -92,7 +82,7 @@ public class RebuildLabelItemCacheRequestHandler(
                     CustomColour? foregroundColour = null;
                     Action leftClickAction = () => { };
 
-                    if (isEquipped && connection is null)
+                    if (isOnAcarsNetwork && connection is null)
                     {
                         text = ".";
                         // TODO: Left click will initiate a manual connection

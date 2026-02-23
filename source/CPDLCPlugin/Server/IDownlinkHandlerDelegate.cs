@@ -9,5 +9,6 @@ public interface IDownlinkHandlerDelegate
     Task AircraftConnectionRemoved(string callsign, string stationId, CancellationToken cancellationToken);
     Task ControllerConnectionUpdated(ControllerConnectionDto controllerConnectionDto, CancellationToken cancellationToken);
     Task ControllerConnectionRemoved(string callsign, CancellationToken cancellationToken);
+    Task AcarsConnectedCallsignsUpdated(string[] callsigns, CancellationToken cancellationToken);
     void Error(Exception exception);
 }
