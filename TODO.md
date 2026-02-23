@@ -1,6 +1,5 @@
 TODO:
 
-- [ ] Use "." for "CPDLC available", ignore equipment code.
 - [ ] Clean up label item creation.
 - [ ] Add strip item cration.
 - [ ] Write documentation.
