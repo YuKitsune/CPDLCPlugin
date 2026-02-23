@@ -6,7 +6,13 @@ namespace CPDLCPlugin.Messages;
 
 public record ConnectedNotification : INotification;
 
-public class ConnectedNotificationHandler(Plugin plugin, DialogueStore dialogueStore, AircraftConnectionStore aircraftConnectionStore, ControllerConnectionStore controllerConnectionStore, ILogger logger)
+public class ConnectedNotificationHandler(
+    Plugin plugin,
+    DialogueStore dialogueStore,
+    AircraftConnectionStore aircraftConnectionStore,
+    ControllerConnectionStore controllerConnectionStore,
+    AcarsConnectedCallsignStore acarsConnectedCallsignStore,
+    ILogger logger)
     : INotificationHandler<ConnectedNotification>
 {
     public async Task Handle(ConnectedNotification notification, CancellationToken cancellationToken)
@@ -35,6 +41,12 @@ public class ConnectedNotificationHandler(Plugin plugin, DialogueStore dialogueS
         var connectedControllers = await plugin.ConnectionManager.GetConnectedControllers(cancellationToken);
         await controllerConnectionStore.Populate(connectedControllers, cancellationToken);
         logger.Verbose("Loaded {ControllerCount} controller connection(s)", connectedControllers.Length);
+
+        // Load ACARS connected callsigns
+        logger.Verbose("Loading ACARS connected callsigns");
+        var acarsConnectedCallsigns = await plugin.ConnectionManager.GetAcarsConnectedCallsigns(cancellationToken);
+        await acarsConnectedCallsignStore.Populate(acarsConnectedCallsigns, cancellationToken);
+        logger.Verbose("Loaded {Count} ACARS connected callsign(s)", acarsConnectedCallsigns.Length);
 
         // Relay notification to UI
         WeakReferenceMessenger.Default.Send(notification);

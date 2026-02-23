@@ -31,6 +31,7 @@ builder.Services.AddSingleton<IClientManager>(sp => sp.GetRequiredService<Client
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ClientManager>());
 builder.Services.AddSingleton<IMessageIdProvider, MessageIdProvider>();
 builder.Services.AddSingleton<IAircraftRepository, InMemoryAircraftRepository>();
+builder.Services.AddSingleton<IAcarsConnectedCallsignsRepository, InMemoryAcarsConnectedCallsignsRepository>();
 builder.Services.AddSingleton<IDialogueRepository, InMemoryDialogueRepository>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddSignalR()

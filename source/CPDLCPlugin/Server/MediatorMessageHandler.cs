@@ -86,6 +86,22 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
     }
 
+    public async Task AcarsConnectedCallsignsUpdated(string[] callsigns, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await mediator.Publish(new AcarsConnectedCallsignsUpdatedNotification(callsigns), cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation is requested
+        }
+        catch (Exception ex)
+        {
+            Plugin.AddError(ex, "Failed to handle AcarsConnectedCallsignsUpdated notification");
+        }
+    }
+
     public void Error(Exception error)
     {
         Plugin.AddError(error, "Error from SignalR Handler Delegate");
