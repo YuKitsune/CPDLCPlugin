@@ -10,7 +10,7 @@ services:
       - "5272:8080"
 
   ngrok:
-    profile: ngrok
+    profiles: [ngrok]
     image: ngrok/ngrok:latest
     command:
       - "http"

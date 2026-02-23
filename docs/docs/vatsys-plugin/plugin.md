@@ -1,5 +1,8 @@
+---
+sidebar_position: 2
+---
 
-# Plugin
+# Plugin Guide
 
 This guide covers the CPDLC Plugin for vatSys.
 It explains how to connect to the server, interpret track labels, and manage CPDLC messages with pilots.

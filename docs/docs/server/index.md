@@ -1,3 +1,8 @@
+---
+sidebar_position: 1
+slug: /server
+---
+
 # CPDLC Server
 
 ![Server Diagram](../../static/diagram.png)
@@ -80,24 +85,3 @@ dotnet run --project source/CPDLCServer/CPDLCServer.csproj
 ```
 
 The server will start on `http://localhost:5261`.
-
-## Plugin Configuration
-
-Once the server is running, you need to configure the CPDLC Plugin to connect to it.
-
-1. Locate the `CPDLC.json` file in your vatSys profile directory:
-   - `Documents\vatSys Files\Profiles\<Profile Name>\Plugins\CPDLCPlugin\CPDLC.json`
-
-2. Update the configuration:
-
-```json
-{
-  "ServerEndpoint": "http://localhost:5261/hubs/controller",
-  "Stations": ["YBBB", "YMMM"]
-}
-```
-
-### Configuration Options
-
-- **ServerEndpoint**: The SignalR hub URL for the CPDLC server. This is typically the server adress and the `/hubs/controller` path.
-- **Stations**: Array of station identifiers (ATSUs) that this plugin instance will handle. These should match the `StationIdentifier` values configured in your server's ACARS connections.

@@ -1,3 +1,9 @@
+---
+sidebar_position: 1
+slug: /concepts
+displayed_sidebar: null
+---
+
 # CPDLC Overview
 
 Controller-Pilot Data Link Communications (CPDLC) is a method of communication between air traffic controllers and pilots using data link rather than voice. This document provides an overview of CPDLC concepts relevant to controllers using the CPDLC Plugin on the VATSIM network.

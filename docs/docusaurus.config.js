@@ -12,7 +12,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 const config = {
   title: 'CPDLC Plugin',
   tagline: 'A vatSys plugin adding support for CPDLC',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon-64.png',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -65,24 +65,28 @@ const config = {
     ({
       navbar: {
         title: 'CPDLC Plugin',
+        logo: {
+          alt: 'CPDLC Plugin',
+          src: 'img/twemoji-satellite.svg',
+        },
         items: [
           {
             type: 'docSidebar',
-            sidebarId: 'userGuideSidebar',
+            sidebarId: 'conceptsSidebar',
             position: 'left',
-            label: 'User Guide',
+            label: 'CPDLC Concepts',
           },
           {
             type: 'docSidebar',
-            sidebarId: 'configurationGuideSidebar',
+            sidebarId: 'vatsysPluginSidebar',
             position: 'left',
-            label: 'Configuration Guide',
+            label: 'vatSys Plugin',
           },
           {
             type: 'docSidebar',
-            sidebarId: 'developerGuideSidebar',
+            sidebarId: 'serverSidebar',
             position: 'left',
-            label: 'Developer Guide',
+            label: 'Server',
           },
           {
             href: '/dashboard',
