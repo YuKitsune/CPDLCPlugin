@@ -225,6 +225,75 @@ public class DownlinkReceivedNotificationHandlerTests
     }
 
     [Fact]
+    public async Task Handle_DoesNotPromoteToCurrentDataAuthority_WhenNotCurrentDataAuthorityMessageReceived()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var aircraftManager = new TestAircraftRepository();
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.NextDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
+
+        var controllerManager = new TestControllerRepository();
+        var controller = new ControllerInfo(
+            Guid.NewGuid(),
+            "ConnectionId-1",
+            "YBBB",
+            "BN-TSN_FSS",
+            "1234567");
+        await controllerManager.Add(controller, CancellationToken.None);
+
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientProxy = Substitute.For<IClientProxy>();
+        hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
+
+        var dialogueRepository = new TestDialogueRepository();
+
+        var publisher = new TestPublisher();
+        var handler = new DownlinkReceivedNotificationHandler(
+            aircraftManager,
+            mediator,
+            clock,
+            controllerManager,
+            dialogueRepository,
+            hubContext,
+            publisher,
+            Logger.None);
+
+        var downlinkMessage = new DownlinkMessage(
+            1,
+            null,
+            "UAL123",
+            CpdlcDownlinkResponseType.NoResponse,
+            AlertType.None,
+            "NOT CURRENT DATA AUTHORITY",
+            clock.UtcNow());
+
+        var notification = new DownlinkReceivedNotification(
+            "hoppies-ybbb",
+            "YBBB",
+            downlinkMessage);
+
+        // Assert - aircraft starts as NextDataAuthority
+        Assert.Equal(DataAuthorityState.NextDataAuthority, aircraft.DataAuthorityState);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - aircraft remains as NextDataAuthority
+        Assert.Equal(DataAuthorityState.NextDataAuthority, aircraft.DataAuthorityState);
+
+        // Assert - AircraftConnectionUpdated event was NOT sent
+        var receivedCalls = clientProxy.ReceivedCalls()
+            .Where(call => call.GetMethodInfo().Name == "SendCoreAsync")
+            .ToList();
+
+        Assert.Empty(receivedCalls);
+    }
+
+    [Fact]
     public async Task Handle_UpdatesLastSeen()
     {
         // Arrange

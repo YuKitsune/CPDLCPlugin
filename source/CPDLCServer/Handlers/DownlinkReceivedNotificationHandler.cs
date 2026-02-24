@@ -74,8 +74,10 @@ public class DownlinkReceivedNotificationHandler(
             // Allow these to flow through to the controller
         }
 
-        // Promote aircraft to CurrentDataAuthority on first downlink
-        if (aircraftConnection.DataAuthorityState == DataAuthorityState.NextDataAuthority)
+        // Promote aircraft to CurrentDataAuthority on first downlink, unless
+        // the aircraft explicitly indicates we are not the current data authority
+        if (aircraftConnection.DataAuthorityState == DataAuthorityState.NextDataAuthority &&
+            !ControlMessages.IsNotCurrentDataAuthority(notification.Downlink))
         {
             aircraftConnection.PromoteToCurrentDataAuthority();
             logger.Information("{Callsign} promoted to CurrentDataAuthority", notification.Downlink.Sender);
