@@ -155,7 +155,12 @@ sequenceDiagram
     YBBB->>Pilot: NEXT DATA AUTHORITY YMMM
     Pilot->>YMMM: REQUEST LOGON
     YMMM->>Pilot: LOGON ACCEPTED
-    Pilot->>YBBB: LOGOFF
+    YBBB-->>Pilot: (messages can still be exchanged)
+    Pilot-->>YBBB:
+    YBBB->>Pilot: END SERVICE
+    Pilot->>YMMM: CURRENT DATA AUTHORITY
+    YMMM-->>Pilot: (service continues with YMMM)
+    Pilot-->>YMMM:
 ```
 
 ## CPDLC on VATSIM
