@@ -512,7 +512,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         UplinkMessageElements = suspendedUplinkMessageElements;
         SelectedUplinkMessageElement = null;
 
-        await _mediator.Send(new RebuildLabelItemCacheRequest());
+        await _mediator.Send(new RebuildCpdlcStatusLabelItemsRequest());
     }
 
     bool CanRestore()
@@ -531,7 +531,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
 
         SelectedMessageCategory = null;
 
-        await _mediator.Send(new RebuildLabelItemCacheRequest());
+        await _mediator.Send(new RebuildCpdlcStatusLabelItemsRequest());
     }
 
     bool CanSuspend()
