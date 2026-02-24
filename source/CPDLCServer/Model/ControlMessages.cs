@@ -16,4 +16,9 @@ public static class ControlMessages
     {
         return downlinkMessage.Content == "END SERVICE";
     }
+
+    public static bool IsNotCurrentDataAuthority(DownlinkMessage downlinkMessage)
+    {
+        return downlinkMessage.Content == "NOT CURRENT DATA AUTHORITY";
+    }
 }
