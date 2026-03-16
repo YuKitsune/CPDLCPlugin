@@ -428,15 +428,19 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         return null;
     }
 
-    public CustomStripItem? GetCustomStripItem(string itemType, FDP2.FDR fdr)
+    public CustomStripItem? GetCustomStripItem(
+        string itemType,
+        Track track,
+        FDP2.FDR flightDataRecord,
+        RDP.RadarTrack radarTrack)
     {
         try
         {
             if (itemType.StartsWith("CPDLCPLUGIN_TEXTSTATUS"))
-                return _textStatusProvider.GetStripItem(itemType, fdr);
+                return _textStatusProvider.GetStripItem(itemType, flightDataRecord);
 
             if (itemType.StartsWith("CPDLCPLUGIN_CPDLCSTATUS"))
-                return _cpdlcStatusProvider.GetStripItem(itemType, fdr);
+                return _cpdlcStatusProvider.GetStripItem(itemType, flightDataRecord);
         }
         catch (Exception ex)
         {
