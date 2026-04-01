@@ -23,7 +23,7 @@ namespace _build;
     GitHubActionsImage.WindowsLatest,
     OnPushBranches = ["main"],
     OnPullRequestBranches = ["main"],
-    InvokedTargets = [nameof(Compile), nameof(Test)],
+    InvokedTargets = [nameof(CompilePlugin), nameof(Test)],
     FetchDepth = 0)]
 [GitHubActions(
     "release",
@@ -42,14 +42,20 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
-    public static int Main () => Execute<Build>(x => x.Compile);
+    public static int Main () => Execute<Build>();
 
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
 
+    [Parameter]
+    string ProfileName { get; }
+
     [Parameter("GitHub token for creating releases")]
     [Secret]
     readonly string GitHubToken;
+
+    [Parameter("Output directory for server build")]
+    readonly string ServerOutputDirectory;
 
     [GitRepository]
     readonly GitRepository GitRepository;
@@ -63,23 +69,28 @@ class Build : NukeBuild
 
     string PluginName => Configuration == Configuration.Debug ? DebugPluginName : ReleasePluginName;
 
-    AbsolutePath PluginProjectPath => RootDirectory / "source" / "CPDLCPlugin" / "CPDLCPlugin.csproj";
+    // Test projects
     AbsolutePath PluginTestsProjectPath => RootDirectory / "source" / "CPDLCPlugin.Tests" / "CPDLCPlugin.Tests.csproj";
-
-    AbsolutePath ServerProjectPath => RootDirectory / "source" / "CPDLCServer" / "CPDLCServer.csproj";
-    AbsolutePath ServerPublishDirectory => RootDirectory / "source" / "CPDLCServer" / "bin" / Configuration / "net10.0" / "publish";
+    // AbsolutePath ContractTestsProjectPath => RootDirectory / "source" / "CPDLCServer.Tests" / "CPDLCServer.Tests.csproj";
     AbsolutePath ServerTestsProjectPath => RootDirectory / "source" / "CPDLCServer.Tests" / "CPDLCServer.Tests.csproj";
-    
-    AbsolutePath BuildOutputDirectory => TemporaryDirectory / "build";
-    AbsolutePath ZipPath => TemporaryDirectory / $"CPDLCPlugin.{GetSemanticVersion()}.zip";
-    AbsolutePath PackageDirectory => TemporaryDirectory / "package";
 
-    [Parameter]
-    string ProfileName { get; }
+    // Plugin paths
+    AbsolutePath PluginProjectPath => RootDirectory / "source" / "CPDLCPlugin" / "CPDLCPlugin.csproj";
+    AbsolutePath PluginBuildOutputDirectory => TemporaryDirectory / "build-plugin";
+    AbsolutePath PluginZipPath => TemporaryDirectory / $"CPDLCPlugin.{GetSemanticVersion()}.zip";
+    AbsolutePath PluginPackageDirectory => TemporaryDirectory / "package-plugin";
 
-    [Parameter("Path to vatSys installation")]
+    // Server paths
+    AbsolutePath ServerProjectPath => RootDirectory / "source" / "CPDLCServer" / "CPDLCServer.csproj";
+    AbsolutePath ServerBuildOutputDirectory => !string.IsNullOrEmpty(ServerOutputDirectory)
+        ? (AbsolutePath)ServerOutputDirectory
+        : TemporaryDirectory / "build-server";
+    AbsolutePath ServerZipPath => TemporaryDirectory / $"CPDLCServer.{GetSemanticVersion()}.zip";
+    AbsolutePath ServerPackageDirectory => TemporaryDirectory / "package-server";
+
+    // vatSys paths
+    [Parameter("Path to the vatSys installation")]
     AbsolutePath VatSysPath { get; }
-
     AbsolutePath VatSysSetupDirectory => TemporaryDirectory / "vatsys-setup";
     AbsolutePath VatSysExePath => VatSysPath ?? VatSysSetupDirectory / "bin" / "vatSys.exe";
 
@@ -131,7 +142,8 @@ class Build : NukeBuild
             Log.Information("vatSys.exe extracted to {Path}", VatSysExePath);
         });
 
-    Target Compile => _ => _
+    Target CompilePlugin => _ => _
+        .Description("Compiles the plugin")
         .DependsOn(DownloadVatSys)
         .Executes(() =>
         {
@@ -140,12 +152,12 @@ class Build : NukeBuild
                 "Building version {Version} with configuration {Configuration} to {OutputDirectory}",
                 version,
                 Configuration,
-                BuildOutputDirectory);
+                PluginBuildOutputDirectory);
 
             DotNetTasks.DotNetBuild(s => s
                 .SetProjectFile(PluginProjectPath)
                 .SetConfiguration(Configuration)
-                .SetOutputDirectory(BuildOutputDirectory)
+                .SetOutputDirectory(PluginBuildOutputDirectory)
                 .SetVersion(version)
                 .SetAssemblyVersion(GitVersion.MajorMinorPatch)
                 .SetFileVersion(GitVersion.MajorMinorPatch)
@@ -153,19 +165,16 @@ class Build : NukeBuild
                 .SetProperty("VatSysPath", VatSysExePath.Parent.Parent));
         });
 
-    Target Repack => _ => _
-        .DependsOn(Compile)
+    Target RepackPlugin => _ => _
+        .Description("Combines all plugin dependencies into a single assembly using ILRepack. This helps avoid dependency conflicts with other vatSys plugins, and vatSys itself.")
+        .DependsOn(CompilePlugin)
         .Executes(() =>
         {
-            var mainAssembly = BuildOutputDirectory / PluginAssemblyFileName;
-            var assembliesToMerge = new[]
-            {
-                BuildOutputDirectory / "Serilog.dll",
-                BuildOutputDirectory / "Serilog.Sinks.File.dll",
-                BuildOutputDirectory / "MediatR.dll",
-                BuildOutputDirectory / "MediatR.Contracts.dll",
-                BuildOutputDirectory / "CommunityToolkit.Mvvm.dll"
-            };
+            var mainAssembly = PluginBuildOutputDirectory / PluginAssemblyFileName;
+            var assembliesToMerge = PluginBuildOutputDirectory
+                .GlobFiles("*.dll")
+                .Except([mainAssembly])
+                .ToArray();
 
             if (!mainAssembly.FileExists())
                 throw new Exception($"Main assembly not found: {mainAssembly}");
@@ -182,10 +191,10 @@ class Build : NukeBuild
 
             var settings = new ILRepackSettings()
                 .SetAssemblies([mainAssembly.ToString(), ..existingAssemblies.Select(a => a.ToString())])
-                .SetInternalize(true)
+                .SetInternalize(false)
                 .SetParallel(true)
                 .SetOutput(mainAssembly.ToString())
-                .SetLib(BuildOutputDirectory.ToString());  // Tell ILRepack where to find referenced assemblies
+                .SetLib(PluginBuildOutputDirectory.ToString());  // Tell ILRepack where to find referenced assemblies
 
             Log.Information("Repacking {Count} assemblies into {MainAssembly}", existingAssemblies.Length, mainAssembly);
             foreach (var assembly in existingAssemblies)
@@ -202,6 +211,15 @@ class Build : NukeBuild
 
             Log.Information("Repack complete");
         });
+
+    // Target TestContracts => _ => _
+    //     .Executes(() =>
+    //     {
+    //         Log.Information("Running Contract tests");
+    //         DotNetTasks.DotNetTest(s => s
+    //             .SetProjectFile(ContractTestsProjectPath)
+    //             .SetConfiguration(Configuration));
+    //     });
 
     Target TestPlugin => _ => _
         .Executes(() =>
@@ -223,29 +241,9 @@ class Build : NukeBuild
 
     Target Test => _ => _.DependsOn(TestPlugin, TestServer);
 
-    Target PublishServer => _ => _
-        .Executes(() =>
-        {
-            var version = GetSemanticVersion();
-            Log.Information(
-                "Publishing CPDLCServer version {Version} with configuration {Configuration}",
-                version,
-                Configuration);
-
-            DotNetTasks.DotNetPublish(s => s
-                .SetProject(ServerProjectPath)
-                .SetConfiguration(Configuration)
-                .SetOutput(ServerPublishDirectory)
-                .SetVersion(version)
-                .SetAssemblyVersion(GitVersion.MajorMinorPatch)
-                .SetFileVersion(GitVersion.MajorMinorPatch)
-                .SetInformationalVersion(version));
-
-            Log.Information("Server published to {OutputDirectory}", ServerPublishDirectory);
-        });
-
     Target Uninstall => _ => _
         .Requires(() => ProfileName)
+        .Description("Uninstalls the plugin from the specified profile.")
         .Executes(() =>
         {
             var pluginsDirectory = GetVatSysPluginsDirectory(ProfileName);
@@ -260,11 +258,19 @@ class Build : NukeBuild
                 pluginDirectory.DeleteDirectory();
                 Log.Information("Plugin uninstalled from {Directory}", pluginDirectory);
             }
+
+            var configFilePath = pluginsDirectory / "Configs" / "CPDLCPlugin" / "CPDLC.json";
+            if (configFilePath.FileExists())
+            {
+                configFilePath.DeleteFile();
+                Log.Information("Config file {ConfigFile} deleted", configFilePath);
+            }
         });
 
     Target Install => _ => _
+        .Description("Installs the plugin to the specified profile.")
         .Requires(() => ProfileName)
-        .DependsOn(Repack)
+        .DependsOn(RepackPlugin)
         .DependsOn(Uninstall)
         .Executes(() =>
         {
@@ -277,20 +283,29 @@ class Build : NukeBuild
             // Copy plugin assemblies
             var pluginDirectory = pluginsDirectory / PluginName;
             pluginDirectory.CreateOrCleanDirectory();
-            foreach (var absolutePath in BuildOutputDirectory.GetFiles())
+            foreach (var absolutePath in PluginBuildOutputDirectory.GetFiles())
             {
                 absolutePath.CopyToDirectory(pluginDirectory, ExistsPolicy.MergeAndOverwrite);
             }
 
             // Copy config
             var configFile = RootDirectory / "CPDLC.json";
-            configFile.CopyToDirectory(pluginDirectory, ExistsPolicy.MergeAndOverwrite);
+            var configDestinationDirectory = pluginsDirectory / "Configs" / "CPDLC";
+            configDestinationDirectory.CreateOrCleanDirectory();
 
-            Log.Information("Plugin installed to {PluginDirectory}", pluginDirectory);
+            configFile.CopyToDirectory(configDestinationDirectory, ExistsPolicy.MergeAndOverwrite);
+
+            Log.Information("Plugin installed to {PluginsDirectory}", pluginDirectory);
         });
 
-    Target Package => _ => _
-        .DependsOn(Repack)
+    Target PackagePlugin => _ => _
+        .Description("Bundles the plugin along with supplementary files into a zip archive.")
+        .DependsOn(CompilePlugin)
+        .DependsOn(RepackPlugin)
+        .DependsOn(
+            // TestContracts,
+            // TestCore,
+            TestPlugin)
         .Requires(() => Configuration == Configuration.Release)
         .Executes(() =>
         {
@@ -298,29 +313,77 @@ class Build : NukeBuild
             var unblockDllsScript = RootDirectory / "unblock-dlls.bat";
             var configFile = RootDirectory / "CPDLC.json";
 
-            PackageDirectory.CreateOrCleanDirectory();
+            PluginPackageDirectory.CreateOrCleanDirectory();
 
             // Copy plugin assemblies
-            foreach (var absolutePath in BuildOutputDirectory.GetFiles())
+            foreach (var absolutePath in PluginBuildOutputDirectory.GetFiles().Where(f => f.Extension != ".pdb"))
             {
-                absolutePath.CopyToDirectory(PackageDirectory, ExistsPolicy.MergeAndOverwrite);
+                absolutePath.CopyToDirectory(PluginPackageDirectory, ExistsPolicy.MergeAndOverwrite);
             }
 
             // Temporary for testing - include the config with the package
-            configFile.CopyToDirectory(PackageDirectory, ExistsPolicy.FileOverwrite);
+            configFile.CopyToDirectory(PluginPackageDirectory, ExistsPolicy.FileOverwrite);
 
-            dpiAwareFixScript.CopyToDirectory(PackageDirectory, ExistsPolicy.FileOverwrite);
-            unblockDllsScript.CopyToDirectory(PackageDirectory, ExistsPolicy.FileOverwrite);
+            dpiAwareFixScript.CopyToDirectory(PluginPackageDirectory, ExistsPolicy.FileOverwrite);
+            unblockDllsScript.CopyToDirectory(PluginPackageDirectory, ExistsPolicy.FileOverwrite);
 
-            if (ZipPath.FileExists())
-                ZipPath.DeleteFile();
+            if (PluginZipPath.FileExists())
+                PluginZipPath.DeleteFile();
 
-            Log.Information("Packaging {OutputDirectory} to {ZipPath}", PackageDirectory, ZipPath);
-            PackageDirectory.ZipTo(ZipPath);
+            Log.Information("Packaging {OutputDirectory} to {ZipPath}", PluginPackageDirectory, PluginZipPath);
+            PluginPackageDirectory.ZipTo(PluginZipPath);
+        });
+
+    Target CompileServer => _ => _
+        .Description("Compiles the server")
+        .DependsOn(
+            TestServer
+            // TestContracts
+        )
+        .Executes(() =>
+        {
+            var version = GetSemanticVersion();
+            Log.Information(
+                "Publishing CPDLCServer version {Version} with configuration {Configuration}",
+                version,
+                Configuration);
+
+            DotNetTasks.DotNetPublish(s => s
+                .SetProject(ServerProjectPath)
+                .SetConfiguration(Configuration)
+                .SetOutput(ServerBuildOutputDirectory)
+                .SetVersion(version)
+                .SetAssemblyVersion(GitVersion.MajorMinorPatch)
+                .SetFileVersion(GitVersion.MajorMinorPatch)
+                .SetInformationalVersion(version));
+
+            Log.Information("Server published to {OutputDirectory}", ServerBuildOutputDirectory);
+        });
+
+    Target PackageServer => _ => _
+        .Description("Bundles the server into a zip archive.")
+        .DependsOn(CompileServer)
+        .Requires(() => Configuration == Configuration.Release)
+        .Executes(() =>
+        {
+            ServerPackageDirectory.CreateOrCleanDirectory();
+
+            // Copy all published server files
+            foreach (var absolutePath in ServerBuildOutputDirectory.GetFiles().Where(f => f.Extension != ".pdb"))
+            {
+                absolutePath.CopyToDirectory(ServerPackageDirectory, ExistsPolicy.MergeAndOverwrite);
+            }
+
+            if (ServerZipPath.FileExists())
+                ServerZipPath.DeleteFile();
+
+            Log.Information("Packaging {OutputDirectory} to {ZipPath}", ServerPackageDirectory, ServerZipPath);
+            ServerPackageDirectory.ZipTo(ServerZipPath);
         });
 
     Target Release => _ => _
-        .DependsOn(Package)
+        .Description("Creates a GitHub release with the plugin and server binaries attached.")
+        .DependsOn(PackagePlugin, PackageServer)
         .Requires(() => GitHubToken)
         .Requires(() => GitRepository)
         .Requires(() => Configuration == Configuration.Release)
@@ -351,17 +414,44 @@ class Build : NukeBuild
             var release = await githubClient.Repository.Release.Create(repositoryOwner, repositoryName, newRelease);
             Log.Information("Release created: {ReleaseUrl}", release.HtmlUrl);
 
-            // Upload the zip file as an asset
-            using var zipStream = File.OpenRead(ZipPath);
-            var assetUpload = new ReleaseAssetUpload
+            // Upload the plugin zip as an asset
+            using var pluginZipStream = File.OpenRead(PluginZipPath);
+            var pluginAssetUpload = new ReleaseAssetUpload
             {
-                FileName = ZipPath.Name,
+                FileName = PluginZipPath.Name,
                 ContentType = "application/zip",
-                RawData = zipStream
+                RawData = pluginZipStream
             };
 
-            var asset = await githubClient.Repository.Release.UploadAsset(release, assetUpload);
-            Log.Information("Asset uploaded: {AssetUrl}", asset.BrowserDownloadUrl);
+            var pluginAsset = await githubClient.Repository.Release.UploadAsset(release, pluginAssetUpload);
+            Log.Information("Plugin asset uploaded: {AssetUrl}", pluginAsset.BrowserDownloadUrl);
+
+            // Upload the server zip as an asset
+            using var serverZipStream = File.OpenRead(ServerZipPath);
+            var serverAssetUpload = new ReleaseAssetUpload
+            {
+                FileName = ServerZipPath.Name,
+                ContentType = "application/zip",
+                RawData = serverZipStream
+            };
+
+            var serverAsset = await githubClient.Repository.Release.UploadAsset(release, serverAssetUpload);
+            Log.Information("Server asset uploaded: {AssetUrl}", serverAsset.BrowserDownloadUrl);
+        });
+
+    /// <summary>
+    /// Publishes Docker image to GitHub Container Registry.
+    /// TODO: Implement when ready to publish Docker images alongside releases.
+    /// </summary>
+    Target PublishDockerImage => _ => _
+        .Description("Builds and uploads the Docker image for the server.")
+        .Unlisted()
+        .DependsOn(CompileServer)
+        .Requires(() => Configuration == Configuration.Release)
+        .Executes(() =>
+        {
+            // Future: docker build, docker tag, docker push to ghcr.io
+            Log.Fatal("Docker image publishing not yet implemented");
         });
 
     static AbsolutePath GetVatSysPluginsDirectory(string profileName)

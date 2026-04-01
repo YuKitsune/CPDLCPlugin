@@ -24,13 +24,15 @@
     "ExecutableTarget": {
       "type": "string",
       "enum": [
-        "Compile",
+        "CompilePlugin",
+        "CompileServer",
         "DownloadVatSys",
         "Install",
-        "Package",
-        "PublishServer",
+        "PackagePlugin",
+        "PackageServer",
+        "PublishDockerImage",
         "Release",
-        "Repack",
+        "RepackPlugin",
         "Test",
         "TestPlugin",
         "TestServer",
@@ -124,9 +126,13 @@
         "ProfileName": {
           "type": "string"
         },
+        "ServerOutputDirectory": {
+          "type": "string",
+          "description": "Output directory for server build"
+        },
         "VatSysPath": {
           "type": "string",
-          "description": "Path to vatSys installation"
+          "description": "Path to the vatSys installation"
         }
       }
     },
