@@ -1,20 +1,15 @@
-﻿using CPDLCServer.Contracts;
+using CPDLCPlugin.LabelItems;
+using CPDLCServer.Contracts;
 using MediatR;
 using vatsys;
 using vatsys.Plugin;
 
 namespace CPDLCPlugin.Messages;
 
-public record CustomStripOrLabelItem(
-    string Text,
-    CustomColour? BackgroundColour,
-    CustomColour? ForegroundColour,
-    Action LeftClickCallback);
+public record RebuildCpdlcStatusLabelItemsRequest : IRequest;
 
-public record RebuildLabelItemCacheRequest : IRequest;
-
-public class RebuildLabelItemCacheRequestHandler(
-    LabelItemCache labelItemCache,
+public class RebuildCpdlcStatusLabelItemsRequestHandler(
+    CpdlcStatusLabelItemProvider cpdlcStatusProvider,
     ColourCache colourCache,
     DialogueStore dialogueStore,
     AircraftConnectionStore aircraftConnectionStore,
@@ -22,21 +17,20 @@ public class RebuildLabelItemCacheRequestHandler(
     SuspendedMessageStore suspendedMessageStore,
     IJurisdictionChecker jurisdictionChecker,
     IMediator mediator,
-    IGuiInvoker guiInvoker,
     IErrorReporter errorReporter,
-    Plugin plugin) : IRequestHandler<RebuildLabelItemCacheRequest>
+    Plugin plugin) : IRequestHandler<RebuildCpdlcStatusLabelItemsRequest>
 {
-    public async Task Handle(RebuildLabelItemCacheRequest request, CancellationToken cancellationToken)
+    public async Task Handle(RebuildCpdlcStatusLabelItemsRequest request, CancellationToken cancellationToken)
     {
         try
         {
-            var newLabelItems = new Dictionary<string, CustomStripOrLabelItem>();
+            var newLabelItems = new Dictionary<string, CustomLabelItem>();
 
             var connectedAircraft = await aircraftConnectionStore.All(cancellationToken);
 
             if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
             {
-                labelItemCache.Clear();
+                cpdlcStatusProvider.Clear();
                 return;
             }
 
@@ -80,7 +74,7 @@ public class RebuildLabelItemCacheRequestHandler(
                     var text = " ";
                     CustomColour? backgroundColour = null;
                     CustomColour? foregroundColour = null;
-                    Action leftClickAction = () => { };
+                    Action<CustomLabelItemMouseClickEventArgs>? onMouseClick = null;
 
                     if (isOnAcarsNetwork && connection is null)
                     {
@@ -90,11 +84,15 @@ public class RebuildLabelItemCacheRequestHandler(
                     else if (connection is not null && connection.DataAuthorityState == DataAuthorityState.NextDataAuthority)
                     {
                         text = "-";
-                        leftClickAction = () =>
+                        onMouseClick = args =>
                         {
                             try
                             {
+                                if (args.Button != CustomLabelItemMouseButton.Left)
+                                    return;
+
                                 mediator.Send(new OpenEditorWindowRequest(callsign));
+                                args.Handled = true;
                             }
                             catch (Exception ex)
                             {
@@ -105,11 +103,15 @@ public class RebuildLabelItemCacheRequestHandler(
                     else if (connection is not null && connection.DataAuthorityState == DataAuthorityState.CurrentDataAuthority)
                     {
                         text = "+";
-                        leftClickAction = () =>
+                        onMouseClick = args =>
                         {
                             try
                             {
+                                if (args.Button != CustomLabelItemMouseButton.Left)
+                                    return;
+
                                 mediator.Send(new OpenEditorWindowRequest(callsign));
+                                args.Handled = true;
                             }
                             catch (Exception ex)
                             {
@@ -136,11 +138,30 @@ public class RebuildLabelItemCacheRequestHandler(
                         }
                     }
 
-                    newLabelItems[callsign] = new CustomStripOrLabelItem(
-                        text,
-                        backgroundColour,
-                        foregroundColour,
-                        leftClickAction);
+                    var labelItem = new CustomLabelItem
+                    {
+                        Type = "CPDLCPLUGIN_CPDLCSTATUS",
+                        Text = text
+                    };
+
+                    if (backgroundColour is not null)
+                    {
+                        labelItem.BackColourIdentity = Colours.Identities.Custom;
+                        labelItem.CustomBackColour = backgroundColour;
+                    }
+
+                    if (foregroundColour is not null)
+                    {
+                        labelItem.ForeColourIdentity = Colours.Identities.Custom;
+                        labelItem.CustomForeColour = foregroundColour;
+                    }
+
+                    if (onMouseClick is not null)
+                    {
+                        labelItem.OnMouseClick = onMouseClick;
+                    }
+
+                    newLabelItems[callsign] = labelItem;
                 }
                 catch (Exception ex)
                 {
@@ -149,7 +170,7 @@ public class RebuildLabelItemCacheRequestHandler(
                 }
             }
 
-            labelItemCache.Replace(newLabelItems);
+            cpdlcStatusProvider.Replace(newLabelItems);
         }
         catch (Exception ex)
         {

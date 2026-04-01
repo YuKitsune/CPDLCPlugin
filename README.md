@@ -40,17 +40,42 @@ Before installing the CPDLC Plugin, ensure you have the following:
 > [!TIP]
 > If you do not see the `CPDLC` menu item after restarting vatSys, refer to the [Troubleshooting](#troubleshooting) section below.
 
-### CPDLC Label Items
+### Configuring Labels and Strips
 
-In order to use the CPDLC label items, you need to replace the default CPDLC label items in the `Labels.xml` file in the profile.
+The plugin provides custom label and strip items that must be added to your profile's `Labels.xml` and `Strips.xml` files. See [Labels.xml.diff](Labels.xml.diff) and [Strips.xml.diff](Strips.xml.diff) for complete examples.
 
-Replace each occurence of `<Item Type="LABEL_ITEM_CPDLC" Colour="" BackgroundColour="CPDLCDownlink" LeftClick="Label_CPDLC_Menu" MiddleClick="Label_CPDLC_Message_Toggle" RightClick="Label_CPDLC_Editor" />` with the following lines:
+#### Labels.xml
 
+Replace each occurrence of:
 ```xml
+<Item Type="LABEL_ITEM_CPDLC" Colour="" BackgroundColour="CPDLCDownlink" LeftClick="Label_CPDLC_Menu" MiddleClick="Label_CPDLC_Message_Toggle" RightClick="Label_CPDLC_Editor" />
+```
+
+With:
+```xml
+<!-- CPDLC Plugin: CPDLC Status -->
 <Item Type="CPDLCPLUGIN_CPDLCSTATUS" />
 <Item Type="CPDLCPLUGIN_CPDLCSTATUS_BG" BackgroundColour="Custom" />
+
+<!-- CPDLC Plugin: Text Status -->
 <Item Type="CPDLCPLUGIN_TEXTSTATUS" />
 <Item Type="CPDLCPLUGIN_TEXTSTATUS_BG" BackgroundColour="Custom" />
+```
+
+#### Strips.xml
+
+Replace:
+```xml
+<StripItem Type="CPDLCStatus" LeftClick="Label_CPDLC_Editor" MinLength="1" />
+```
+
+With:
+```xml
+<!-- CPDLC Plugin: CPDLC Status -->
+<StripItem Type="CPDLCPLUGIN_CPDLCSTATUS" MinLength="1" />
+
+<!-- CPDLC Plugin: Text Status -->
+<StripItem Type="CPDLCPLUGIN_TEXTSTATUS" />
 ```
 
 ## Troubleshooting
