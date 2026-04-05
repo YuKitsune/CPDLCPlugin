@@ -86,7 +86,11 @@ public class SendUplinkCommandHandler(
 
         if (ControlMessages.IsEndServiceUplink(uplinkMessage))
         {
-            await mediator.Send(new TerminateConnectionRequest(uplinkMessage.Recipient, aircraftConnection.AcarsClientId), cancellationToken);
+            await mediator.Send(
+                new TerminateConnectionRequest(
+                    uplinkMessage.Recipient,
+                    aircraftConnection.AcarsClientId),
+                cancellationToken);
         }
 
         await client.Send(uplinkMessage, cancellationToken);
