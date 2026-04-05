@@ -28,25 +28,25 @@ public class ConnectedNotificationHandler(
         logger.Verbose("Loading all dialogues");
         var dialogues = await plugin.ConnectionManager.GetAllDialogues(cancellationToken);
         await dialogueStore.Populate(dialogues, cancellationToken);
-        logger.Verbose("Loaded {DialogueCount} dialogue(s)", dialogues.Length);
+        logger.Information("Loaded {DialogueCount} dialogue(s)", dialogues.Length);
 
         // Load aircraft connections
         logger.Verbose("Loading all aircraft connections");
         var connectedAircraft = await plugin.ConnectionManager.GetConnectedAircraft(cancellationToken);
         await aircraftConnectionStore.Populate(connectedAircraft, cancellationToken);
-        logger.Verbose("Loaded {ConnectionCount} aircraft connection(s)", connectedAircraft.Length);
+        logger.Information("Loaded {ConnectionCount} aircraft connection(s)", connectedAircraft.Length);
 
         // Load controller connections
         logger.Verbose("Loading all controller connections");
         var connectedControllers = await plugin.ConnectionManager.GetConnectedControllers(cancellationToken);
         await controllerConnectionStore.Populate(connectedControllers, cancellationToken);
-        logger.Verbose("Loaded {ControllerCount} controller connection(s)", connectedControllers.Length);
+        logger.Information("Loaded {ControllerCount} controller connection(s)", connectedControllers.Length);
 
         // Load ACARS connected callsigns
         logger.Verbose("Loading ACARS connected callsigns");
         var acarsConnectedCallsigns = await plugin.ConnectionManager.GetAcarsConnectedCallsigns(cancellationToken);
         await acarsConnectedCallsignStore.Populate(acarsConnectedCallsigns, cancellationToken);
-        logger.Verbose("Loaded {Count} ACARS connected callsign(s)", acarsConnectedCallsigns.Length);
+        logger.Information("Loaded {Count} ACARS connected callsign(s)", acarsConnectedCallsigns.Length);
 
         // Relay notification to UI
         WeakReferenceMessenger.Default.Send(notification);

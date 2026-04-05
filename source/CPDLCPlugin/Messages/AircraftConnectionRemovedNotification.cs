@@ -11,7 +11,7 @@ public class AircraftConnectionRemovedNotificationNotificationHandler(AircraftCo
 {
     public async Task Handle(AircraftConnectionRemovedNotification notification, CancellationToken cancellationToken)
     {
-        logger.Verbose("Aircraft {Callsign} disconnected from {StationId}", notification.Callsign, notification.StationId);
+        logger.Information("Aircraft {Callsign} disconnected from {StationId}", notification.Callsign, notification.StationId);
 
         if (!await aircraftConnectionStore.Remove(notification.Callsign, notification.StationId, cancellationToken))
         {

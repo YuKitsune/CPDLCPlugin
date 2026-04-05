@@ -16,8 +16,8 @@ public class SendUplinkRequestHandler(Plugin plugin, ILogger logger)
 {
     public async Task Handle(SendUplinkRequest request, CancellationToken cancellationToken)
     {
-        logger.Information("Sending uplink to {Recipient} (ReplyTo: {ReplyToDownlinkId}, Type: {ResponseType})",
-            request.Recipient, request.ReplyToDownlinkId, request.ResponseType);
+        logger.Information("Sending uplink to {Recipient} (ReplyTo: {ReplyToDownlinkId}, Type: {ResponseType}) with content: {Content}",
+            request.Recipient, request.ReplyToDownlinkId, request.ResponseType, request.Content);
 
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
         {

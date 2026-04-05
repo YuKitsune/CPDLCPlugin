@@ -13,7 +13,7 @@ public class AcarsConnectedCallsignsUpdatedNotificationHandler(
 {
     public async Task Handle(AcarsConnectedCallsignsUpdatedNotification notification, CancellationToken cancellationToken)
     {
-        logger.Verbose("ACARS connected callsigns updated: {Count} callsigns", notification.Callsigns.Length);
+        logger.Information("ACARS connected callsigns updated: {Count} callsigns", notification.Callsigns.Length);
 
         await acarsConnectedCallsignStore.Populate(notification.Callsigns, cancellationToken);
 

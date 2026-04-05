@@ -10,7 +10,7 @@ public class AcknowledgeDownlinkMessageRequestHandler(Plugin plugin, ILogger log
 {
     public async Task Handle(AcknowledgeDownlinkMessageRequest request, CancellationToken cancellationToken)
     {
-        logger.Information("Acknowledging downlink message {MessageId} from dialogue {Dialogue}", request.MessageId, request.DialogueId);
+        logger.Verbose("Acknowledging downlink message {MessageId} in dialogue {Dialogue}", request.MessageId, request.DialogueId);
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
         {
             logger.Warning("Not connected to server");
@@ -19,7 +19,7 @@ public class AcknowledgeDownlinkMessageRequestHandler(Plugin plugin, ILogger log
 
         await plugin.ConnectionManager.AcknowledgeDownlink(request.DialogueId, request.MessageId, cancellationToken);
 
-        logger.Verbose("Acknowledged downlink with id {MessageId} in dialogue {DialogueId}",
+        logger.Information("Acknowledged downlink message {MessageId} in dialogue {DialogueId}",
             request.MessageId,
             request.DialogueId);
     }

@@ -19,14 +19,14 @@ public class DisconnectRequestHandler(Plugin plugin, IPublisher publisher, ILogg
 
         if (plugin.ConnectionManager.IsConnected)
         {
-            logger.Verbose("Stopping active connection");
+            logger.Information("Stopping active connection");
             await plugin.ConnectionManager.StopAsync();
         }
 
         plugin.ConnectionManager.Dispose();
         plugin.ConnectionManager = null;
 
-        logger.Verbose("Disconnected from server");
+        logger.Information("Disconnected from server");
         await publisher.Publish(new DisconnectedNotification(), cancellationToken);
     }
 }

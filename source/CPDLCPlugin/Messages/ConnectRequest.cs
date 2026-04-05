@@ -41,14 +41,14 @@ public class ConnectRequestHandler(Plugin plugin, IMediator mediator, ILogger lo
             logger.ForContext<SignalRConnectionManager>());
 
         // Initialize the connection with the station ID and current callsign
-        logger.Verbose("Initializing SignalR connection");
+        logger.Information("Initializing SignalR connection");
         await plugin.ConnectionManager.InitializeAsync(request.StationId, Network.Callsign);
 
         // Start the connection
-        logger.Verbose("Starting SignalR connection");
+        logger.Information("Starting SignalR connection");
         await plugin.ConnectionManager.StartAsync();
 
-        logger.Verbose("Connected to server");
+        logger.Information("Connected to server");
         await mediator.Publish(new ConnectedNotification(), cancellationToken);
     }
 }

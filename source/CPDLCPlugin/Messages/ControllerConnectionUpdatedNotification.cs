@@ -11,7 +11,7 @@ public class ControllerConnectionUpdatedNotificationHandler(ControllerConnection
 {
     public async Task Handle(ControllerConnectionUpdatedNotification notification, CancellationToken cancellationToken)
     {
-        logger.Verbose("Upserting connection for controller {Callsign}",
+        logger.Information("Upserting connection for controller {Callsign}",
             notification.ControllerConnectionDto.Callsign);
 
         await controllerConnectionStore.Upsert(notification.ControllerConnectionDto, cancellationToken);

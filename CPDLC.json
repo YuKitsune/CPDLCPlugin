@@ -1,6 +1,7 @@
 {
   "ServerEndpoint": "https://cpdlc.eoinmotherway.dev/hubs/controller",
   "Stations": ["YBBB", "YMMM"],
+  "LogLevel": "Verbose",
   "MaxCurrentMessages": 50,
   "MaxArchivedMessages": 50,
   "MaxDisplayMessageLength": 40,

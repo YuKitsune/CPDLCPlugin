@@ -23,7 +23,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
             return;
 
-        logger.Verbose("Calculating next data authority for {Callsign}", fdr.Callsign);
+        logger.Information("Calculating next data authority for {Callsign}", fdr.Callsign);
 
         var aircraftConnections = await aircraftConnectionStore.All(cancellationToken);
         var ourAircraft = aircraftConnections.FirstOrDefault(
@@ -62,7 +62,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
             if (oldInfo is not ValidNextDataAuthorityInfo)
                 return;
 
-            logger.Verbose(
+            logger.Information(
                 "Transmitting NDA clear to server for {Callsign} (error state)",
                 fdr.Callsign);
 
@@ -85,11 +85,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 return;
 
             logger.Information(
-                "No ATSU boundary found for {Callsign}",
-                fdr.Callsign);
-
-            logger.Verbose(
-                "Transmitting NDA clear to server for {Callsign} (no boundary)",
+                "No ATSU boundary found for {Callsign}, clearing NDA on server",
                 fdr.Callsign);
 
             await plugin.ConnectionManager.UpdateNextDataAuthority(
@@ -163,7 +159,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
             if (cpdlcCodes.Count == 0)
             {
-                logger.Debug(
+                logger.Verbose(
                     "No CPDLC codes found for sector {SectorId} at {Frequency} for {Callsign}",
                     sectorEntry.SectorId,
                     sectorEntry.SectorFrequency,
@@ -185,7 +181,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
             if (cpdlcCode.Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            logger.Verbose(
+            logger.Information(
                 "ATSU boundary found for {Callsign}: sector {SectorId} with code {CpdlcCode} at {ExitTime}",
                 fdr.Callsign,
                 sectorEntry.SectorId,
@@ -195,7 +191,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
             return new ValidNextDataAuthorityInfo(cpdlcCode, sectorEntry.SectorEntryTime);
         }
 
-        logger.Debug("No ATSU boundary found for {Callsign}", fdr.Callsign);
+        logger.Information("No ATSU boundary found for {Callsign}", fdr.Callsign);
         return NoneNextDataAuthorityInfo.Instance;
     }
 

@@ -10,7 +10,7 @@ public class AcknowledgeMessageRequestHandler(Plugin plugin, ILogger logger)
 {
     public async Task Handle(AcknowledgeUplinkMessageRequest request, CancellationToken cancellationToken)
     {
-        logger.Information("Manually acknowledging uplink message {MessageId} from dialogue {DialogueId}", request.MessageId, request.DialogueId);
+        logger.Verbose("Manually acknowledging uplink message {MessageId} in dialogue {DialogueId}", request.MessageId, request.DialogueId);
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
         {
             logger.Warning("Not connected to server");
@@ -19,7 +19,7 @@ public class AcknowledgeMessageRequestHandler(Plugin plugin, ILogger logger)
 
         await plugin.ConnectionManager.AcknowledgeUplink(request.DialogueId, request.MessageId, cancellationToken);
 
-        logger.Verbose("Acknowledged uplink with id {MessageId} in dialogue {DialogueId}",
+        logger.Information("Manually acknowledged uplink message {MessageId} in dialogue {DialogueId}",
             request.MessageId,
             request.DialogueId);
     }
