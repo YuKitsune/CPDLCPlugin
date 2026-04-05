@@ -1,4 +1,4 @@
-@page "/dashboard/connections"
+@page "/connections"
 @model CPDLCServer.Pages.Dashboard.Connections.IndexModel
 @{
     ViewData["Title"] = "Connections";
@@ -6,7 +6,7 @@
 
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
         <li class="breadcrumb-item active" aria-current="page">Connections</li>
     </ol>
 </nav>
@@ -39,7 +39,7 @@
                                 @foreach (var controller in Model.Controllers)
                                 {
                                     <tr>
-                                        <td><a href="/dashboard/atsu/@controller.StationId">@controller.Callsign</a></td>
+                                        <td><a href="/atsu/@controller.StationId">@controller.Callsign</a></td>
                                         <td>@controller.StationId</td>
                                         <td><code>@controller.ConnectionId</code></td>
                                     </tr>
@@ -79,7 +79,7 @@
                                 @foreach (var aircraft in Model.Aircraft)
                                 {
                                     <tr>
-                                        <td><a href="/dashboard/pilot/@aircraft.Callsign">@aircraft.Callsign</a></td>
+                                        <td><a href="/pilot/@aircraft.Callsign">@aircraft.Callsign</a></td>
                                         <td>@aircraft.StationId</td>
                                         <td>@aircraft.DataAuthorityState</td>
                                         <td>@aircraft.AcarsClientId</td>

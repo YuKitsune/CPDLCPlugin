@@ -1,4 +1,4 @@
-@page "/dashboard/dialogue/{id:guid}"
+@page "/dialogue/{id:guid}"
 @model CPDLCServer.Pages.Dashboard.Dialogue.IndexModel
 @{
     ViewData["Title"] = $"Dialogue {Model.Dialogue?.Id.ToString()[..8]}...";
@@ -6,8 +6,8 @@
 
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/dashboard/messages">Messages</a></li>
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/messages">Messages</a></li>
         <li class="breadcrumb-item active" aria-current="page">Dialogue</li>
     </ol>
 </nav>
@@ -26,10 +26,10 @@
             <dd class="col-sm-9"><code>@Model.Dialogue?.Id</code></dd>
 
             <dt class="col-sm-3">Aircraft</dt>
-            <dd class="col-sm-9"><a href="/dashboard/pilot/@Model.Dialogue?.AircraftCallsign">@Model.Dialogue?.AircraftCallsign</a></dd>
+            <dd class="col-sm-9"><a href="/pilot/@Model.Dialogue?.AircraftCallsign">@Model.Dialogue?.AircraftCallsign</a></dd>
 
             <dt class="col-sm-3">ATSU</dt>
-            <dd class="col-sm-9"><a href="/dashboard/atsu/@Model.StationId">@Model.StationId</a></dd>
+            <dd class="col-sm-9"><a href="/atsu/@Model.StationId">@Model.StationId</a></dd>
 
             <dt class="col-sm-3">ACARS Network</dt>
             <dd class="col-sm-9">@Model.AcarsNetwork</dd>

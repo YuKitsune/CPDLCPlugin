@@ -1,0 +1,101 @@
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
+
+domains:
+  - domain: cpdlc.eoinmotherway.dev
+    type: PRIMARY
+  - domain: vatpac.cpdlc.eoinmotherway.dev
+    type: ALIAS
+
+features:
+  - buildpack-stack=ubuntu-22
+
+ingress:
+  rules:
+    # CPDLC Docs
+    - component:
+        name: docs
+      match:
+        authority:
+          exact: cpdlc.eoinmotherway.dev
+        path:
+          prefix: /
+    
+    # VATPAC CPDLC Server (YBBB, YMMM)
+    - component:
+        name: cpdlcplugin-source-cpdlc-server
+      match:
+        authority:
+          exact: vatpac.cpdlc.eoinmotherway.dev
+        path:
+          prefix: /
+
+name: cpdlc
+region: syd
+services:
+
+  # CPDLC Docs
+  - name: docs
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: YuKitsune/CPDLCPlugin
+    dockerfile_path: docs/Dockerfile
+    http_port: 3000
+    source_dir: .
+
+  # VATPAC CPDLC Server (YBBB, YMMM)
+  - name: vatpac
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
+    github:
+      branch: main
+      deploy_on_push: true
+      repo: YuKitsune/CPDLCPlugin
+    dockerfile_path: source/CPDLCServer/Dockerfile
+    http_port: 8080
+    source_dir: .
+
+    envs:
+      - key: Logging__Level
+        scope: RUN_AND_BUILD_TIME
+        value: Information
+        
+        # Brisbane FIR (YBBB)
+      - key: Acars__0__Type
+        scope: RUN_AND_BUILD_TIME
+        value: Hoppie
+      - key: Acars__0__FlightSimulationNetwork
+        scope: RUN_AND_BUILD_TIME
+        value: VATSIM
+      - key: Acars__0__StationIdentifier
+        scope: RUN_AND_BUILD_TIME
+        value: YBBB
+      - key: Acars__0__Url
+        scope: RUN_AND_BUILD_TIME
+        value: http://www.hoppie.nl/acars/system/connect.html
+      - key: Acars__0__AuthenticationCode
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: EV[1:3sZeb0HuUxKq18SL40EiZlHAFiCHYJQZ:FoBEby0KiLA8M3AbXb8QwMoLTNF+jWevdlDZ2xc2gDEW]
+
+        # Melbourne FIR (YMMM)
+      - key: Acars__1__Type
+        scope: RUN_AND_BUILD_TIME
+        value: Hoppie
+      - key: Acars__1__FlightSimulationNetwork
+        scope: RUN_AND_BUILD_TIME
+        value: VATSIM
+      - key: Acars__1__StationIdentifier
+        scope: RUN_AND_BUILD_TIME
+        value: YMMM
+      - key: Acars__1__Url
+        scope: RUN_AND_BUILD_TIME
+        value: http://www.hoppie.nl/acars/system/connect.html
+      - key: Acars__1__AuthenticationCode
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: EV[1:CRa251llH20gzBZHzT2AGYmd3hiIBT2/:TwTUdBBtHUT9+x9MMonshbme6jm/1d1Nj+up9n7SCA==]

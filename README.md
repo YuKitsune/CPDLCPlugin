@@ -17,7 +17,17 @@
 This plugin enables CPDLC (Controller-Pilot Data Link Communications) functionality in vatSys, allowing controllers to send and receive datalink messages with aircraft on the VATSIM network.
 
 > [!NOTE]
-> This plugin requires a CPDLC Server to function. For information on how the system works and how to configure the server, see the [Server Documentation](docs/SERVER.md).
+> This plugin requires a CPDLC Server to function. For information on how the system works and how to configure the server, see the [Server Documentation](https://cpdlc.eoinmotherway.dev).
+
+## Server Deployment
+
+Deploy your own CPDLC Server instance:
+
+[![Deploy to DigitalOcean](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/YuKitsune/CPDLCPlugin/tree/main)
+
+After deployment, configure the following environment variables:
+- `Acars__0__StationIdentifier`: Your station identifier (e.g., YZZZ)
+- `Acars__0__AuthenticationCode`: Your Hoppie ACARS authentication code
 
 ## Installation
 

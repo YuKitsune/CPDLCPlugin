@@ -53,7 +53,6 @@ app.MapRazorPages();
 app.MapHub<ControllerHub>("/hubs/controller");
 
 app.MapGet("/health", () => Results.Ok());
-app.MapFallbackToFile("index.html");
 
 app.Run();
 return;

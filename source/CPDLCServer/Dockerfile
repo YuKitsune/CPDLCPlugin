@@ -4,35 +4,21 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-FROM node:lts-alpine AS docs-build
-WORKDIR /docs
-COPY ["docs/package.json", "docs/package-lock.json", "./"]
-RUN npm ci
-COPY docs .
-RUN npm run build
-
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
-WORKDIR /repo
+WORKDIR /src
+COPY ["source/CPDLCServer/CPDLCServer.csproj", "CPDLCServer/"]
+COPY ["source/CPDLCServer.Contracts/CPDLCServer.Contracts.csproj", "CPDLCServer.Contracts/"]
+RUN dotnet restore "CPDLCServer/CPDLCServer.csproj"
+COPY source/ .
+WORKDIR "/src/CPDLCServer"
+RUN dotnet build "CPDLCServer.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# Copy build system files
-COPY [".nuke", ".nuke/"]
-COPY ["build.sh", "build.cmd", "build.ps1", "./"]
-COPY ["source/build/", "source/build/"]
-
-# Copy git repository for GitVersion
-COPY [".git", ".git/"]
-
-# Copy source code
-COPY ["source/", "source/"]
-
-# Run NUKE build to publish server with proper versioning
-RUN chmod +x build.sh && \
-    ./build.sh PublishServer --configuration $BUILD_CONFIGURATION
+FROM build AS publish
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "CPDLCServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /app
-COPY --from=build /repo/source/CPDLCServer/bin/${BUILD_CONFIGURATION}/net10.0/publish .
-COPY --from=docs-build /docs/build ./wwwroot
+COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "CPDLCServer.dll"]

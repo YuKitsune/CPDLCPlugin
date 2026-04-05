@@ -1,0 +1,28 @@
+spec:
+  name: cpdlc-server
+  services:
+    - name: cpdlc-server
+      instance_count: 1
+      instance_size_slug: basic-xxs
+      dockerfile_path: source/CPDLCServer/Dockerfile
+      github:
+        repo: YuKitsune/CPDLCPlugin
+        branch: main
+        deploy_on_push: true
+      http_port: 8080
+      envs:
+        - key: Logging__Level
+          value: Information
+        - key: Acars__0__Type
+          value: Hoppie
+        - key: Acars__0__FlightSimulationNetwork
+          value: VATSIM
+        - key: Acars__0__StationIdentifier
+          value: CHANGE_ME
+        - key: Acars__0__Url
+          value: http://www.hoppie.nl/acars/system/connect.html
+        - key: Acars__0__AuthenticationCode
+          value: CHANGE_ME
+          type: SECRET
+        - key: Handoff__NotificationLeadTime
+          value: "10"

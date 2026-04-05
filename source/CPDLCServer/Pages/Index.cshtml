@@ -1,14 +1,14 @@
-@page "/dashboard"
+@page "/"
 @model CPDLCServer.Pages.Dashboard.IndexModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "CPDLC Server";
 }
 
 <h2>Dashboard</h2>
 
 <div class="row mt-4 g-4">
     <div class="col-md-6 col-lg-3">
-        <a href="/dashboard/connections" class="text-decoration-none">
+        <a href="/connections" class="text-decoration-none">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <h3 class="display-4">@Model.AtcConnectionCount</h3>
@@ -19,7 +19,7 @@
     </div>
 
     <div class="col-md-6 col-lg-3">
-        <a href="/dashboard/connections" class="text-decoration-none">
+        <a href="/connections" class="text-decoration-none">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <h3 class="display-4">@Model.PilotConnectionCount</h3>
@@ -30,7 +30,7 @@
     </div>
 
     <div class="col-md-6 col-lg-3">
-        <a href="/dashboard/messages" class="text-decoration-none">
+        <a href="/messages" class="text-decoration-none">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <h3 class="display-4">@Model.TotalMessageCount</h3>
@@ -41,7 +41,7 @@
     </div>
 
     <div class="col-md-6 col-lg-3">
-        <a href="/dashboard/messages" class="text-decoration-none">
+        <a href="/messages" class="text-decoration-none">
             <div class="card h-100">
                 <div class="card-body text-center">
                     <h3 class="display-4">@Model.OpenDialogueCount</h3>

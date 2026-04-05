@@ -30,7 +30,7 @@
             @foreach (var msg in Model)
             {
                 <tr>
-                    <td><a href="/dashboard/dialogue/@msg.DialogueId">@msg.DialogueId.ToString()[..8]...</a></td>
+                    <td><a href="/dialogue/@msg.DialogueId">@msg.DialogueId.ToString()[..8]...</a></td>
                     <td>@msg.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
                     <td>@msg.AcarsNetwork</td>
                     <td>@(msg.IsUplink ? "↑" : "↓")</td>

@@ -1,4 +1,4 @@
-@page "/dashboard/atsu/{stationId}"
+@page "/atsu/{stationId}"
 @model CPDLCServer.Pages.Dashboard.Atsu.IndexModel
 @{
     ViewData["Title"] = $"ATSU {Model.StationId}";
@@ -6,8 +6,8 @@
 
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/dashboard/connections">Connections</a></li>
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/connections">Connections</a></li>
         <li class="breadcrumb-item active" aria-current="page">ATSU</li>
     </ol>
 </nav>

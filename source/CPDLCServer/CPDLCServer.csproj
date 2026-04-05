@@ -38,4 +38,19 @@
       <ProjectReference Include="..\CPDLCServer.Contracts\CPDLCServer.Contracts.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <AdditionalFiles Include="Pages\Atsu\Index.cshtml" />
+      <AdditionalFiles Include="Pages\Connections\Index.cshtml" />
+      <AdditionalFiles Include="Pages\Dialogue\Index.cshtml" />
+      <AdditionalFiles Include="Pages\Messages\Index.cshtml" />
+      <AdditionalFiles Include="Pages\Pilot\Index.cshtml" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Pages\Dashboard\Connections\Index.cshtml" />
+      <_ContentIncludedByDefault Remove="Pages\Dashboard\Dialogue\Index.cshtml" />
+      <_ContentIncludedByDefault Remove="Pages\Dashboard\Messages\Index.cshtml" />
+      <_ContentIncludedByDefault Remove="Pages\Dashboard\Pilot\Index.cshtml" />
+    </ItemGroup>
+
 </Project>

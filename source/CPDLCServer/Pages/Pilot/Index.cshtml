@@ -1,4 +1,4 @@
-@page "/dashboard/pilot/{callsign}"
+@page "/pilot/{callsign}"
 @model CPDLCServer.Pages.Dashboard.Pilot.IndexModel
 @{
     ViewData["Title"] = $"Pilot {Model.Callsign}";
@@ -6,8 +6,8 @@
 
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/dashboard/connections">Connections</a></li>
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/connections">Connections</a></li>
         <li class="breadcrumb-item active" aria-current="page">Pilot</li>
     </ol>
 </nav>
@@ -23,7 +23,7 @@
                 <dd class="col-sm-9">@Model.Aircraft.Callsign</dd>
 
                 <dt class="col-sm-3">ATSU</dt>
-                <dd class="col-sm-9"><a href="/dashboard/atsu/@Model.Aircraft.StationId">@Model.Aircraft.StationId</a></dd>
+                <dd class="col-sm-9"><a href="/atsu/@Model.Aircraft.StationId">@Model.Aircraft.StationId</a></dd>
 
                 <dt class="col-sm-3">ACARS Network</dt>
                 <dd class="col-sm-9">@Model.Aircraft.AcarsClientId</dd>
