@@ -55,9 +55,8 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
 
 #if DEBUG
     // Test constructor for design-time data - shows all possible message states
-    public CurrentMessagesViewModel(DialogueStore dialogueStore)
+    public CurrentMessagesViewModel()
     {
-        _dialogueStore = dialogueStore;
         var mexMessageDisplayLength = 40;
 
         var testGroups = new ObservableCollection<DialogueViewModel>();
