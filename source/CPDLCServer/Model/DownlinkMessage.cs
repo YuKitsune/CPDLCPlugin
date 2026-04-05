@@ -31,6 +31,7 @@ public class DownlinkMessage(
     public void Close(DateTimeOffset time)
     {
         Closed = time;
+        IsControllerLate = false;
     }
 
     public void Acknowledge(DateTimeOffset now)

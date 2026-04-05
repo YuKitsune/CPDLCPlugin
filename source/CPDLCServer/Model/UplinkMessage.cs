@@ -40,6 +40,7 @@ public class UplinkMessage(
     {
         Closed = time;
         ClosedManually = manual;
+        IsPilotLate = false;
     }
 
     void ICpdlcMessage.Close(DateTimeOffset time) => Close(time, false);
