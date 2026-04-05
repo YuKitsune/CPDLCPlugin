@@ -128,13 +128,12 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
             if (!dialogue.IsClosed || dialogue.IsArchived)
                 continue;
 
-            // Find the last acknowledged time across all messages (uplinks and downlinks)
-            var lastAckTime = dialogue.Messages
-                .Where(m => m.IsAcknowledged)
-                .Max(m => m.Acknowledged);
-
-            if (lastAckTime is null)
+            // Ensure all messages are acknowledged before archiving
+            if (!dialogue.Messages.All(m => m.IsAcknowledged))
                 continue;
+
+            // Find the last acknowledged time across all messages
+            var lastAckTime = dialogue.Messages.Max(m => m.Acknowledged);
 
             // Take the later of the last acknowledgement time or dialogue closed time
             var latest = lastAckTime.Value > dialogue.Closed
