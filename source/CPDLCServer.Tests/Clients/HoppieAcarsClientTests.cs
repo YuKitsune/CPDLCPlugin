@@ -364,6 +364,30 @@ public class HoppieAcarsClientTests : IDisposable
     }
 
     [Fact]
+    public async Task Poll_WithoutMessageReferenceNumbers_MapsCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 cpdlc {{/data2///N/LOGOFF}}}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var client = CreateClient(httpHandler);
+
+        // Act
+        await client.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await client.MessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var cpdlcMessage = Assert.IsType<DownlinkMessage>(message);
+        Assert.Equal(-1, cpdlcMessage.MessageId);
+
+        await client.DisposeAsync();
+        _clients.Remove(client);
+    }
+
+    [Fact]
     public async Task ListConnections_ReturnsCallsigns()
     {
         // Arrange

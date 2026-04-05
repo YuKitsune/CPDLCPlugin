@@ -355,7 +355,7 @@ public class HoppieAcarsClient : IAcarsClient
         if (parts.Length != 6)
             throw new MessageParseException($"Invalid CPDLC packet: Expected 6 components, got {parts.Length}: \"{packet}\"");
 
-        var messageId = int.Parse(parts[2]);
+        var messageId = !string.IsNullOrEmpty(parts[2]) ? int.Parse(parts[2]) : -1;
         int? replyToId = !string.IsNullOrEmpty(parts[3]) ? int.Parse(parts[3]) : null;
         var responseType = parts[4] switch
         {
