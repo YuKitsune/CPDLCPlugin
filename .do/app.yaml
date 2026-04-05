@@ -43,7 +43,7 @@ services:
       branch: main
       deploy_on_push: false
       repo: YuKitsune/CPDLCPlugin
-    dockerfile_path: Dockerfile
+    dockerfile_path: docs/Dockerfile
     http_port: 3000
     source_dir: docs
 
