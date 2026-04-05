@@ -53,7 +53,7 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
                     var connection = connectedAircraft.FirstOrDefault(c => c.Callsign == callsign && c.StationId == plugin.ConnectionManager.StationIdentifier);
 
                     var openDialogues = (await dialogueStore.All(cancellationToken))
-                        .Where(d => d.AircraftCallsign == callsign && !d.IsClosed)
+                        .Where(d => d.AircraftCallsign == callsign && (!d.IsClosed || !d.IsArchived))
                         .ToArray();
 
                     if (cancellationToken.IsCancellationRequested)
@@ -62,7 +62,7 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
                     var openDownlinkMessages = openDialogues
                         .SelectMany(d => d.Messages ?? [])
                         .OfType<DownlinkMessageDto>()
-                        .Where(m => !m.IsClosed)
+                        .Where(m => !m.IsClosed || !m.IsAcknowledged)
                         .ToArray();
 
                     var hasOpenDownlinkMessages = openDownlinkMessages.Any();
@@ -72,7 +72,7 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
                     var unacknowledgedUnableReceived = openDialogues
                         .SelectMany(d => d.Messages ?? [])
                         .OfType<DownlinkMessageDto>()
-                        .Any(m => (m.Content ?? string.Empty).Contains("UNABLE") && m.Acknowledged is null);
+                        .Any(m => (m.Content ?? string.Empty).Contains("UNABLE") && !m.IsAcknowledged);
 
                     var hasSuspendedMessage = suspendedMessageStore.HasSuspendedMessage(callsign);
 
