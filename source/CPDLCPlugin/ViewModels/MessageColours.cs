@@ -64,7 +64,7 @@ public class MessageColours
 
         if (message is UplinkMessageDto)
         {
-            return new ColorPair(background, Theme.CPDLCUplinkColor).Invert();
+            return new ColorPair(background, Theme.CPDLCUplinkColor).InvertIf(!message.IsAcknowledged);
         }
 
         return new ColorPair(background, Theme.CPDLCClosedColor);
