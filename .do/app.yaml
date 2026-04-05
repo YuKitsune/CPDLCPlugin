@@ -43,9 +43,9 @@ services:
       branch: main
       deploy_on_push: false
       repo: YuKitsune/CPDLCPlugin
-    dockerfile_path: docs/Dockerfile
+    dockerfile_path: Dockerfile
     http_port: 3000
-    source_dir: .
+    source_dir: docs
 
   # VATPAC CPDLC Server (YBBB, YMMM)
   - name: vatpac
