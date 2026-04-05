@@ -24,7 +24,7 @@ ingress:
     
     # VATPAC CPDLC Server (YBBB, YMMM)
     - component:
-        name: cpdlcplugin-source-cpdlc-server
+        name: vatpac
       match:
         authority:
           exact: vatpac.cpdlc.eoinmotherway.dev
