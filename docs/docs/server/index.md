@@ -13,6 +13,16 @@ The server will relay CPDLC messages to the upstream ACARS network, allowing pil
 
 The server also allows for multiple connections upstream ACARS networks, enabling ATC to communicate with aircraft on different ACARS networks (Hoppies, FSDLP, etc.) or aggregate messages across multiple ATSUs.
 
+## Deployment
+
+Deploy your own CPDLC Server instance to DigitalOcean:
+
+[![Deploy to DigitalOcean](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/YuKitsune/CPDLCPlugin/tree/main)
+
+After deployment, configure the following environment variables in the DigitalOcean dashboard:
+- `Acars__0__StationIdentifier`: Your station identifier (e.g., YBBB)
+- `Acars__0__AuthenticationCode`: Your Hoppie ACARS authentication code
+
 ## Prerequisites
 
 Before running the CPDLC Server, ensure you have:
