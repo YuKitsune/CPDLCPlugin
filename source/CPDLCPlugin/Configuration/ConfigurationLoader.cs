@@ -1,6 +1,7 @@
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using vatsys;
 
 namespace CPDLCPlugin.Configuration;
@@ -49,6 +50,7 @@ public static class ConfigurationLoader
         {
             PropertyNameCaseInsensitive = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
+            Converters = { new JsonStringEnumConverter() },
             AllowTrailingCommas = true
         })!;
 
