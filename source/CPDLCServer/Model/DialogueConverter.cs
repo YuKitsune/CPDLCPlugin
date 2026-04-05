@@ -66,6 +66,7 @@ public static class DialogueConverter
             MessageId = uplink.MessageId,
             MessageReference = uplink.MessageReference,
             AlertType = ToDto(uplink.AlertType),
+            Closed = uplink.Closed,
             IsClosedManually = uplink.ClosedManually,
             Acknowledged = uplink.Sent,
             Recipient = uplink.Recipient,
