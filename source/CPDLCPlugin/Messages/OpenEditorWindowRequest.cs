@@ -2,6 +2,7 @@
 using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
 using MediatR;
+using Serilog;
 
 namespace CPDLCPlugin.Messages;
 
@@ -14,7 +15,8 @@ public class OpenEditorWindowRequestHandler(
     DialogueStore dialogueStore,
     SuspendedMessageStore suspendedMessageStore,
     IErrorReporter errorReporter,
-    IGuiInvoker guiInvoker)
+    IGuiInvoker guiInvoker,
+    ILogger logger)
     : IRequestHandler<OpenEditorWindowRequest>
 {
     public Task Handle(OpenEditorWindowRequest request, CancellationToken cancellationToken)
@@ -35,7 +37,8 @@ public class OpenEditorWindowRequestHandler(
                     mediator,
                     errorReporter,
                     guiInvoker,
-                    windowHandle);
+                    windowHandle,
+                    logger);
 
                 var control = new EditorWindow(viewModel);
                 return control;

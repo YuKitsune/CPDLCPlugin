@@ -1,6 +1,7 @@
 using CPDLCPlugin.LabelItems;
 using CPDLCServer.Contracts;
 using MediatR;
+using Serilog;
 using vatsys;
 using vatsys.Plugin;
 
@@ -18,6 +19,7 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
     IJurisdictionChecker jurisdictionChecker,
     IMediator mediator,
     IErrorReporter errorReporter,
+    ILogger logger,
     Plugin plugin) : IRequestHandler<RebuildCpdlcStatusLabelItemsRequest>
 {
     public async Task Handle(RebuildCpdlcStatusLabelItemsRequest request, CancellationToken cancellationToken)
@@ -57,10 +59,13 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
                     if (cancellationToken.IsCancellationRequested)
                         return;
 
-                    var hasOpenDownlinkMessages = openDialogues
+                    var openDownlinkMessages = openDialogues
                         .SelectMany(d => d.Messages ?? [])
                         .OfType<DownlinkMessageDto>()
-                        .Any(m => !m.IsClosed);
+                        .Where(m => !m.IsClosed)
+                        .ToArray();
+
+                    var hasOpenDownlinkMessages = openDownlinkMessages.Any();
 
                     var isOnAcarsNetwork = await acarsConnectedCallsignStore.IsConnected(callsign, cancellationToken);
 
@@ -124,12 +129,25 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
                         {
                             if (unacknowledgedUnableReceived)
                             {
+                                logger.Debug("[{Callsign}] Setting UNABLE background (light green) - unacknowledged UNABLE received", callsign);
                                 backgroundColour = colourCache.UnableBackgroundColour;
                             }
                             else if (hasOpenDownlinkMessages)
                             {
+                                logger.Debug("[{Callsign}] Setting downlink background (green) - {Count} open downlink(s): {@Messages}",
+                                    callsign,
+                                    openDownlinkMessages.Length,
+                                    openDownlinkMessages.Select(m => new { m.MessageId, m.Content, m.IsClosed, m.IsAcknowledged, Closed = m.Closed, Acknowledged = m.Acknowledged }));
                                 backgroundColour = colourCache.DownlinkBackgroundColour;
                             }
+                            else
+                            {
+                                logger.Debug("[{Callsign}] No background - no open downlink messages", callsign);
+                            }
+                        }
+                        else
+                        {
+                            logger.Debug("[{Callsign}] No background - no dialogues in jurisdiction", callsign);
                         }
 
                         if (hasSuspendedMessage)

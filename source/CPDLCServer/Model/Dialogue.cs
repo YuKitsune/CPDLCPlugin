@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Serilog;
 
 namespace CPDLCServer.Model;
 
@@ -60,6 +61,8 @@ public class Dialogue
         if (downlink is null)
             throw new InvalidOperationException($"Downlink message {downlinkMessageId} not found in dialogue");
 
+        Log.Debug("[Dialogue {DialogueId}] Acknowledging downlink {DownlinkId} (IsClosed: {IsClosed}, Content: {Content})",
+            Id, downlinkMessageId, downlink.IsClosed, downlink.Content);
         downlink.Acknowledge(now);
     }
 
@@ -73,8 +76,15 @@ public class Dialogue
                     var downlink = _messages.OfType<DownlinkMessage>().FirstOrDefault(dl => dl.MessageId == uplink.MessageReference.Value);
                     if (downlink != null)
                     {
+                        Log.Debug("[Dialogue {DialogueId}] Uplink {UplinkId} references downlink {DownlinkId} - closing and auto-acknowledging downlink",
+                            Id, uplink.MessageId, downlink.MessageId);
                         downlink.Close(uplink.Sent);
                         downlink.Acknowledge(uplink.Sent); // Auto-acknowledge when replying
+                    }
+                    else
+                    {
+                        Log.Warning("[Dialogue {DialogueId}] Uplink {UplinkId} references downlink {DownlinkId} but downlink not found in dialogue",
+                            Id, uplink.MessageId, uplink.MessageReference.Value);
                     }
                 }
 
@@ -86,10 +96,22 @@ public class Dialogue
                     var uplink = _messages.OfType<UplinkMessage>().FirstOrDefault(ul => ul.MessageId == downlink.MessageReference.Value);
                     if (uplink != null)
                     {
+                        Log.Debug("[Dialogue {DialogueId}] Downlink {DownlinkId} references uplink {UplinkId} - closing uplink",
+                            Id, downlink.MessageId, uplink.MessageId);
                         uplink.Close(downlink.Received);
                     }
                 }
 
+                break;
+
+            case UplinkMessage uplink when uplink.MessageReference is not null:
+                Log.Debug("[Dialogue {DialogueId}] Uplink {UplinkId} references downlink {DownlinkId} but cannot close (Content: {Content})",
+                    Id, uplink.MessageId, uplink.MessageReference.Value, uplink.Content);
+                break;
+
+            case UplinkMessage uplink when uplink.MessageReference is null:
+                Log.Debug("[Dialogue {DialogueId}] Uplink {UplinkId} has no MessageReference - not closing any downlink",
+                    Id, uplink.MessageId);
                 break;
         }
 

@@ -6,6 +6,8 @@ using CPDLCPlugin.Configuration;
 using CPDLCPlugin.Messages;
 using CPDLCServer.Contracts;
 using MediatR;
+using Serilog;
+using Serilog.Core;
 
 namespace CPDLCPlugin.ViewModels;
 
@@ -21,6 +23,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
     readonly IErrorReporter _errorReporter;
     readonly IGuiInvoker _guiInvoker;
     readonly IWindowHandle _windowHandle;
+    readonly ILogger _logger;
 
 #if DEBUG
 
@@ -129,7 +132,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
     }
 
     // For testing in the designer
-    public EditorViewModel() : this("QFA1", null!,CreateTestConfiguration(), null!, null!, null!, null!, null!)
+    public EditorViewModel() : this("QFA1", null!,CreateTestConfiguration(), null!, null!, null!, null!, null!, Logger.None)
     {
         DownlinkMessages = _testDownlinkMessages;
     }
@@ -144,7 +147,8 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         IMediator mediator,
         IErrorReporter errorReporter,
         IGuiInvoker guiInvoker,
-        IWindowHandle windowHandle)
+        IWindowHandle windowHandle,
+        ILogger logger)
     {
         _uplinkMessagesConfiguration = uplinkMessagesConfiguration;
         _dialogueStore = dialogueStore;
@@ -153,6 +157,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         _errorReporter = errorReporter;
         _guiInvoker = guiInvoker;
         _windowHandle = windowHandle;
+        _logger = logger;
 
         Callsign = callsign;
         DownlinkMessages = downlinkMessages;
@@ -564,11 +569,24 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
 
             // Remove the selected downlink message and select the most recent one
             var downlinkMessage = SelectedDownlinkMessage;
+
+            _logger.Debug("[{Callsign}] Sending uplink from editor - SelectedDownlinkMessage: {HasSelection}, MessageId: {MessageId}, Content: {Content}",
+                Callsign,
+                downlinkMessage != null,
+                downlinkMessage?.OriginalMessage?.MessageId,
+                uplinkMessageContent);
+
             if (SelectedDownlinkMessage is not null)
             {
+                _logger.Debug("[{Callsign}] Removing downlink {DownlinkId} from selection after sending reply",
+                    Callsign, SelectedDownlinkMessage.OriginalMessage.MessageId);
                 var newDownlinkMessages = new List<DownlinkMessageViewModel>();
                 newDownlinkMessages.AddRange(DownlinkMessages.Where(d => d != SelectedDownlinkMessage));
                 SelectedDownlinkMessage = newDownlinkMessages.LastOrDefault();
+            }
+            else
+            {
+                _logger.Debug("[{Callsign}] No downlink selected - sending uplink without MessageReference", Callsign);
             }
 
             await _mediator.Send(new SendUplinkRequest(
@@ -747,6 +765,11 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                 }
             }
 
+            _logger.Debug("[{Callsign}] Loaded {Count} open downlinks into editor: {@Downlinks}",
+                Callsign,
+                downlinkMessageViewModels.Count,
+                downlinkMessageViewModels.Select(vm => new { vm.OriginalMessage.MessageId, vm.OriginalMessage.Content, vm.OriginalMessage.IsClosed, vm.OriginalMessage.IsAcknowledged }));
+
             DownlinkMessages = downlinkMessageViewModels.ToArray();
 
             // Try to maintain the current selection if the message still exists
@@ -756,6 +779,9 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                 SelectedDownlinkMessage = stillExists
                     ? downlinkMessageViewModels.First(vm => vm.OriginalMessage.MessageId == SelectedDownlinkMessage.OriginalMessage.MessageId)
                     : null;
+
+                _logger.Debug("[{Callsign}] Selection maintained: {Maintained}, SelectedDownlinkMessage: {MessageId}",
+                    Callsign, stillExists, SelectedDownlinkMessage?.OriginalMessage?.MessageId);
             }
         }
         catch (Exception ex)
