@@ -80,7 +80,7 @@ public class AtisCache(IClock clock, IErrorReporter errorReporter, ILogger logge
     void RequestAtis(string callsign)
     {
         var instanceField = typeof(Network).GetField("Instance", BindingFlags.NonPublic | BindingFlags.Static);
-        var getAtisMethod = typeof(Network).GetMethod("RequestATIS", BindingFlags.NonPublic | BindingFlags.Static);
+        var getAtisMethod = typeof(Network).GetMethod("RequestATIS", BindingFlags.NonPublic | BindingFlags.Instance);
 
         var networkInstance = instanceField.GetValue(null);
         getAtisMethod.Invoke(networkInstance, new object[] { callsign });
