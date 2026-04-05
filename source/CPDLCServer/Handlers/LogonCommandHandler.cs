@@ -7,13 +7,27 @@ using MediatR;
 
 namespace CPDLCServer.Handlers;
 
-public class LogonCommandHandler(IClientManager clientManager, IAircraftRepository aircraftRepository, IClock clock, IMediator mediator)
+public class LogonCommandHandler(IClientManager clientManager, IAircraftRepository aircraftRepository, IControllerRepository controllerRepository, IClock clock, IMediator mediator)
     : IRequestHandler<LogonCommand>
 {
     public async Task Handle(LogonCommand request, CancellationToken cancellationToken)
     {
-        var client = await clientManager.GetAcarsClient(request.AcarsClientId, cancellationToken);
+        // Don't accept the logon if no controllers are connected
+        var activeControllers = await controllerRepository.All(cancellationToken);
+        if (activeControllers.Length == 0)
+        {
+            await mediator.Send(
+                new SendUplinkCommand(
+                    "SYSTEM",
+                    request.Callsign,
+                    ReplyToDownlinkId: null,
+                    CpdlcUplinkResponseType.NoResponse,
+                    "LOGON REJECTED. NO ATS AVBL."),
+                cancellationToken);
+            return;
+        }
 
+        var client = await clientManager.GetAcarsClient(request.AcarsClientId, cancellationToken);
         var aircraft = new AircraftConnection(
             request.Callsign,
             request.AcarsClientId,
