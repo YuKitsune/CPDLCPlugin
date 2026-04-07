@@ -94,6 +94,11 @@ class Build : NukeBuild
     AbsolutePath VatSysSetupDirectory => TemporaryDirectory / "vatsys-setup";
     AbsolutePath VatSysExePath => VatSysPath ?? VatSysSetupDirectory / "bin" / "vatSys.exe";
 
+    public Target CheckVersion => _ => _
+        .Description("Prints the semantic version that will be assigned to the binaries.")
+        .Unlisted()
+        .Executes(() => Log.Information("Version: {Version}", GetSemanticVersion()));
+
     Target DownloadVatSys => _ => _
         .OnlyWhenStatic(() => VatSysPath == null && !VatSysExePath.FileExists())
         .Executes(async () =>
@@ -467,21 +472,11 @@ class Build : NukeBuild
 
     string GetSemanticVersion()
     {
-        // For main/master branch: use major.minor.patch (e.g., "1.2.3")
-        if (GitVersion.BranchName is "main" or "master")
+        // For main/master branch, or if we're on a detached head (building from a tag)
+        // use major.minor.patch (e.g., "1.2.3")
+        if (string.IsNullOrEmpty(GitVersion.BranchName) || GitVersion.BranchName is "main" or "master")
         {
             return GitVersion.MajorMinorPatch;
-        }
-
-        // For feature branches: use major.minor.patch-feature-name (e.g., "1.2.3-feature-name")
-        if (GitVersion.BranchName.StartsWith("feature/") || GitVersion.BranchName.StartsWith("features/"))
-        {
-            var featureName = GitVersion.BranchName
-                .Replace("feature/", "")
-                .Replace("features/", "")
-                .Replace("/", "-")
-                .Replace("_", "-");
-            return $"{GitVersion.MajorMinorPatch}-{featureName}";
         }
 
         // For other branches (develop, hotfix, etc.): use SemVer format
