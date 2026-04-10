@@ -305,7 +305,6 @@ class Build : NukeBuild
 
     Target PackagePlugin => _ => _
         .Description("Bundles the plugin along with supplementary files into a zip archive.")
-        .DependsOn(CompilePlugin)
         .DependsOn(RepackPlugin)
         .DependsOn(
             // TestContracts,

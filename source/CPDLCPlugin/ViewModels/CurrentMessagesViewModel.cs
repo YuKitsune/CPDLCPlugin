@@ -82,7 +82,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             Recipient = "TEST1",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK REGULAR NOT ACK",
+            Content = "UPLINK REGULAR",
             Sent = DateTimeOffset.UtcNow.AddMinutes(-48),
             IsPilotLate = false,
             IsTransmissionFailed = false,
@@ -94,7 +94,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             AlertType = AlertType.None,
             Sender = "TEST1",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK REGULAR NOT ACK",
+            Content = "DOWNLINK REGULAR",
             Received = DateTimeOffset.UtcNow.AddMinutes(-47),
             IsControllerLate = false
         };
@@ -117,7 +117,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             Recipient = "TEST3",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK URGENT NOT ACK",
+            Content = "UPLINK URGENT",
             Sent = DateTimeOffset.UtcNow.AddMinutes(-45),
             IsPilotLate = false,
             IsTransmissionFailed = false,
@@ -129,7 +129,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             AlertType = AlertType.High,
             Sender = "TEST3",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK URGENT NOT ACK",
+            Content = "DOWNLINK URGENT",
             Received = DateTimeOffset.UtcNow.AddMinutes(-44),
             IsControllerLate = false
         };
@@ -152,7 +152,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             Recipient = "TEST5",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.Roger,
-            Content = "UPLINK CLOSED NOT ACK",
+            Content = "UPLINK CLOSED",
             Sent = DateTimeOffset.UtcNow.AddMinutes(-42),
             Closed = DateTimeOffset.UtcNow.AddMinutes(-42),
             IsPilotLate = false,
@@ -165,7 +165,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             AlertType = AlertType.None,
             Sender = "TEST5",
             ResponseType = CpdlcDownlinkResponseType.NoResponse,
-            Content = "DOWNLINK CLOSED NOT ACK",
+            Content = "DOWNLINK CLOSED",
             Received = DateTimeOffset.UtcNow.AddMinutes(-41),
             Closed = DateTimeOffset.UtcNow.AddMinutes(-41),
             IsControllerLate = false
@@ -211,7 +211,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             Recipient = "TEST9",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK FAILED NOT ACK",
+            Content = "UPLINK FAILED",
             Sent = DateTimeOffset.UtcNow.AddMinutes(-37),
             IsPilotLate = false,
             IsTransmissionFailed = true,
@@ -232,7 +232,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             Recipient = "TEST11",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK PILOT LATE NOT ACK",
+            Content = "UPLINK PILOT LATE",
             Sent = DateTimeOffset.UtcNow.AddMinutes(-35),
             IsPilotLate = true,
             IsTransmissionFailed = false,
@@ -252,7 +252,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             AlertType = AlertType.None,
             Sender = "TEST13",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK CONTROLLER LATE NOT ACK",
+            Content = "DOWNLINK CONTROLLER LATE",
             Received = DateTimeOffset.UtcNow.AddMinutes(-33),
             IsControllerLate = true
         };
