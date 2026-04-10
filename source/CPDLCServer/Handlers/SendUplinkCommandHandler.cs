@@ -84,15 +84,6 @@ public class SendUplinkCommandHandler(
         // Publish dialogue change notification
         await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
 
-        if (ControlMessages.IsEndServiceUplink(uplinkMessage))
-        {
-            await mediator.Send(
-                new TerminateConnectionRequest(
-                    uplinkMessage.Recipient,
-                    aircraftConnection.AcarsClientId),
-                cancellationToken);
-        }
-
         await client.Send(uplinkMessage, cancellationToken);
         logger.Information(
             "Sent CPDLC message from {Sender} to {PilotCallsign}",

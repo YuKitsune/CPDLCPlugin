@@ -134,7 +134,18 @@ The plugin handles certain actions automatically without controller input.
 
 **Next Data Authority:** The plugin will automatically calculate the next data authority using the aircrafts route and online ATC. The server will transmit a `NEXT DATA AUTHORITY` uplink message to the aircraft prior to entering their airspace. If their CPDLC logon code cannot be determined due to a conflict, an error will be displayed in the vatSys error window. If no CPDLC code can be found, no `NEXT DATA AUTHORITY` message will be transmitted.
 
-**Handoff:** When you hand an aircraft off to another controller, the plugin will transmit an `END SERVICE` message if the next controller resides within a different ATSU, or does not have CPDLC capabilities.
+## Connection Termination
+
+When handing off an aircraft or ending CPDLC service, controllers must manually send `END SERVICE` messages using the CPDLC editor.
+
+### END SERVICE Behavior
+
+The `END SERVICE` uplink terminates the CPDLC connection after the dialogue closes:
+
+- **Standalone END SERVICE:** Connection terminates immediately since the message requires no response
+- **With frequency instructions:** Connection remains active until the pilot responds (e.g., "END SERVICE. CONTACT MELBOURNE ON 123.45" or "END SERVICE. MONITOR SYDNEY ON 118.60" waits for WILCO before terminating)
+
+This ensures pilots can acknowledge frequency change instructions before losing CPDLC connectivity. The aircraft will disappear from the Current Messages window once the connection terminates.
 
 ## Limitations
 

@@ -71,6 +71,35 @@ For example:
 
 Because `WU` has the highest priority, the pilot will be prompted to respond with WILCO or UNABLE for the entire concatenated message.
 
+## Connection Establishment
+
+Before CPDLC messages can be exchanged, a connection must be established between the aircraft and ground station.
+
+### Logon Process
+
+Aircraft establish CPDLC connections by sending a logon request to an ATSU:
+
+```mermaid
+sequenceDiagram
+    participant Pilot
+    participant ATSU
+
+    Pilot->>ATSU: REQUEST LOGON
+    ATSU->>Pilot: LOGON ACCEPTED
+    Note over ATSU,Pilot: Connection established (NDA state)
+```
+
+The ground station responds with `LOGON ACCEPTED` to confirm the connection. The aircraft initially connects as Next Data Authority (NDA) and is promoted to Current Data Authority (CDA) upon sending the first downlink message.
+
+### Initiation Methods
+
+Connections can be initiated by:
+
+- **Pilot-initiated:** Aircraft sends `REQUEST LOGON` when entering ATSU airspace
+- **Controller-initiated:** Ground station sends `CONNECTION REQUESTED` to prompt the pilot to logon
+
+In both cases, the server automatically accepts valid logon requests.
+
 ## Dialogues
 
 Dialogues represent a conversation between aircraft and ground stations. A dialogue can be:
@@ -161,6 +190,45 @@ sequenceDiagram
     Pilot->>YMMM: CURRENT DATA AUTHORITY
     YMMM-->>Pilot: (service continues with YMMM)
     Pilot-->>YMMM:
+```
+
+## Connection Termination
+
+Connection termination occurs when a CPDLC session between an aircraft and ATSU ends.
+The `END SERVICE` uplink message signals to the pilot that the ATSU is ending the CPDLC session.
+
+
+:::note
+In certain aircraft, reception of the `END SERVICE` (`LOGOFF` for Hoppie's) will cause the aircraft to automatically terminate the CPDLC connection.
+:::
+
+### Termination Timing
+
+Connection termination is deferred until the dialogue containing the `END SERVICE` message closes.
+This allows controllers to include frequency change instructions, or any additional messages with the termination message.
+
+**Self-closing END SERVICE:**
+- When `END SERVICE` is sent alone, no response is required
+- The message closes immediately
+- The connection terminates immediately
+
+**END SERVICE with additional message elements:**
+- When `END SERVICE` includes other elements that require a response (e.g., "END SERVICE. CONTACT MELBOURNE ON 123.45")
+- The message remains open until the pilot responds
+- The dialogue remains open until all messages are closed
+- The connection terminates only after the pilot responds and the dialogue closes
+
+### Example: END SERVICE with Frequency Change
+
+```mermaid
+sequenceDiagram
+    participant Pilot
+    participant YBBB
+
+    YBBB->>Pilot: END SERVICE. CONTACT MELBOURNE ON 123.450
+    Note over YBBB,Pilot: Connection remains active
+    Pilot->>YBBB: WILCO
+    Note over YBBB,Pilot: Dialogue closes, connection terminates
 ```
 
 ## CPDLC on VATSIM
