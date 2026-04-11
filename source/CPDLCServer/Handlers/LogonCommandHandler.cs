@@ -38,6 +38,11 @@ public class LogonCommandHandler(IClientManager clientManager, IAircraftReposito
                     CpdlcUplinkResponseType.NoResponse,
                     "LOGON REJECTED. NO ATS AVBL."),
                 cancellationToken);
+
+            await aircraftRepository.Remove(
+                new AircraftKey(request.Callsign, request.AcarsClientId),
+                cancellationToken);
+
             return;
         }
 
