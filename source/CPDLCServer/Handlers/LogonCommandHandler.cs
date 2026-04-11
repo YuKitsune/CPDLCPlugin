@@ -12,21 +12,6 @@ public class LogonCommandHandler(IClientManager clientManager, IAircraftReposito
 {
     public async Task Handle(LogonCommand request, CancellationToken cancellationToken)
     {
-        // Don't accept the logon if no controllers are connected
-        var activeControllers = await controllerRepository.All(cancellationToken);
-        if (activeControllers.Length == 0)
-        {
-            await mediator.Send(
-                new SendUplinkCommand(
-                    "SYSTEM",
-                    request.Callsign,
-                    ReplyToDownlinkId: null,
-                    CpdlcUplinkResponseType.NoResponse,
-                    "LOGON REJECTED. NO ATS AVBL."),
-                cancellationToken);
-            return;
-        }
-
         var client = await clientManager.GetAcarsClient(request.AcarsClientId, cancellationToken);
         var aircraft = new AircraftConnection(
             request.Callsign,
@@ -36,13 +21,25 @@ public class LogonCommandHandler(IClientManager clientManager, IAircraftReposito
 
         aircraft.RequestLogon(clock.UtcNow());
 
-        // TODO: Perform validation
-        // TODO: What if there are no controllers online?
-
         await aircraftRepository.Add(
             new(request.Callsign, request.AcarsClientId),
             aircraft,
             cancellationToken);
+
+        // Don't accept the logon if no controllers are connected
+        var activeControllers = await controllerRepository.All(cancellationToken);
+        if (activeControllers.Length == 0)
+        {
+            await mediator.Send(
+                new SendUplinkCommand(
+                    "SYSTEM",
+                    request.Callsign,
+                    ReplyToDownlinkId: request.DownlinkId,
+                    CpdlcUplinkResponseType.NoResponse,
+                    "LOGON REJECTED. NO ATS AVBL."),
+                cancellationToken);
+            return;
+        }
 
         // Immediately accept it for now
         aircraft.AcceptLogon(clock.UtcNow());
