@@ -522,6 +522,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
 
             Dialogues.Clear();
             var dialogueViewModels = dialogues
+                .OrderBy(d => d.Opened)
                 .Select(d => new DialogueViewModel
                 {
                     Messages = new ObservableCollection<CurrentMessageViewModel>(d.Messages.Select(m =>
