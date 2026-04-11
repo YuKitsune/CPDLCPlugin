@@ -26,6 +26,51 @@ Before installing the CPDLC Plugin, ensure you have the following:
 If you do not see the `CPDLC` menu item after restarting vatSys, refer to the [Troubleshooting](#troubleshooting) section below.
 :::
 
+## Configuring Labels and Strips
+
+The plugin provides custom label and strip items. You can place these items anywhere in your profile's `Labels.xml` and `Strips.xml` files.
+
+See [Labels.xml.diff](https://github.com/YuKitsune/CPDLCPlugin/blob/main/Labels.xml.diff) and [Strips.xml.diff](https://github.com/YuKitsune/CPDLCPlugin/blob/main/Strips.xml.diff) for examples.
+
+### Available Label Items
+
+- `CPDLCPLUGIN_CPDLCSTATUS`: CPDLC connection status symbol (`.`, `-`, `+`)
+- `CPDLCPLUGIN_CPDLCSTATUS_BG`: Background for CPDLC status (highlights when downlink awaiting response)
+- `CPDLCPLUGIN_TEXTSTATUS`: Voice capability indicator (blank, `R`, `T`, `V`)
+- `CPDLCPLUGIN_TEXTSTATUS_BG`: Background for voice capability (highlights when text message received)
+
+:::note
+vatSys requires separate items for foreground content and background color. The `_BG` items control background highlighting based on message state.
+:::
+
+### Replacing Default Items
+
+**Highly recommended:** Replace the default `LABEL_ITEM_CPDLC` and `CPDLCStatus` items with the plugin's items to avoid confusion.
+
+vatSys uses the Eurocat CPDLC symbols (`.`, `-`, `+`) for voice capabilities on VATSIM. The plugin repurposes these symbols for their intended CPDLC function, and provides `CPDLCPLUGIN_TEXTSTATUS` as a replacement voice capability indicator.
+
+**Labels.xml:** Replace `LABEL_ITEM_CPDLC` with:
+
+```xml
+<!-- CPDLC Plugin: CPDLC Status -->
+<Item Type="CPDLCPLUGIN_CPDLCSTATUS" />
+<Item Type="CPDLCPLUGIN_CPDLCSTATUS_BG" BackgroundColour="Custom" />
+
+<!-- CPDLC Plugin: Text Status -->
+<Item Type="CPDLCPLUGIN_TEXTSTATUS" />
+<Item Type="CPDLCPLUGIN_TEXTSTATUS_BG" BackgroundColour="Custom" />
+```
+
+**Strips.xml:** Replace `CPDLCStatus` with:
+
+```xml
+<!-- CPDLC Plugin: CPDLC Status -->
+<StripItem Type="CPDLCPLUGIN_CPDLCSTATUS" MinLength="1" />
+
+<!-- CPDLC Plugin: Text Status -->
+<StripItem Type="CPDLCPLUGIN_TEXTSTATUS" />
+```
+
 ## Troubleshooting
 
 ### CPDLC menu item not appearing

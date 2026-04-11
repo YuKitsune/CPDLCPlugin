@@ -74,7 +74,7 @@ public class UplinkMessageGroup
 public class UplinkMessagesConfiguration
 {
     public required UplinkMessageTemplate[] MasterMessages { get; init; } = [];
-    public required UplinkMessageReference[] PermanentMessages { get; init; } = [];
+    public required UplinkMessageReference[] QuickAccessMessages { get; init; } = [];
     public required UplinkMessageGroup[] Groups { get; init; } = [];
 }
 

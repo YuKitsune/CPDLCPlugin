@@ -84,7 +84,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                     ResponseType = UplinkResponseType.Roger
                 }
             ],
-            PermanentMessages =
+            QuickAccessMessages =
             [
                 new UplinkMessageReference { MessageId = 147 },
                 new UplinkMessageReference { MessageId = 123 },
@@ -170,7 +170,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
             .ToArray();
 
         SelectedMessageCategory = null;
-        DisplayMessageElements(_uplinkMessagesConfiguration.PermanentMessages);
+        DisplayMessageElements(_uplinkMessagesConfiguration.QuickAccessMessages);
 
         ClearUplinkMessage();
 
@@ -247,10 +247,10 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
     {
         try
         {
-            // If no category is selected, show permanent messages
+            // If no category is selected, show quick access messages
             if (string.IsNullOrEmpty(value))
             {
-                DisplayMessageElements(_uplinkMessagesConfiguration.PermanentMessages);
+                DisplayMessageElements(_uplinkMessagesConfiguration.QuickAccessMessages);
             }
             else
             {

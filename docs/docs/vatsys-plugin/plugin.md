@@ -15,7 +15,7 @@ The station you select is your primary ATSU. Once connected, you can send and re
 
 ## Track Label Item
 
-<!-- TODO: Screenshot -->
+![Screenshot of CPDLC track label items](../../static/cpdlc_label_items.png)
 
 The CPDLC track label item shows the connection status of each aircraft.
 
@@ -27,33 +27,26 @@ The connection status is denoted by the following symbols:
 - `+`: Aircraft has logged on, we are the Current Data Authority
 
 The background of the item will change when a downlink message has been received and is awaiting response.
-The colour of the symbol will change when an `UNABLE` response has been received
+The colour of the symbol will change when an `UNABLE` response has been received.
 
 Left-clicking the label item opens the CPDLC Editor.
 If there are open downlink messages, the most recent one is automatically selected.
 
 If the aircraft is not already logged on, left-clicking sends a `CONNECTION REQUESTED` message to initiate a controller-initiated logon.
 
-## Editor Window
-
-<!-- TODO: Screenshot -->
-
-- Downlink Messages Area
-- Message Class list
-- Hot actions (<!-- TODO: Screenshot -->)
-- Message Element list
-- Message Element editor
-- Escape
-- Suspend
-- Restore
-- Send
-
 ## Current Messages Window
 
-<!-- TODO: Screenshot -->
+![Screenshot of the Current Messages Window](../../static/current_messages_window.png)
 
-The Current Messages Window shows active CPDLC conversations that need your attention.
+The Current Messages Window shows open CPDLC dialogues for aircraft in your jurisdiction.
 It opens automatically when there are open dialogues and closes when all dialogues are resolved.
+
+A dialogue is considered within your jurisdiction if any of the following conditions are met:
+
+- You are currently tracking the aircraft
+- You have sent at least one uplink message in the dialogue
+- The aircraft is not tracked by anyone and is in an Announced state
+- You were the last owner and the aircraft is no longer tracked by anyone
 
 ### Reading Messages
 
@@ -65,10 +58,9 @@ Unacknowledged messages appear with inverted colours. Left-click a message to ac
 
 - `*`: Message is truncated. Right-click to expand.
 - `P`: Message contains free-text.
+- `!`: Message is urgent.
 
-<!-- TODO: Screenshot of expanded message -->
-
-Once a dialogue is closed and acknowledged, messages move to the [History Window](#history-window).
+Once a dialogue is closed and acknowledged, all messages within the dialogue are moved to the [History Window](#history-window).
 
 ### Responding to Messages
 
@@ -97,9 +89,86 @@ Messages are grouped by dialogue, not strictly by time. This means messages from
 ```
 :::
 
+## Editor Window
+
+The Editor Window is used to compose uplink messages and respond to downlink requests from pilots. The window operates in two different modes depending on whether you are composing a new message or responding to a pilot request.
+
+![Screenshot of the Editor Window](../../static/editor_diagram.png)
+
+### Window Layout
+
+The editor window is divided into several sections:
+
+- **Downlink Messages Area**: Displays any received downlink messages from the pilot that require a response
+- **Category or Quick Actions Panel**: Shows message category buttons or quick-action response buttons depending on context
+- **Message Templates Area**: Lists available message templates from the selected category
+- **Message Construction Area**: Where uplink messages are constructed
+- **Action Buttons**: Provides Escape, Suspend, Restore, and Send buttons
+
+### Downlink Messages Area
+
+This area shows any received downlink messages from the pilot that are awaiting a response. The most recent downlink message is selected automatically when the window opens.
+
+**Interacting with downlink messages:**
+- Left-click a message to select it (which displays quick action buttons) or click again to deselect it (which shows message categories)
+- Right-click a message to expand it if it has been truncated
+
+### Message Categories
+
+When no downlink is selected, message category buttons are displayed in a grid. Click a category button to view the message templates available in that category.
+
+When no category is selected, the editor displays frequently used messages that are always available for quick access.
+
+### Quick Actions
+
+![Screenshot of the Editor Window](../../static/editor_with_quick_actions.png)
+
+When a downlink message is selected, quick-action buttons are displayed instead of message categories. These buttons are organized into three sections:
+
+**Delay Response:**
+- **Standby**: Sends a STANDBY message to acknowledge the request while you coordinate
+- **Deferred**: Sends a REQUEST DEFERRED message to defer the pilot's request
+
+**To Editor:**
+- **Edit**: Dismisses the quick actions and displays message categories so you can compose a custom response
+
+**Unable Due To:**
+- **Traffic**: Sends UNABLE DUE TO TRAFFIC in response to the request
+- **Airspace**: Sends UNABLE DUE TO AIRSPACE RESTRICTION in response to the request
+
+### Building Uplink Messages
+
+To build an uplink message, click a message template in the message templates area. The template will be added to the message construction area.
+
+If you have a message element selected in the construction area, clicking a template will replace that element. Otherwise, the template will be appended to the end of the list. You can combine up to 5 message elements in a single uplink.
+
+Message templates may contain editable parameters enclosed in brackets (for example, `[level]` or `[freq]`). Some templates have default values that are pre-filled for common scenarios.
+
+**Working with message elements:**
+- **Left-click the line number**: Select or deselect that message element
+- **Right-click the line number**: Insert a new blank element above the clicked element
+- **Middle-click the line number**: Clear the element's content, or remove it entirely if it's already blank
+
+**Editing template parameters:**
+- Left-click a parameter (such as `[level]`) to begin editing it
+- Middle-click a parameter to clear its value
+- Press Enter to save your changes, or Escape to cancel editing
+
+When the uplink is sent, multiple message elements are automatically joined together with `. ` as a separator.
+
+### Action Buttons
+
+**Escape**: Clears all message elements from the message construction area.
+
+**Suspend**: Saves the current message for later use. You can only have one suspended message per aircraft at a time. You cannot suspend messages when quick actions are displayed or when responding to a downlink.
+
+**Restore**: Loads a previously suspended message back into the message construction area.
+
+**Send**: Transmits the uplink message to the aircraft. If you are responding to a downlink message, the dialogue will be closed. The editor window will close automatically if there are no remaining downlinks that require a response.
+
 ## History Window
 
-<!-- TODO: Screenshot -->
+![Screenshot of the History Window](../../static/history_window.png)
 
 The History Window shows previously completed dialogues. Use it to review past conversations with an aircraft.
 
@@ -109,7 +178,7 @@ Messages are displayed the same way as in the Current Messages Window. Messages 
 
 ## Voice Capability Indicators
 
-<!-- TODO: Screenshot -->
+![Screenshot of voice capability label items](../../static/text_label_items.png)
 
 vatSys uses the real-world CPDLC track label symbols (`.`, `-`, `+`) to indicate voice capabilities.
 With this plugin introducing CPDLC functionality, those symbols are now used for their intended purpose.
@@ -132,7 +201,7 @@ The plugin handles certain actions automatically without controller input.
 
 **Logon:** Pilot logon requests are automatically accepted by the server.
 
-**Next Data Authority:** The plugin will automatically calculate the next data authority using the aircrafts route and online ATC. The server will transmit a `NEXT DATA AUTHORITY` uplink message to the aircraft prior to entering their airspace. If their CPDLC logon code cannot be determined due to a conflict, an error will be displayed in the vatSys error window. If no CPDLC code can be found, no `NEXT DATA AUTHORITY` message will be transmitted.
+**Next Data Authority:** Automatically calculates next data authority from aircraft route and online ATC. Transmits `NEXT DATA AUTHORITY` uplink prior to airspace entry. Errors display in vatSys error window if CPDLC logon code conflicts occur or cannot be found.
 
 ## Connection Termination
 

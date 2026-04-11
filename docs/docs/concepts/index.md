@@ -13,6 +13,51 @@ Controller-Pilot Data Link Communications (CPDLC) is a method of communication b
 An Air Traffic Service Unit (ATSU) is a ground station connected to an ACARS network.
 Aircraft connect to ATSUs via an intermediate network (such as ACARS) to exchange CPDLC messages with controllers.
 
+## Connection Establishment
+
+Before CPDLC messages can be exchanged, a connection must be established between the aircraft and ground station.
+
+### Logon Process
+
+Aircraft establish CPDLC connections by sending a logon request to an ATSU:
+
+```mermaid
+sequenceDiagram
+    participant Pilot
+    participant ATSU
+
+    Pilot->>ATSU: REQUEST LOGON
+    ATSU->>Pilot: LOGON ACCEPTED
+    Note over ATSU,Pilot: Connection established (NDA state)
+```
+
+The ground station responds with `LOGON ACCEPTED` to confirm the connection. The aircraft initially connects as Next Data Authority (NDA) and is promoted to Current Data Authority (CDA) upon sending the first downlink message.
+
+### Initiation Methods
+
+Connections can be initiated by:
+
+- **Pilot-initiated:** Aircraft sends `REQUEST LOGON` when entering ATSU airspace
+- **Controller-initiated:** Ground station sends `CONNECTION REQUESTED` to prompt the pilot to logon
+
+In both cases, the server automatically accepts valid logon requests.
+
+## Data Authority
+
+Data authority determines which ground station is responsible for communicating with an aircraft.
+
+### Current Data Authority
+
+The Current Data Authority (CDA) is the ground station currently responsible for the flight. CPDLC dialogues between the pilot and controller take place through the CDA.
+
+Aircraft may reject uplink messages from stations that are not their Current Data Authority.
+
+### Next Data Authority
+
+The Next Data Authority (NDA) is the ground station designated to take over communications. This typically occurs when an aircraft connects to the next ATSU preemptively before a handoff.
+
+New connections from aircraft always start as Next Data Authority. An aircraft in NDA state is promoted to CDA upon receipt of the first downlink message.
+
 ## Uplink and Downlink Messages
 
 CPDLC messages are categorised by their direction:
@@ -71,35 +116,6 @@ For example:
 
 Because `WU` has the highest priority, the pilot will be prompted to respond with WILCO or UNABLE for the entire concatenated message.
 
-## Connection Establishment
-
-Before CPDLC messages can be exchanged, a connection must be established between the aircraft and ground station.
-
-### Logon Process
-
-Aircraft establish CPDLC connections by sending a logon request to an ATSU:
-
-```mermaid
-sequenceDiagram
-    participant Pilot
-    participant ATSU
-
-    Pilot->>ATSU: REQUEST LOGON
-    ATSU->>Pilot: LOGON ACCEPTED
-    Note over ATSU,Pilot: Connection established (NDA state)
-```
-
-The ground station responds with `LOGON ACCEPTED` to confirm the connection. The aircraft initially connects as Next Data Authority (NDA) and is promoted to Current Data Authority (CDA) upon sending the first downlink message.
-
-### Initiation Methods
-
-Connections can be initiated by:
-
-- **Pilot-initiated:** Aircraft sends `REQUEST LOGON` when entering ATSU airspace
-- **Controller-initiated:** Ground station sends `CONNECTION REQUESTED` to prompt the pilot to logon
-
-In both cases, the server automatically accepts valid logon requests.
-
 ## Dialogues
 
 Dialogues represent a conversation between aircraft and ground stations. A dialogue can be:
@@ -156,24 +172,10 @@ sequenceDiagram
 Note that STANDBY does not close the pilot's request.
 The dialogue remains open until the controller issues a clearance and the pilot responds.
 
-## Data Authority
+## Authority Transfer
 
-Data authority determines which ground station is responsible for communicating with an aircraft.
-
-### Current Data Authority
-
-The Current Data Authority (CDA) is the ground station currently responsible for the flight. CPDLC dialogues between the pilot and controller take place through the CDA.
-
-Aircraft may reject uplink messages from stations that are not their Current Data Authority.
-
-### Next Data Authority
-
-The Next Data Authority (NDA) is the ground station designated to take over communications. This typically occurs when an aircraft connects to the next ATSU preemptively before a handoff.
-
-New connections from aircraft always start as Next Data Authority. An aircraft in NDA state is promoted to CDA upon receipt of the first downlink message.
-
-The current ATSU will send a `NEXT DATA AUTHORITY` uplink message to the aircraft when transferring them to a new ATSU.
-This will instruct the pilot to establish a connection with the next ATSU and terminate the connection with the current one.
+When transferring an aircraft to another ATSU, the system automatically sends a `NEXT DATA AUTHORITY` uplink message well before the FIR boundary.
+This instructs the pilot to establish a connection with the next ATSU and terminate the connection with the current one.
 
 ```mermaid
 sequenceDiagram
