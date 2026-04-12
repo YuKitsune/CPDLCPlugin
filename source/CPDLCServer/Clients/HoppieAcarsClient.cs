@@ -412,9 +412,13 @@ public class HoppieAcarsClient : IAcarsClient
 
     string GetTranslatedContent(UplinkMessage uplinkMessage)
     {
-        return _uplinkMessageTranslations.TryGetValue(uplinkMessage.Content, out var translation)
-            ? translation
-            : uplinkMessage.Content;
+        var translatedContent = uplinkMessage.Content;
+        foreach (var uplinkMessageTranslation in _uplinkMessageTranslations)
+        {
+            translatedContent = translatedContent.Replace(uplinkMessageTranslation.Key, uplinkMessageTranslation.Value);
+        }
+
+        return translatedContent;
     }
 
     public async ValueTask DisposeAsync()

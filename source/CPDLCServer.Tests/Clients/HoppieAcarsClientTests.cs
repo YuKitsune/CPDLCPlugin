@@ -184,7 +184,7 @@ public class HoppieAcarsClientTests : IDisposable
             "BN-TSN_FSS",
             CpdlcUplinkResponseType.NoResponse,
             AlertType.None,
-            "END SERVICE",
+            "MONITOR ML CEN 123.450. END SERVICE.",
             clock.UtcNow());
 
         // Act
@@ -199,7 +199,7 @@ public class HoppieAcarsClientTests : IDisposable
 
         Assert.NotNull(sendRequest);
         var formData = await ParseFormDataFromRequest(sendRequest);
-        Assert.Equal("/data2/1//NE/LOGOFF", formData["packet"]);
+        Assert.Equal("/data2/1//NE/MONITOR+ML+CEN+123.450.+LOGOFF.", formData["packet"]);
     }
 
     [Fact]
