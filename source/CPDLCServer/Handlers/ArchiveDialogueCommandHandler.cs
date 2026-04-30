@@ -28,6 +28,15 @@ public class ArchiveDialogueCommandHandler(
             return; // Idempotent - already archived
         }
 
+        if (!dialogue.IsClosed)
+        {
+            logger.Warning(
+                "Attempted to archive an open dialogue {DialogueId} for {AircraftCallsign}",
+                request.DialogueId,
+                dialogue.AircraftCallsign);
+            return;
+        }
+
         dialogue.Archive(clock.UtcNow());
 
         logger.Information(

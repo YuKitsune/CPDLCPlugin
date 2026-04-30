@@ -50,6 +50,11 @@ public class Dialogue
 
     public void Archive(DateTimeOffset now)
     {
+        foreach (var downlink in _messages.OfType<DownlinkMessage>().Where(d => !d.IsAcknowledged))
+        {
+            downlink.Acknowledge(now);
+        }
+
         Archived = now;
     }
 
