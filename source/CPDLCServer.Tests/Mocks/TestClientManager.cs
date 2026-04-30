@@ -9,8 +9,8 @@ public class TestClientManager : IClientManager
 
     public TestClientManager()
     {
-        AddClient("hoppies-ybbb", new TestAcarsClient());
-        AddClient("hoppies-ymmm", new TestAcarsClient());
+        AddClient("hoppies-ybbb", new TestAcarsClient("YBBB"));
+        AddClient("hoppies-ymmm", new TestAcarsClient("YMMM"));
     }
 
     public void AddClient(string acarsClientId, IAcarsClient client)
