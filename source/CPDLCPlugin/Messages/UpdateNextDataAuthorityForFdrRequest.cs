@@ -41,6 +41,9 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
         var oldInfo = ourAircraft.NextDataAuthorityInfo;
 
+        using var serverCallCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        serverCallCts.CancelAfter(TimeSpan.FromSeconds(10));
+
         // Handle state transitions and error display
         if (newInfo is ErrorNextDataAuthorityInfo errorInfo)
         {
@@ -66,13 +69,11 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 "Transmitting NDA clear to server for {Callsign} (error state)",
                 fdr.Callsign);
 
-            using var errorStateCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            errorStateCts.CancelAfter(TimeSpan.FromSeconds(10));
             await plugin.ConnectionManager.UpdateNextDataAuthority(
                 fdr.Callsign,
                 null,
                 null,
-                errorStateCts.Token);
+                serverCallCts.Token);
 
             return;
         }
@@ -90,13 +91,11 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 "No ATSU boundary found for {Callsign}, clearing NDA on server",
                 fdr.Callsign);
 
-            using var noneStateCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            noneStateCts.CancelAfter(TimeSpan.FromSeconds(10));
             await plugin.ConnectionManager.UpdateNextDataAuthority(
                 fdr.Callsign,
                 null,
                 null,
-                noneStateCts.Token);
+                serverCallCts.Token);
 
             return;
         }
@@ -120,13 +119,11 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
             ourAircraft.SetNextDataAuthorityInfo(newInfo);
 
-            using var validStateCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            validStateCts.CancelAfter(TimeSpan.FromSeconds(10));
             await plugin.ConnectionManager.UpdateNextDataAuthority(
                 fdr.Callsign,
                 validInfo.NextDataAuthority,
                 validInfo.ExitTime,
-                validStateCts.Token);
+                serverCallCts.Token);
         }
     }
 
