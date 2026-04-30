@@ -16,7 +16,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var acarsClient = new TestAcarsClient();
+        var acarsClient = new TestAcarsClient("YBBB");
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
@@ -63,7 +63,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var acarsClient = new TestAcarsClient();
+        var acarsClient = new TestAcarsClient("YBBB");
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
@@ -110,8 +110,8 @@ public class CheckAircraftConnectionsRequestHandlerTests
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var acarsClientYbbb = new TestAcarsClient();
-        var acarsClientYmmm = new TestAcarsClient();
+        var acarsClientYbbb = new TestAcarsClient("YBBB");
+        var acarsClientYmmm = new TestAcarsClient("YMMM");
         clientManager.AddClient("hoppies-ybbb", acarsClientYbbb);
         clientManager.AddClient("hoppies-ymmm", acarsClientYmmm);
 
@@ -172,7 +172,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var acarsClient = new TestAcarsClient();
+        var acarsClient = new TestAcarsClient("YBBB");
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
@@ -212,7 +212,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var acarsClient = new TestAcarsClient();
+        var acarsClient = new TestAcarsClient("YBBB");
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
@@ -251,7 +251,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var acarsClient = new TestAcarsClient();
+        var acarsClient = new TestAcarsClient("YBBB");
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
@@ -292,7 +292,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var acarsClient = new TestAcarsClient();
+        var acarsClient = new TestAcarsClient("YBBB");
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
@@ -337,7 +337,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var acarsClient = new TestAcarsClient();
+        var acarsClient = new TestAcarsClient("YBBB");
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();

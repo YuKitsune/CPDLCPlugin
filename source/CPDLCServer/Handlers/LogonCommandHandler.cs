@@ -7,13 +7,44 @@ using MediatR;
 
 namespace CPDLCServer.Handlers;
 
-public class LogonCommandHandler(IClientManager clientManager, IAircraftRepository aircraftRepository, IControllerRepository controllerRepository, IClock clock, IMediator mediator)
+// TODO: Unit tests
+
+public class LogonCommandHandler(
+    IClientManager clientManager,
+    IAircraftRepository aircraftRepository,
+    IControllerRepository controllerRepository,
+    IClock clock,
+    IMediator mediator,
+    ILogger logger)
     : IRequestHandler<LogonCommand>
 {
     public async Task Handle(LogonCommand request, CancellationToken cancellationToken)
     {
         var client = await clientManager.GetAcarsClient(request.AcarsClientId, cancellationToken);
-        var aircraft = new AircraftConnection(
+
+        // If the aircraft already exists, simply accept the connection again
+        // Likely an issue with the aircraft requiring a reconnect
+        var aircraft = await aircraftRepository.Find(
+            new(request.AcarsClientId, request.Callsign),
+            cancellationToken);
+
+        if (aircraft is not null)
+        {
+            logger.Verbose("Duplicate connection request received from {Callsign} on {ClientId}. Accepting the request.", request.Callsign, request.AcarsClientId);
+
+            await mediator.Send(
+                new SendUplinkCommand(
+                    "SYSTEM",
+                    request.Callsign,
+                    request.DownlinkId,
+                    CpdlcUplinkResponseType.NoResponse,
+                    "LOGON ACCEPTED"),
+                cancellationToken);
+
+            return;
+        }
+
+        aircraft = new AircraftConnection(
             request.Callsign,
             request.AcarsClientId,
             client.StationId,
@@ -30,6 +61,8 @@ public class LogonCommandHandler(IClientManager clientManager, IAircraftReposito
         var activeControllers = await controllerRepository.All(cancellationToken);
         if (activeControllers.Length == 0)
         {
+            logger.Information("New connection request received from {Callsign} on {ClientId}, but no ATC is online. Rejecting the request.", request.Callsign, request.AcarsClientId);
+
             await mediator.Send(
                 new SendUplinkCommand(
                     "SYSTEM",
@@ -45,6 +78,8 @@ public class LogonCommandHandler(IClientManager clientManager, IAircraftReposito
 
             return;
         }
+
+        logger.Information("New connection request received from {Callsign} on {ClientId}. Accepting the request.", request.Callsign, request.AcarsClientId);
 
         // Immediately accept it for now
         aircraft.AcceptLogon(clock.UtcNow());
