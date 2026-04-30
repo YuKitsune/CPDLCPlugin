@@ -66,11 +66,13 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 "Transmitting NDA clear to server for {Callsign} (error state)",
                 fdr.Callsign);
 
+            using var errorStateCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            errorStateCts.CancelAfter(TimeSpan.FromSeconds(10));
             await plugin.ConnectionManager.UpdateNextDataAuthority(
                 fdr.Callsign,
                 null,
                 null,
-                cancellationToken);
+                errorStateCts.Token);
 
             return;
         }
@@ -88,11 +90,13 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 "No ATSU boundary found for {Callsign}, clearing NDA on server",
                 fdr.Callsign);
 
+            using var noneStateCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            noneStateCts.CancelAfter(TimeSpan.FromSeconds(10));
             await plugin.ConnectionManager.UpdateNextDataAuthority(
                 fdr.Callsign,
                 null,
                 null,
-                cancellationToken);
+                noneStateCts.Token);
 
             return;
         }
@@ -116,11 +120,13 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
             ourAircraft.SetNextDataAuthorityInfo(newInfo);
 
+            using var validStateCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            validStateCts.CancelAfter(TimeSpan.FromSeconds(10));
             await plugin.ConnectionManager.UpdateNextDataAuthority(
                 fdr.Callsign,
                 validInfo.NextDataAuthority,
                 validInfo.ExitTime,
-                cancellationToken);
+                validStateCts.Token);
         }
     }
 

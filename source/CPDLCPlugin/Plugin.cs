@@ -70,7 +70,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
         WeakReferenceMessenger.Default.Register<ConnectedAircraftChanged>(this);
 
-        _workQueue = new WorkQueue(AddError);
+        _workQueue = new WorkQueue(AddError, Log.Logger);
     }
 
     void ConfigureServices(PluginConfiguration pluginConfiguration)
