@@ -646,6 +646,9 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
     {
         try
         {
+            if (currentMessageViewModel.Message.IsAcknowledged)
+                return;
+
             await _mediator.Send(new AcknowledgeDownlinkMessageRequest(
                 currentMessageViewModel.Dialogue.Id,
                 currentMessageViewModel.Message.MessageId));

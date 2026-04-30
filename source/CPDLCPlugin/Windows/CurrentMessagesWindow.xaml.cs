@@ -84,6 +84,9 @@ public partial class CurrentMessagesWindow : Window
         {
             ActionPopup.IsOpen = true;
         }
+
+        // Prevent the click from bubbling to Message_MouseLeftButtonDown
+        e.Handled = true;
     }
 
     void Message_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
