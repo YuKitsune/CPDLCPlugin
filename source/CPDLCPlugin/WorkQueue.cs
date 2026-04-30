@@ -9,6 +9,7 @@ public class WorkQueue : IAsyncDisposable
 {
     readonly Action<Exception> _onError;
     readonly ILogger _logger;
+    readonly IClock _clock;
     readonly Channel<Func<Task>> _workQueue = Channel.CreateUnbounded<Func<Task>>();
 
     readonly CancellationTokenSource _cancellationTokenSource;
@@ -17,10 +18,11 @@ public class WorkQueue : IAsyncDisposable
     static readonly TimeSpan WaitWarningThreshold = TimeSpan.FromSeconds(2);
     static readonly TimeSpan ExecutionWarningThreshold = TimeSpan.FromSeconds(5);
 
-    public WorkQueue(Action<Exception> onError, ILogger logger)
+    public WorkQueue(Action<Exception> onError, ILogger logger, IClock clock)
     {
         _onError = onError;
         _logger = logger;
+        _clock = clock;
 
         _cancellationTokenSource = new CancellationTokenSource();
         _worker = Worker(_cancellationTokenSource.Token);
@@ -28,10 +30,10 @@ public class WorkQueue : IAsyncDisposable
 
     public bool Enqueue(Func<Task> work, [CallerMemberName] string caller = "")
     {
-        var enqueueTime = DateTimeOffset.UtcNow;
+        var enqueueTime = _clock.UtcNow();
         return _workQueue.Writer.TryWrite(async () =>
         {
-            var waitTime = DateTimeOffset.UtcNow - enqueueTime;
+            var waitTime = _clock.UtcNow() - enqueueTime;
             if (waitTime > WaitWarningThreshold)
                 _logger.Warning("[{Caller}] Work item waited {WaitMs}ms in queue", caller, (long)waitTime.TotalMilliseconds);
 
