@@ -770,18 +770,21 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                 downlinkMessageViewModels.Count,
                 downlinkMessageViewModels.Select(vm => new { vm.OriginalMessage.MessageId, vm.OriginalMessage.Content, vm.OriginalMessage.IsClosed, vm.OriginalMessage.IsAcknowledged }));
 
+            // Capture the selected ID before updating DownlinkMessages. When the ItemsSource changes,
+            // the ListBox's TwoWay binding clears SelectedDownlinkMessage if the old object is no
+            // longer in the collection, so we must save the ID first and restore after.
+            var selectedId = SelectedDownlinkMessage?.OriginalMessage?.MessageId;
+
             DownlinkMessages = downlinkMessageViewModels.ToArray();
 
             // Try to maintain the current selection if the message still exists
-            if (SelectedDownlinkMessage is not null)
+            if (selectedId is not null)
             {
-                var stillExists = downlinkMessageViewModels.Any(vm => vm.OriginalMessage.MessageId == SelectedDownlinkMessage.OriginalMessage?.MessageId);
-                SelectedDownlinkMessage = stillExists
-                    ? downlinkMessageViewModels.First(vm => vm.OriginalMessage.MessageId == SelectedDownlinkMessage.OriginalMessage.MessageId)
-                    : null;
+                var match = downlinkMessageViewModels.FirstOrDefault(vm => vm.OriginalMessage.MessageId == selectedId);
+                SelectedDownlinkMessage = match;
 
                 _logger.Debug("[{Callsign}] Selection maintained: {Maintained}, SelectedDownlinkMessage: {MessageId}",
-                    Callsign, stillExists, SelectedDownlinkMessage?.OriginalMessage?.MessageId);
+                    Callsign, match is not null, SelectedDownlinkMessage?.OriginalMessage?.MessageId);
             }
         }
         catch (Exception ex)
