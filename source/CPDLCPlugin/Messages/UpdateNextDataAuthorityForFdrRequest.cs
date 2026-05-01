@@ -1,3 +1,4 @@
+using CPDLCPlugin.Configuration;
 using CPDLCServer.Contracts;
 using MediatR;
 using Newtonsoft.Json;
@@ -10,9 +11,8 @@ public record UpdateNextDataAuthorityForFdrRequest(FDP2.FDR Fdr) : IRequest;
 
 public class UpdateNextDataAuthorityForFdrRequestHandler(
     Plugin plugin,
-    AtisCache atisCache,
     AircraftConnectionStore aircraftConnectionStore,
-    ControllerConnectionStore controllerConnectionStore,
+    PluginConfiguration configuration,
     ILogger logger)
     : IRequestHandler<UpdateNextDataAuthorityForFdrRequest>
 {
@@ -36,8 +36,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
         var newInfo = await CalculateNextDataAuthority(
             fdr,
-            plugin.ConnectionManager.StationIdentifier,
-            cancellationToken);
+            plugin.ConnectionManager.StationIdentifier);
 
         var oldInfo = ourAircraft.NextDataAuthorityInfo;
 
@@ -127,10 +126,9 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
         }
     }
 
-    async Task<INextDataAuthorityInfo> CalculateNextDataAuthority(
+    Task<INextDataAuthorityInfo> CalculateNextDataAuthority(
         FDP2.FDR fdr,
-        string currentStationId,
-        CancellationToken cancellationToken)
+        string currentStationId)
     {
         var sectorEntryInfos = GetSectorEntryInfos(fdr);
 
@@ -138,67 +136,50 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
         foreach (var sectorEntry in sectorEntryInfos)
         {
-            // Lookup CPDLC codes by frequency in case a controller is extending coverage to another sector
-            var cpdlcCodesByFrequency = await LogonCodeHelper.TryGetLogonCode(
-                sectorEntry.SectorFrequency,
-                atisCache,
-                cancellationToken);
+            // Find which ATSU codes in the config claim this sector
+            var matchingAtsuCodes = configuration.AtsuCodes
+                .Where(kvp => kvp.Value.Any(s => s.Equals(sectorEntry.SectorId, StringComparison.OrdinalIgnoreCase)))
+                .Select(kvp => kvp.Key)
+                .ToList();
 
-            // Lookup CPDLC code by callsign for the most accurate answer
-            var cpdlcCodeByCallsign = await LogonCodeHelper.TryGetLogonCode(
-                sectorEntry.ControllerCallsign,
-                controllerConnectionStore,
-                atisCache,
-                cancellationToken);
-
-            var cpdlcCodes = new HashSet<string>();
-            foreach (var cpdlcCodeByFrequency in cpdlcCodesByFrequency)
-            {
-                cpdlcCodes.Add(cpdlcCodeByFrequency);
-            }
-
-            if (!string.IsNullOrEmpty(cpdlcCodeByCallsign))
-                cpdlcCodes.Add(cpdlcCodeByCallsign);
-
-            if (cpdlcCodes.Count == 0)
+            if (matchingAtsuCodes.Count == 0)
             {
                 logger.Verbose(
-                    "No CPDLC codes found for sector {SectorId} at {Frequency} for {Callsign}",
+                    "Sector {SectorId} not found in AtsuCodes config for {Callsign}, skipping",
                     sectorEntry.SectorId,
-                    sectorEntry.SectorFrequency,
                     fdr.Callsign);
                 continue;
             }
 
-            if (cpdlcCodes.Count > 1)
+            if (matchingAtsuCodes.Count > 1)
             {
-                var errorMessage = $"Multiple CPDLC codes found in next sector {sectorEntry.SectorId}: {string.Join(", ", cpdlcCodes)}";
+                var errorMessage = $"Sector {sectorEntry.SectorId} is claimed by multiple ATSU codes in config: {string.Join(", ", matchingAtsuCodes)}";
                 logger.Warning(
                     "Cannot calculate next data authority for {Callsign}: {ErrorMessage}",
                     fdr.Callsign,
                     errorMessage);
-                return new ErrorNextDataAuthorityInfo(errorMessage);
+                return Task.FromResult<INextDataAuthorityInfo>(new ErrorNextDataAuthorityInfo(errorMessage));
             }
 
-            var cpdlcCode = cpdlcCodes.Single();
-            if (cpdlcCode.Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
+            var atsuCode = matchingAtsuCodes[0];
+            if (atsuCode.Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
                 continue;
 
             logger.Information(
-                "ATSU boundary found for {Callsign}: sector {SectorId} with code {CpdlcCode} at {ExitTime}",
+                "ATSU boundary found for {Callsign}: sector {SectorId} with code {AtsuCode} at {ExitTime}",
                 fdr.Callsign,
                 sectorEntry.SectorId,
-                cpdlcCode,
+                atsuCode,
                 sectorEntry.SectorEntryTime);
 
-            return new ValidNextDataAuthorityInfo(cpdlcCode, sectorEntry.SectorEntryTime);
+            return Task.FromResult<INextDataAuthorityInfo>(new ValidNextDataAuthorityInfo(atsuCode, sectorEntry.SectorEntryTime));
         }
 
         logger.Information("No ATSU boundary found for {Callsign}", fdr.Callsign);
-        return NoneNextDataAuthorityInfo.Instance;
+        return Task.FromResult<INextDataAuthorityInfo>(NoneNextDataAuthorityInfo.Instance);
     }
 
-    record SectorEntryInfo(string SectorId, string ControllerCallsign, int SectorFrequency, DateTimeOffset SectorEntryTime);
+    record SectorEntryInfo(string SectorId, DateTimeOffset SectorEntryTime);
 
     static IReadOnlyList<SectorEntryInfo> GetSectorEntryInfos(FDP2.FDR fdr)
     {
@@ -239,7 +220,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 eto.Second,
                 offset: TimeSpan.Zero);
 
-            results.Add(new SectorEntryInfo(sector.Name, sector.Callsign, (int) sector.Frequency, etoDateTimeOffset));
+            results.Add(new SectorEntryInfo(sector.Name, etoDateTimeOffset));
         }
 
         return results.AsReadOnly();
