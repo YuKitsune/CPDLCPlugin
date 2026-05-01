@@ -79,16 +79,16 @@ Maximum character length for messages shown in the extended message view. Messag
 
 ### AtsuCodes
 
-Maps ATSU/CPDLC codes to the vatSys sector names they cover. The plugin uses this to determine the Next Data Authority (NDA) for each tracked aircraft by walking the FDR route and finding the first sector that belongs to a different ATSU.
+Maps ATSU/CPDLC logon codes to the vatSys sector names they cover. The plugin uses this to determine the Next Data Authority (NDA) for each tracked aircraft by walking the FDR route and finding the first sector that belongs to a different ATSU.
 
-Keys are the ATSU identifier (the code aircraft logon to). Values are arrays of sector names from the vatSys `Sectors.xml` file. Subsector names do not need to be listed; the plugin resolves them to their parent sector automatically.
+Each entry has an `AtsuCode` (the code aircraft logon to) and a `Sectors` array of sector names from the vatSys `Sectors.xml` file. Subsector names do not need to be listed; the plugin resolves them to their parent sector automatically.
 
 **Example:**
 ```json
-"AtsuCodes": {
-  "YBBB": ["ARL", "INL", "TSN"],
-  "YMMM": ["GUN", "BLA", "IND"]
-}
+"AtsuCodes": [
+  { "AtsuCode": "YBBB", "Sectors": ["ARL", "INL", "TSN"] },
+  { "AtsuCode": "YMMM", "Sectors": ["GUN", "BLA", "IND"] }
+]
 ```
 
 If a sector appears in more than one entry, the NDA calculation will produce an error for that aircraft. If a sector does not appear in any entry, it is treated as outside CPDLC coverage and skipped.
@@ -195,10 +195,10 @@ Array of message groups for organizing messages in the editor. Each group has:
   "MaxArchivedMessages": 50,
   "MaxDisplayMessageLength": 40,
   "MaxExtendedMessageLength": 80,
-  "AtsuCodes": {
-    "YBBB": ["OCN", "ARL", "SDY", "TSN"],
-    "YMMM": ["ASP", "SNO", "IND", "INE"]
-  },
+  "AtsuCodes": [
+    { "AtsuCode": "YBBB", "Sectors": ["OCN", "ARL", "SDY", "TSN"] },
+    { "AtsuCode": "YMMM", "Sectors": ["ASP", "SNO", "IND", "INE"] }
+  ],
   "NdaRecalculationIntervalMinutes": 1,
   "UplinkMessages": {
     "MasterMessages": [
