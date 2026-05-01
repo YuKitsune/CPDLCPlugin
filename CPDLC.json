@@ -6,6 +6,10 @@
   "MaxArchivedMessages": 50,
   "MaxDisplayMessageLength": 40,
   "MaxExtendedMessageLength": 80,
+  "AtsuCodes": {
+    "YBBB": [],
+    "YMMM": []
+  },
   "UplinkMessages": {
     "MasterMessages": [
       {
