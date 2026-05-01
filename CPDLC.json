@@ -18,7 +18,9 @@
     "WIIF": ["WIIF", "WIFFSG", "WIFFBD", "WIFFMN", "WIFFIS", "WIFFT"],
     "WAAF": ["WAAF", "UBLI", "WAAFNA", "WAAFAN", "WAAFPA", "WAAFT", "WAAFX"],
     "AYPM": ["AYPM"],
-    "KZAK": ["KZAK", "KZAKE", "KZAKW", "KZAK3", "KZAK5", "KZAK6", "KZAK9"]
+    "KZAK": ["KZAK", "KZAKE", "KZAKW", "KZAK3", "KZAK5", "KZAK6", "KZAK9"],
+    "ASIW": ["ASIAW"],
+    "ASEA": ["ASEA"]
   },
   "UplinkMessages": {
     "MasterMessages": [
