@@ -7,8 +7,18 @@
   "MaxDisplayMessageLength": 40,
   "MaxExtendedMessageLength": 80,
   "AtsuCodes": {
-    "YBBB": [],
-    "YMMM": []
+    "YBBB": ["INL", "ARL", "SWY", "KEN", "ISA", "TRT", "TSN"],
+    "YMMM": ["GUN", "WOL", "BLA", "HUO", "MUN", "TBD", "ASP", "HYD", "OLW", "IND"],
+    "NZZO": ["NZZO", "NZZOT"],
+    "NZCM": ["NZCM"],
+    "FAJO": ["FAJO"],
+    "FIMM": ["FIMM", "FIMMU"],
+    "VRMF": ["VRMF"],
+    "VCCF": ["VCCF"],
+    "WIIF": ["WIIF", "WIFFSG", "WIFFBD", "WIFFMN", "WIFFIS", "WIFFT"],
+    "WAAF": ["WAAF", "UBLI", "WAAFNA", "WAAFAN", "WAAFPA", "WAAFT", "WAAFX"],
+    "AYPM": ["AYPM"],
+    "KZAK": ["KZAK", "KZAKE", "KZAKW", "KZAK3", "KZAK5", "KZAK6", "KZAK9"]
   },
   "UplinkMessages": {
     "MasterMessages": [
