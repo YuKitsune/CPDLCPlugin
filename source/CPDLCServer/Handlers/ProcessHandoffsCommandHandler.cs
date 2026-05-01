@@ -8,6 +8,7 @@ namespace CPDLCServer.Handlers;
 
 public class ProcessHandoffsCommandHandler(
     IAircraftRepository aircraftRepository,
+    IAcarsConnectedCallsignsRepository acarsConnectedCallsignsRepository,
     IMediator mediator,
     IClock clock,
     ILogger logger,
@@ -15,11 +16,15 @@ public class ProcessHandoffsCommandHandler(
     : IRequestHandler<ProcessHandoffsCommand>
 {
     readonly TimeSpan _notificationLeadTime = TimeSpan.FromMinutes(
-        configuration["Handoff:NotificationLeadTime"] is { } value && int.TryParse(value, out var minutes) ? minutes : 10);
+        configuration["Handoff:NotificationLeadTime"] is { } value && int.TryParse(value, out var minutes) ? minutes : 20);
 
     public async Task Handle(ProcessHandoffsCommand request, CancellationToken cancellationToken)
     {
         var trackedConnections = await aircraftRepository.All(cancellationToken);
+
+        // Fetch the cached list of ACARS-connected callsigns once per cycle to avoid
+        // repeated repository calls for each aircraft.
+        var onlineCallsigns = await acarsConnectedCallsignsRepository.All(cancellationToken);
 
         foreach (var aircraftConnection in trackedConnections)
         {
@@ -35,6 +40,17 @@ public class ProcessHandoffsCommandHandler(
             var transmitTime = aircraftConnection.ExpectedTransferTime.Value.Subtract(_notificationLeadTime);
             if (clock.UtcNow() <= transmitTime)
                 continue; // Too early, nothing to do
+
+            // Only transmit if the NDA ATSU is currently reachable on the ACARS network.
+            // If it's offline, skip for now and retry on the next cycle.
+            if (!onlineCallsigns.Contains(aircraftConnection.NextDataAuthority!, StringComparer.OrdinalIgnoreCase))
+            {
+                logger.Warning(
+                    "NDA ATSU {NextDataAuthority} is not online, skipping handoff message for {Callsign}",
+                    aircraftConnection.NextDataAuthority,
+                    aircraftConnection.Callsign);
+                continue;
+            }
 
             logger.Information("Sending handoff {NextDataAuthority} message to {Callsign}", aircraftConnection.NextDataAuthority, aircraftConnection.Callsign);
 
