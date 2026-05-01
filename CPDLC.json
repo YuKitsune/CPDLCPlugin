@@ -20,7 +20,8 @@
     "AYPM": ["AYPM"],
     "KZAK": ["KZAK", "KZAKE", "KZAKW", "KZAK3", "KZAK5", "KZAK6", "KZAK9"],
     "ASIW": ["ASIAW"],
-    "ASEA": ["ASEA"]
+    "ASEA": ["ASEA"],
+    "AFRS": ["AFRS"]
   },
   "UplinkMessages": {
     "MasterMessages": [
