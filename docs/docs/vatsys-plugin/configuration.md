@@ -81,13 +81,13 @@ Maximum character length for messages shown in the extended message view. Messag
 
 Maps ATSU/CPDLC codes to the vatSys sector names they cover. The plugin uses this to determine the Next Data Authority (NDA) for each tracked aircraft by walking the FDR route and finding the first sector that belongs to a different ATSU.
 
-Keys are the ATSU identifier (the code aircraft logon to). Values are arrays of sector names from the vatSys `Volumes.xml` file. Subsector names do not need to be listed; the plugin resolves them to their parent sector automatically.
+Keys are the ATSU identifier (the code aircraft logon to). Values are arrays of sector names from the vatSys `Sectors.xml` file. Subsector names do not need to be listed; the plugin resolves them to their parent sector automatically.
 
 **Example:**
 ```json
 "AtsuCodes": {
-  "YBBB": ["OCN", "ARL", "SDY", "TSN"],
-  "YMMM": ["ASP", "SNO", "IND", "INE"]
+  "YBBB": ["ARL", "INL", "TSN"],
+  "YMMM": ["GUN", "BLA", "IND"]
 }
 ```
 
