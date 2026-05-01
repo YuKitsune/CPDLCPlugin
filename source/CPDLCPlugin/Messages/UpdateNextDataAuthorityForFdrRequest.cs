@@ -139,8 +139,8 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
         {
             // Find which ATSU codes in the config claim this sector
             var matchingAtsuCodes = configuration.AtsuCodes
-                .Where(kvp => kvp.Value.Any(s => s.Equals(sectorEntry.SectorId, StringComparison.OrdinalIgnoreCase)))
-                .Select(kvp => kvp.Key)
+                .Where(m => m.Sectors.Any(s => s.Equals(sectorEntry.SectorId, StringComparison.OrdinalIgnoreCase)))
+                .Select(m => m.AtsuCode)
                 .ToList();
 
             logger.Verbose("{Callsign} enters {SectorId} at {EntryTime}", fdr.Callsign, sectorEntry.SectorId, sectorEntry.SectorEntryTime);

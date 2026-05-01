@@ -16,7 +16,7 @@ public class PluginConfiguration
 
     // Maps ATSU/CPDLC codes to the sector names they cover (as reported by vatSys SectorsVolumes).
     // Used to determine the Next Data Authority when walking the FDR route.
-    public Dictionary<string, string[]> AtsuCodes { get; init; } = new();
+    public AtsuCodeMapping[] AtsuCodes { get; init; } = [];
 
     // How often (in minutes) to recalculate the NDA for all tracked aircraft.
     // NDA is also recalculated on every FDR update, so this is a catch-all interval.
