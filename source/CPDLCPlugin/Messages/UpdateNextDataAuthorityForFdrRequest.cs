@@ -23,7 +23,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
             return;
 
-        logger.Information("Calculating next data authority for {Callsign}", fdr.Callsign);
+        logger.Verbose("Calculating next data authority for {Callsign}", fdr.Callsign);
 
         var aircraftConnections = await aircraftConnectionStore.All(cancellationToken);
         var ourAircraft = aircraftConnections.FirstOrDefault(
@@ -47,7 +47,8 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
         if (newInfo is ErrorNextDataAuthorityInfo errorInfo)
         {
             // Only show error if we're transitioning TO error state (not if already in error)
-            if (oldInfo is not ErrorNextDataAuthorityInfo)
+            if (oldInfo is not ErrorNextDataAuthorityInfo existingErrorInfo ||
+                existingErrorInfo.ErrorMessage != errorInfo.ErrorMessage)
             {
                 logger.Information(
                     "Next data authority calculation failed for {Callsign}: {ErrorMessage}",
@@ -165,7 +166,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
             if (atsuCode.Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            logger.Information(
+            logger.Verbose(
                 "ATSU boundary found for {Callsign}: sector {SectorId} with code {AtsuCode} at {ExitTime}",
                 fdr.Callsign,
                 sectorEntry.SectorId,
@@ -175,7 +176,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
             return Task.FromResult<INextDataAuthorityInfo>(new ValidNextDataAuthorityInfo(atsuCode, sectorEntry.SectorEntryTime));
         }
 
-        logger.Information("No ATSU boundary found for {Callsign}", fdr.Callsign);
+        logger.Verbose("No ATSU boundary found for {Callsign}", fdr.Callsign);
         return Task.FromResult<INextDataAuthorityInfo>(NoneNextDataAuthorityInfo.Instance);
     }
 
