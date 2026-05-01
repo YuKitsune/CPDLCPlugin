@@ -56,38 +56,6 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
     }
 
-    public async Task ControllerConnectionUpdated(ControllerConnectionDto controllerConnectionDto, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await mediator.Publish(new ControllerConnectionUpdatedNotification(controllerConnectionDto), cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected when cancellation is requested
-        }
-        catch (Exception ex)
-        {
-            Plugin.AddError(ex, "Failed to handle ControllerConnectionUpdated notification");
-        }
-    }
-
-    public async Task ControllerConnectionRemoved(string callsign, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await mediator.Publish(new ControllerConnectionRemovedNotification(callsign), cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected when cancellation is requested
-        }
-        catch (Exception ex)
-        {
-            Plugin.AddError(ex, "Failed to handle ControllerConnectionRemoved notification");
-        }
-    }
-
     public async Task AcarsConnectedCallsignsUpdated(string[] callsigns, CancellationToken cancellationToken)
     {
         try

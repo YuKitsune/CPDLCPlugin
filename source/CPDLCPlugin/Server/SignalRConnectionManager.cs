@@ -120,10 +120,6 @@ public class SignalRConnectionManager(
             WithCancellationToken<AircraftConnectionDto>(downlinkHandlerDelegate.AircraftConnectionUpdated)(connectedAircraftInfo));
         _connection.On<string, string>("AircraftConnectionRemoved", (callsign, stationId) =>
             WithCancellationToken<string, string>(downlinkHandlerDelegate.AircraftConnectionRemoved)(callsign, stationId));
-        _connection.On<ControllerConnectionDto>("ControllerConnectionUpdated", connectedAircraftInfo =>
-            WithCancellationToken<ControllerConnectionDto>(downlinkHandlerDelegate.ControllerConnectionUpdated)(connectedAircraftInfo));
-        _connection.On<string>("ControllerConnectionRemoved", callsign =>
-            WithCancellationToken<string>(downlinkHandlerDelegate.ControllerConnectionRemoved)(callsign));
         _connection.On<string[]>("AcarsConnectedCallsignsUpdated", callsigns =>
             WithCancellationToken<string[]>(downlinkHandlerDelegate.AcarsConnectedCallsignsUpdated)(callsigns));
     }
@@ -170,14 +166,6 @@ public class SignalRConnectionManager(
         var connection = GetConnectedOrThrow();
         return await connection.InvokeAsync<AircraftConnectionDto[]>(
             "GetConnectedAircraft",
-            cancellationToken);
-    }
-
-    public async Task<ControllerConnectionDto[]> GetConnectedControllers(CancellationToken cancellationToken)
-    {
-        var connection = GetConnectedOrThrow();
-        return await connection.InvokeAsync<ControllerConnectionDto[]>(
-            "GetConnectedControllers",
             cancellationToken);
     }
 

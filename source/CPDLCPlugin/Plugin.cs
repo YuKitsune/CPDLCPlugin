@@ -65,7 +65,6 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
         Network.Connected += NetworkConnected;
         Network.Disconnected += NetworkDisconnected;
-        Network.OnlineATCChanged += NetworkOnlineATCChanged;
 
         WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
         WeakReferenceMessenger.Default.Register<ConnectedAircraftChanged>(this);
@@ -87,11 +86,9 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton<IJurisdictionChecker, JurisdictionChecker>()
             .AddSingleton<AircraftConnectionStore>()
             .AddSingleton<AcarsConnectedCallsignStore>()
-            .AddSingleton<ControllerConnectionStore>()
             .AddSingleton<WindowManager>()
             .AddSingleton<DialogueStore>()
             .AddSingleton<SuspendedMessageStore>()
-            .AddSingleton<AtisCache>()
             .AddSingleton(_cpdlcStatusProvider)
             .AddSingleton(_colourCache)
             .AddMediatR(c => c.RegisterServicesFromAssemblies(typeof(Plugin).Assembly))
@@ -144,19 +141,6 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
                 await mediator.Send(new DisconnectRequest()).ConfigureAwait(false);
             });
-        }
-        catch (Exception ex)
-        {
-            AddError(ex);
-        }
-    }
-
-    void NetworkOnlineATCChanged(object sender, EventArgs e)
-    {
-        try
-        {
-            // When ATC change, we need to re-calculate the NextDataAuthority
-            _workQueue.Enqueue(RecalculateNextDataAuthorityForAllAircraft);
         }
         catch (Exception ex)
         {
