@@ -23,8 +23,6 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
             return;
 
-        logger.Verbose("Calculating next data authority for {Callsign}", fdr.Callsign);
-
         var aircraftConnections = await aircraftConnectionStore.All(cancellationToken);
         var ourAircraft = aircraftConnections.FirstOrDefault(
             c => c.Callsign == fdr.Callsign &&
@@ -33,6 +31,8 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
         if (ourAircraft is null)
             return;
+
+        logger.Verbose("Calculating next data authority for {Callsign}", fdr.Callsign);
 
         var newInfo = await CalculateNextDataAuthority(
             fdr,
@@ -142,6 +142,8 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 .Where(kvp => kvp.Value.Any(s => s.Equals(sectorEntry.SectorId, StringComparison.OrdinalIgnoreCase)))
                 .Select(kvp => kvp.Key)
                 .ToList();
+
+            logger.Verbose("{Callsign} enters {SectorId} at {EntryTime}", fdr.Callsign, sectorEntry.SectorId, sectorEntry.SectorEntryTime);
 
             if (matchingAtsuCodes.Count == 0)
             {

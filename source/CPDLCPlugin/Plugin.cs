@@ -335,7 +335,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             // Record the last known owner of each FDR
             _workQueue.Enqueue(async () =>
             {
-                Log.Debug(
+                Log.Verbose(
                     "{Callsign}: IsTracked {IsTracked}; IsTrackedByMe: {IsTrackedByMe}; Controller Tracking: {CurrentController}; Handoff Controller: {HandoffController}",
                     updated.Callsign,
                     updated.IsTracked,
