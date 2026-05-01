@@ -1,4 +1,6 @@
-﻿namespace CPDLCPlugin.Server;
+﻿using CPDLCServer.Contracts;
+
+namespace CPDLCPlugin.Server;
 
 public interface IDownlinkHandlerDelegate
 {
