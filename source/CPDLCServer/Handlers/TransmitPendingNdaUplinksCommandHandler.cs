@@ -21,28 +21,22 @@ public class TransmitPendingNdaUplinksCommandHandler(
     public async Task Handle(TransmitPendingNdaUplinksCommand request, CancellationToken cancellationToken)
     {
         var trackedConnections = await aircraftRepository.All(cancellationToken);
-
-        // Fetch the cached list of ACARS-connected callsigns once per cycle to avoid
-        // repeated repository calls for each aircraft.
         var onlineCallsigns = await acarsConnectedCallsignsRepository.All(cancellationToken);
 
         foreach (var aircraftConnection in trackedConnections)
         {
-            // TODO Test Case: When aircraft has no NextDataAuthority, no messages are sent
             if (!aircraftConnection.HasNextDataAuthority)
             {
                 logger.Debug("{Callsign}: no NDA set, skipping", aircraftConnection.Callsign);
                 continue;
             }
 
-            // TODO Test Case: When a handoff message has already been sent, no new messages are sent
             if (aircraftConnection.DidSentNextDataAuthorityMessage)
             {
                 logger.Debug("{Callsign}: NDA uplink already sent, skipping", aircraftConnection.Callsign);
                 continue;
             }
 
-            // TODO Test Case: When NextDataAuthority is set, and we're not within the specified time window, no messages are sent
             var transmitTime = aircraftConnection.ExpectedTransferTime.Value.Subtract(_notificationLeadTime);
             if (clock.UtcNow() <= transmitTime)
             {
@@ -50,8 +44,6 @@ public class TransmitPendingNdaUplinksCommandHandler(
                 continue;
             }
 
-            // Only transmit if the NDA ATSU is currently reachable on the ACARS network.
-            // If it's offline, skip for now and retry on the next cycle.
             if (!onlineCallsigns.Contains(aircraftConnection.NextDataAuthority!, StringComparer.OrdinalIgnoreCase))
             {
                 logger.Debug(
@@ -65,10 +57,9 @@ public class TransmitPendingNdaUplinksCommandHandler(
 
             if (clock.UtcNow() > aircraftConnection.ExpectedTransferTime)
             {
-                logger.Information("Handoff message for {Callsign} is being transmitted after the expected transfer time {TransferTime}",  aircraftConnection.Callsign, aircraftConnection.ExpectedTransferTime);
+                logger.Warning("Handoff message for {Callsign} is being transmitted after the expected transfer time {TransferTime}",  aircraftConnection.Callsign, aircraftConnection.ExpectedTransferTime);
             }
 
-            // TODO Test Case: When NextDataAuthority is set, and we're within the specified time window, NEXT DATA AUTHORITY message is sent
             await mediator.Send(
                 new SendUplinkCommand(
                     aircraftConnection.StationId,
@@ -78,7 +69,6 @@ public class TransmitPendingNdaUplinksCommandHandler(
                     $"NEXT DATA AUTHORITY @{aircraftConnection.NextDataAuthority}@"),
                 cancellationToken);
 
-            // TODO Test Case: When NextDataAuthority message is sent connection is updated
             aircraftConnection.SentNextDataAuthorityMessage();
         }
     }
