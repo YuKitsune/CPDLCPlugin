@@ -6,19 +6,19 @@ using MediatR;
 
 namespace CPDLCServer.Handlers;
 
-public class ProcessHandoffsCommandHandler(
+public class TransmitPendingNdaUplinksCommandHandler(
     IAircraftRepository aircraftRepository,
     IAcarsConnectedCallsignsRepository acarsConnectedCallsignsRepository,
     IMediator mediator,
     IClock clock,
     ILogger logger,
     IConfiguration configuration)
-    : IRequestHandler<ProcessHandoffsCommand>
+    : IRequestHandler<TransmitPendingNdaUplinksCommand>
 {
     readonly TimeSpan _notificationLeadTime = TimeSpan.FromMinutes(
         configuration["Handoff:NotificationLeadTime"] is { } value && int.TryParse(value, out var minutes) ? minutes : 20);
 
-    public async Task Handle(ProcessHandoffsCommand request, CancellationToken cancellationToken)
+    public async Task Handle(TransmitPendingNdaUplinksCommand request, CancellationToken cancellationToken)
     {
         var trackedConnections = await aircraftRepository.All(cancellationToken);
 

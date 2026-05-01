@@ -9,7 +9,7 @@ using Serilog.Core;
 
 namespace CPDLCServer.Tests.Handlers;
 
-public class ProcessHandoffsCommandHandlerTests
+public class TransmitPendingNdaUplinksCommandHandlerTests
 {
     static IConfiguration DefaultConfiguration() =>
         new ConfigurationBuilder()
@@ -29,7 +29,7 @@ public class ProcessHandoffsCommandHandlerTests
         aircraft.AcceptLogon(clock.UtcNow());
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
-        var handler = new ProcessHandoffsCommandHandler(
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
             aircraftRepository,
             mediator,
             clock,
@@ -37,7 +37,7 @@ public class ProcessHandoffsCommandHandlerTests
             DefaultConfiguration());
 
         // Act
-        await handler.Handle(new ProcessHandoffsCommand(), CancellationToken.None);
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
 
         // Assert
         await mediator.DidNotReceive().Send(Arg.Any<SendUplinkCommand>(), Arg.Any<CancellationToken>());
@@ -58,7 +58,7 @@ public class ProcessHandoffsCommandHandlerTests
         aircraft.SentNextDataAuthorityMessage();
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
-        var handler = new ProcessHandoffsCommandHandler(
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
             aircraftRepository,
             mediator,
             clock,
@@ -66,7 +66,7 @@ public class ProcessHandoffsCommandHandlerTests
             DefaultConfiguration());
 
         // Act
-        await handler.Handle(new ProcessHandoffsCommand(), CancellationToken.None);
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
 
         // Assert
         await mediator.DidNotReceive().Send(Arg.Any<SendUplinkCommand>(), Arg.Any<CancellationToken>());
@@ -88,7 +88,7 @@ public class ProcessHandoffsCommandHandlerTests
         aircraft.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(20));
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
-        var handler = new ProcessHandoffsCommandHandler(
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
             aircraftRepository,
             mediator,
             clock,
@@ -96,7 +96,7 @@ public class ProcessHandoffsCommandHandlerTests
             DefaultConfiguration());
 
         // Act
-        await handler.Handle(new ProcessHandoffsCommand(), CancellationToken.None);
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
 
         // Assert
         await mediator.DidNotReceive().Send(Arg.Any<SendUplinkCommand>(), Arg.Any<CancellationToken>());
@@ -118,7 +118,7 @@ public class ProcessHandoffsCommandHandlerTests
         aircraft.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(5));
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
-        var handler = new ProcessHandoffsCommandHandler(
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
             aircraftRepository,
             mediator,
             clock,
@@ -126,7 +126,7 @@ public class ProcessHandoffsCommandHandlerTests
             DefaultConfiguration());
 
         // Act
-        await handler.Handle(new ProcessHandoffsCommand(), CancellationToken.None);
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
 
         // Assert
         await mediator.Received(1).Send(
@@ -154,7 +154,7 @@ public class ProcessHandoffsCommandHandlerTests
         aircraft.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(5));
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
-        var handler = new ProcessHandoffsCommandHandler(
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
             aircraftRepository,
             mediator,
             clock,
@@ -162,7 +162,7 @@ public class ProcessHandoffsCommandHandlerTests
             DefaultConfiguration());
 
         // Act
-        await handler.Handle(new ProcessHandoffsCommand(), CancellationToken.None);
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
 
         // Assert
         Assert.True(aircraft.DidSentNextDataAuthorityMessage);

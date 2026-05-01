@@ -5,7 +5,7 @@ using MediatR;
 
 namespace CPDLCServer.Services;
 
-public class AircraftConnectivityCheckService : IHostedService, IDisposable
+public class AcarsConnectivityCheckService : IHostedService, IDisposable
 {
     readonly TimeSpan _checkInterval;
 #if DEBUG
@@ -21,10 +21,10 @@ public class AircraftConnectivityCheckService : IHostedService, IDisposable
     CancellationTokenSource? _cancellationTokenSource;
     Task? _task;
 
-    public AircraftConnectivityCheckService(IConfiguration configuration, IMediator mediator, ILogger logger)
+    public AcarsConnectivityCheckService(IConfiguration configuration, IMediator mediator, ILogger logger)
     {
         _mediator = mediator;
-        _logger = logger.ForContext<AircraftConnectivityCheckService>();
+        _logger = logger.ForContext<AcarsConnectivityCheckService>();
 
         var checkIntervalMinutes = configuration.GetValue("ConnectivityCheckIntervalMinutes", 15);
         _checkInterval = TimeSpan.FromMinutes(checkIntervalMinutes);
@@ -91,7 +91,7 @@ public class AircraftConnectivityCheckService : IHostedService, IDisposable
                         timeoutCts.CancelAfter(TimeSpan.FromMinutes(1));
 
                         await _mediator.Send(
-                            new CheckAircraftConnectionsRequest(acarsConfiguration.ClientId),
+                            new RefreshAcarsCallsignsRequest(acarsConfiguration.ClientId),
                             timeoutCts.Token);
                     }
 
@@ -119,7 +119,7 @@ public class AircraftConnectivityCheckService : IHostedService, IDisposable
         }
         catch (Exception exception)
         {
-            _logger.Fatal(exception, "AircraftConnectivityCheckService failed");
+            _logger.Fatal(exception, "AcarsConnectivityCheckService failed");
         }
 
         _logger.Information("Stopped aircraft connectivity check service");

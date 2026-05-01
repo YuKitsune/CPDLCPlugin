@@ -6,15 +6,15 @@ using MediatR;
 
 namespace CPDLCServer.Handlers;
 
-public class CheckAircraftConnectionsRequestHandler(
+public class RefreshAcarsCallsignsRequestHandler(
     IClientManager clientManager,
     IAircraftRepository aircraftRepository,
     IAcarsConnectedCallsignsRepository acarsConnectedCallsignsRepository,
     IMediator mediator,
     IClock clock,
-    ILogger logger) : IRequestHandler<CheckAircraftConnectionsRequest>
+    ILogger logger) : IRequestHandler<RefreshAcarsCallsignsRequest>
 {
-    public async Task Handle(CheckAircraftConnectionsRequest request, CancellationToken cancellationToken)
+    public async Task Handle(RefreshAcarsCallsignsRequest request, CancellationToken cancellationToken)
     {
         var client = await clientManager.GetAcarsClient(request.AcarsClientId, cancellationToken);
         var activeConnections = await client.ListConnections(cancellationToken);

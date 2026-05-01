@@ -9,7 +9,7 @@ using Serilog.Core;
 
 namespace CPDLCServer.Tests.Handlers;
 
-public class CheckAircraftConnectionsRequestHandlerTests
+public class RefreshAcarsCallsignsRequestHandlerTests
 {
     [Fact]
     public async Task Handle_UpdatesLastSeenForConnectedAircraft()
@@ -35,7 +35,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         // Simulate the aircraft being connected on the ACARS network
         acarsClient.Connections.Add("UAL123");
 
-        var handler = new CheckAircraftConnectionsRequestHandler(
+        var handler = new RefreshAcarsCallsignsRequestHandler(
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
@@ -47,7 +47,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         var now = initialTime.AddMinutes(10);
         clock.SetUtcNow(now);
 
-        var request = new CheckAircraftConnectionsRequest("hoppies-ybbb");
+        var request = new RefreshAcarsCallsignsRequest("hoppies-ybbb");
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -82,7 +82,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         // Aircraft is NOT in the ACARS connections list (disconnected)
         // acarsClient.Connections remains empty
 
-        var handler = new CheckAircraftConnectionsRequestHandler(
+        var handler = new RefreshAcarsCallsignsRequestHandler(
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
@@ -94,7 +94,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         var now = initialTime.AddMinutes(10);
         clock.SetUtcNow(now);
 
-        var request = new CheckAircraftConnectionsRequest("hoppies-ybbb");
+        var request = new RefreshAcarsCallsignsRequest("hoppies-ybbb");
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -139,7 +139,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         acarsClientYbbb.Connections.Add("UAL123");
         acarsClientYmmm.Connections.Add("QFA456");
 
-        var handler = new CheckAircraftConnectionsRequestHandler(
+        var handler = new RefreshAcarsCallsignsRequestHandler(
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
@@ -152,7 +152,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         clock.SetUtcNow(now);
 
         // Only check YBBB
-        var request = new CheckAircraftConnectionsRequest("hoppies-ybbb");
+        var request = new RefreshAcarsCallsignsRequest("hoppies-ybbb");
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -187,7 +187,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         acarsClient.Connections.Add("UAL123");
         acarsClient.Connections.Add("QFA456");
 
-        var handler = new CheckAircraftConnectionsRequestHandler(
+        var handler = new RefreshAcarsCallsignsRequestHandler(
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
@@ -195,7 +195,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
             clock,
             Logger.None);
 
-        var request = new CheckAircraftConnectionsRequest("hoppies-ybbb");
+        var request = new RefreshAcarsCallsignsRequest("hoppies-ybbb");
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -226,7 +226,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         // Simulate aircraft connected on the ACARS network
         acarsClient.Connections.Add("UAL123");
 
-        var handler = new CheckAircraftConnectionsRequestHandler(
+        var handler = new RefreshAcarsCallsignsRequestHandler(
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
@@ -234,7 +234,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
             clock,
             Logger.None);
 
-        var request = new CheckAircraftConnectionsRequest("hoppies-ybbb");
+        var request = new RefreshAcarsCallsignsRequest("hoppies-ybbb");
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -268,7 +268,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         // Pre-populate the repository with the same callsign
         await acarsConnectedCallsignsRepository.Update(["UAL123"], CancellationToken.None);
 
-        var handler = new CheckAircraftConnectionsRequestHandler(
+        var handler = new RefreshAcarsCallsignsRequestHandler(
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
@@ -276,7 +276,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
             clock,
             Logger.None);
 
-        var request = new CheckAircraftConnectionsRequest("hoppies-ybbb");
+        var request = new RefreshAcarsCallsignsRequest("hoppies-ybbb");
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -310,7 +310,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         acarsClient.Connections.Add("UAL123");
         acarsClient.Connections.Add("QFA456");
 
-        var handler = new CheckAircraftConnectionsRequestHandler(
+        var handler = new RefreshAcarsCallsignsRequestHandler(
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
@@ -318,7 +318,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
             clock,
             Logger.None);
 
-        var request = new CheckAircraftConnectionsRequest("hoppies-ybbb");
+        var request = new RefreshAcarsCallsignsRequest("hoppies-ybbb");
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -355,7 +355,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
         acarsClient.Connections.Add("UAL123");
         // QFA456 is no longer connected
 
-        var handler = new CheckAircraftConnectionsRequestHandler(
+        var handler = new RefreshAcarsCallsignsRequestHandler(
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
@@ -363,7 +363,7 @@ public class CheckAircraftConnectionsRequestHandlerTests
             clock,
             Logger.None);
 
-        var request = new CheckAircraftConnectionsRequest("hoppies-ybbb");
+        var request = new RefreshAcarsCallsignsRequest("hoppies-ybbb");
 
         // Act
         await handler.Handle(request, CancellationToken.None);

@@ -5,10 +5,10 @@ using MediatR;
 namespace CPDLCServer.Services;
 
 /// <summary>
-///     Periodically dispatches <see cref="ProcessHandoffsCommand"/> to ensure handoff messages are sent to aircraft
+///     Periodically dispatches <see cref="TransmitPendingNdaUplinksCommand"/> to ensure handoff messages are sent to aircraft
 ///     within the configured lead time before their expected transfer.
 /// </summary>
-public class HandoffService(IMediator mediator, ILogger logger) : IHostedService, IDisposable
+public class NdaUplinkService(IMediator mediator, ILogger logger) : IHostedService, IDisposable
 {
     readonly TimeSpan _interval = TimeSpan.FromMinutes(1);
     readonly TimeSpan _errorInterval = TimeSpan.FromSeconds(5);
@@ -50,13 +50,13 @@ public class HandoffService(IMediator mediator, ILogger logger) : IHostedService
 
                 try
                 {
-                    await mediator.Send(new ProcessHandoffsCommand(), checkTimeoutCancellationTokenSource.Token);
+                    await mediator.Send(new TransmitPendingNdaUplinksCommand(), checkTimeoutCancellationTokenSource.Token);
                     await Task.Delay(_interval, cancellationToken);
                 }
                 catch (OperationCanceledException) when (checkTimeoutCancellationTokenSource.IsCancellationRequested)
                 {
                     // Timeout
-                    logger.Warning("HandoffService check timed out");
+                    logger.Warning("NdaUplinkService check timed out");
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
@@ -77,7 +77,7 @@ public class HandoffService(IMediator mediator, ILogger logger) : IHostedService
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // Stopping
-            logger.Information("Stopping HandoffService...");
+            logger.Information("Stopping NdaUplinkService...");
         }
         catch (Exception exception)
         {

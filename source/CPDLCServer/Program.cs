@@ -38,10 +38,10 @@ builder.Services.AddSignalR()
     .AddJsonProtocol();
 builder.Services.AddRazorPages();
 
-builder.Services.AddHostedService<AircraftConnectivityCheckService>();
+builder.Services.AddHostedService<AcarsConnectivityCheckService>();
 builder.Services.AddHostedService<LostConnectionService>();
 builder.Services.AddHostedService<MessageMonitorService>();
-builder.Services.AddHostedService<HandoffService>();
+builder.Services.AddHostedService<NdaUplinkService>();
 
 var app = builder.Build();
 
