@@ -40,6 +40,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
     readonly ColourCache _colourCache;
 
     readonly WorkQueue _workQueue;
+    PluginConfiguration? _configuration;
 
     BackgroundWorker? _ndaRecalculationWorker;
 
@@ -59,6 +60,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         _textStatusProvider = new TextStatusLabelItemProvider(_colourCache);
 
         var configuration = ConfigurationLoader.Load();
+        _configuration = configuration;
         ConfigureServices(configuration);
 
         AddToolbarItems();
@@ -150,14 +152,15 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
     void StartNdaRecalculationWorker()
     {
-        Log.Information("Starting NDA recalculation worker");
+        var interval = TimeSpan.FromMinutes(_configuration?.NdaRecalculationIntervalMinutes ?? 1);
+        Log.Information("Starting NDA recalculation worker (interval: {Interval})", interval);
         _ndaRecalculationWorker = new BackgroundWorker(async cancellationToken =>
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
+                    await Task.Delay(interval, cancellationToken);
                     await RecalculateNextDataAuthorityForAllAircraft();
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
