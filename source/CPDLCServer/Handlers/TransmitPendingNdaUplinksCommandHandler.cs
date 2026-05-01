@@ -30,25 +30,34 @@ public class TransmitPendingNdaUplinksCommandHandler(
         {
             // TODO Test Case: When aircraft has no NextDataAuthority, no messages are sent
             if (!aircraftConnection.HasNextDataAuthority)
-                continue; // No NDA, nothing to do
+            {
+                logger.Debug("{Callsign}: no NDA set, skipping", aircraftConnection.Callsign);
+                continue;
+            }
 
             // TODO Test Case: When a handoff message has already been sent, no new messages are sent
             if (aircraftConnection.DidSentNextDataAuthorityMessage)
-                continue; // Already sent, nothing to do
+            {
+                logger.Debug("{Callsign}: NDA uplink already sent, skipping", aircraftConnection.Callsign);
+                continue;
+            }
 
             // TODO Test Case: When NextDataAuthority is set, and we're not within the specified time window, no messages are sent
             var transmitTime = aircraftConnection.ExpectedTransferTime.Value.Subtract(_notificationLeadTime);
             if (clock.UtcNow() <= transmitTime)
-                continue; // Too early, nothing to do
+            {
+                logger.Debug("{Callsign}: transmit time {TransmitTime} not reached, skipping", aircraftConnection.Callsign, transmitTime);
+                continue;
+            }
 
             // Only transmit if the NDA ATSU is currently reachable on the ACARS network.
             // If it's offline, skip for now and retry on the next cycle.
             if (!onlineCallsigns.Contains(aircraftConnection.NextDataAuthority!, StringComparer.OrdinalIgnoreCase))
             {
-                logger.Warning(
-                    "NDA ATSU {NextDataAuthority} is not online, skipping handoff message for {Callsign}",
-                    aircraftConnection.NextDataAuthority,
-                    aircraftConnection.Callsign);
+                logger.Debug(
+                    "{Callsign}: NDA ATSU {NextDataAuthority} is not online, skipping",
+                    aircraftConnection.Callsign,
+                    aircraftConnection.NextDataAuthority);
                 continue;
             }
 
