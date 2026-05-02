@@ -12,6 +12,7 @@ public record UpdateNextDataAuthorityForFdrRequest(FDP2.FDR Fdr) : IRequest;
 public class UpdateNextDataAuthorityForFdrRequestHandler(
     Plugin plugin,
     AircraftConnectionStore aircraftConnectionStore,
+    AcarsStationStore acarsStationStore,
     PluginConfiguration configuration,
     ILogger logger)
     : IRequestHandler<UpdateNextDataAuthorityForFdrRequest>
@@ -36,7 +37,8 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
         var newInfo = await CalculateNextDataAuthority(
             fdr,
-            plugin.ConnectionManager.StationIdentifier);
+            plugin.ConnectionManager.StationIdentifier,
+            cancellationToken);
 
         var oldInfo = ourAircraft.NextDataAuthorityInfo;
 
@@ -127,9 +129,10 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
         }
     }
 
-    Task<INextDataAuthorityInfo> CalculateNextDataAuthority(
+    async Task<INextDataAuthorityInfo> CalculateNextDataAuthority(
         FDP2.FDR fdr,
-        string currentStationId)
+        string currentStationId,
+        CancellationToken cancellationToken)
     {
         var sectorEntryInfos = GetSectorEntryInfos(fdr);
 
@@ -137,52 +140,72 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
         foreach (var sectorEntry in sectorEntryInfos)
         {
-            // Find which ATSU codes in the config claim this sector
-            var matchingAtsuCodes = configuration.AtsuCodes
-                .Where(m => m.Sectors.Any(s => s.Equals(sectorEntry.SectorId, StringComparison.OrdinalIgnoreCase)))
-                .Select(m => m.AtsuCode)
-                .ToList();
+            logger.Verbose("{Callsign} enters [{SectorIds}] at {EntryTime}", fdr.Callsign, string.Join(", ", sectorEntry.SectorIds), sectorEntry.SectorEntryTime);
 
-            logger.Verbose("{Callsign} enters {SectorId} at {EntryTime}", fdr.Callsign, sectorEntry.SectorId, sectorEntry.SectorEntryTime);
-
-            if (matchingAtsuCodes.Count == 0)
+            // Build ATSU code candidates from the sector hierarchy (most-specific first),
+            // deduplicating to avoid redundant online checks.
+            var candidates = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var sectorId in sectorEntry.SectorIds)
             {
-                logger.Verbose(
-                    "Sector {SectorId} not found in AtsuCodes config for {Callsign}, skipping",
-                    sectorEntry.SectorId,
-                    fdr.Callsign);
+                var matches = configuration.AtsuCodes
+                    .Where(m => m.Sectors.Any(s => s.Equals(sectorId, StringComparison.OrdinalIgnoreCase)))
+                    .Select(m => m.AtsuCode)
+                    .ToList();
+
+                if (matches.Count > 1)
+                {
+                    var errorMessage = $"Sector {sectorId} is claimed by multiple ATSU codes in config: {string.Join(", ", matches)}";
+                    logger.Warning(
+                        "Cannot calculate next data authority for {Callsign}: {ErrorMessage}",
+                        fdr.Callsign,
+                        errorMessage);
+                    return new ErrorNextDataAuthorityInfo(errorMessage);
+                }
+
+                if (matches.Count == 1 && seen.Add(matches[0]))
+                    candidates.Add(matches[0]);
+            }
+
+            if (candidates.Count == 0)
+            {
+                logger.Verbose("No ATSU codes found in hierarchy for {Callsign}, skipping", fdr.Callsign);
                 continue;
             }
 
-            if (matchingAtsuCodes.Count > 1)
-            {
-                var errorMessage = $"Sector {sectorEntry.SectorId} is claimed by multiple ATSU codes in config: {string.Join(", ", matchingAtsuCodes)}";
-                logger.Warning(
-                    "Cannot calculate next data authority for {Callsign}: {ErrorMessage}",
-                    fdr.Callsign,
-                    errorMessage);
-                return Task.FromResult<INextDataAuthorityInfo>(new ErrorNextDataAuthorityInfo(errorMessage));
-            }
-
-            var atsuCode = matchingAtsuCodes[0];
-            if (atsuCode.Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
+            // If the most-specific candidate is our own station, this is our airspace.
+            if (candidates[0].Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
                 continue;
+
+            // Find the first candidate (most-specific first) that is currently online.
+            foreach (var atsuCode in candidates)
+            {
+                if (atsuCode.Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (await acarsStationStore.IsOnline(atsuCode, cancellationToken))
+                {
+                    logger.Verbose(
+                        "ATSU boundary found for {Callsign}: {AtsuCode} at {ExitTime}",
+                        fdr.Callsign,
+                        atsuCode,
+                        sectorEntry.SectorEntryTime);
+
+                    return new ValidNextDataAuthorityInfo(atsuCode, sectorEntry.SectorEntryTime);
+                }
+            }
 
             logger.Verbose(
-                "ATSU boundary found for {Callsign}: sector {SectorId} with code {AtsuCode} at {ExitTime}",
+                "ATSU boundary found for {Callsign} but no candidates online [{Candidates}], continuing",
                 fdr.Callsign,
-                sectorEntry.SectorId,
-                atsuCode,
-                sectorEntry.SectorEntryTime);
-
-            return Task.FromResult<INextDataAuthorityInfo>(new ValidNextDataAuthorityInfo(atsuCode, sectorEntry.SectorEntryTime));
+                string.Join(", ", candidates));
         }
 
         logger.Verbose("No ATSU boundary found for {Callsign}", fdr.Callsign);
-        return Task.FromResult<INextDataAuthorityInfo>(NoneNextDataAuthorityInfo.Instance);
+        return NoneNextDataAuthorityInfo.Instance;
     }
 
-    record SectorEntryInfo(string SectorId, DateTimeOffset SectorEntryTime);
+    record SectorEntryInfo(IReadOnlyList<string> SectorIds, DateTimeOffset SectorEntryTime);
 
     static IReadOnlyList<SectorEntryInfo> GetSectorEntryInfos(FDP2.FDR fdr)
     {
@@ -201,16 +224,17 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
             if (sector is null)
                 continue;
 
-            // If this is a subsector, find the smallest parent sector that contains it
-            // (e.g., if flying through ML-SNO subsector, find parent YMMM sector)
-            var parentSector = SectorsVolumes.SectorGroupings.Keys
-                .Where(parent => parent.SubSectors.Contains(sector))
-                .OrderBy(parent => parent.SubSectors.Count)
-                .FirstOrDefault();
-
-            if (parentSector is not null)
+            // Walk the sector hierarchy from most-specific to least-specific.
+            var sectorIds = new List<string>();
+            var current = sector;
+            while (current is not null)
             {
-                sector = parentSector;
+                sectorIds.Add(current.Name);
+                var captured = current;
+                current = SectorsVolumes.SectorGroupings.Keys
+                    .Where(p => p.SubSectors.Contains(captured))
+                    .OrderBy(p => p.SubSectors.Count)
+                    .FirstOrDefault();
             }
 
             var eto = segment.ETO;
@@ -223,7 +247,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 eto.Second,
                 offset: TimeSpan.Zero);
 
-            results.Add(new SectorEntryInfo(sector.Name, etoDateTimeOffset));
+            results.Add(new SectorEntryInfo(sectorIds.AsReadOnly(), etoDateTimeOffset));
         }
 
         return results.AsReadOnly();
