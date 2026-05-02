@@ -9,6 +9,7 @@ public class DisconnectedNotification : INotification;
 public class DisconnectedNotificationBridge(
     DialogueStore dialogueStore,
     AircraftConnectionStore aircraftConnectionStore,
+    AcarsStationStore acarsStationStore,
     ILogger logger) : INotificationHandler<DisconnectedNotification>
 {
     public async Task Handle(DisconnectedNotification notification, CancellationToken cancellationToken)
@@ -18,6 +19,9 @@ public class DisconnectedNotificationBridge(
 
         logger.Information("Clearing aircraft connection store");
         await aircraftConnectionStore.Clear(cancellationToken);
+
+        logger.Information("Clearing ACARS station store");
+        await acarsStationStore.Clear(cancellationToken);
 
         WeakReferenceMessenger.Default.Send(notification);
     }
