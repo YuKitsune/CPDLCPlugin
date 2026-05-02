@@ -8,7 +8,7 @@ namespace CPDLCServer.Handlers;
 
 public class TransmitPendingNdaUplinksCommandHandler(
     IAircraftRepository aircraftRepository,
-    IAcarsConnectedCallsignsRepository acarsConnectedCallsignsRepository,
+    IAcarsStationRepository acarsConnectedCallsignsRepository,
     IMediator mediator,
     IClock clock,
     ILogger logger,

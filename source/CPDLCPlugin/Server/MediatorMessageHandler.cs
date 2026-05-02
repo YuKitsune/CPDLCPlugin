@@ -56,11 +56,11 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
     }
 
-    public async Task AcarsConnectedCallsignsUpdated(string[] callsigns, CancellationToken cancellationToken)
+    public async Task AcarsStationsUpdated(string[] callsigns, CancellationToken cancellationToken)
     {
         try
         {
-            await mediator.Publish(new AcarsConnectedCallsignsUpdatedNotification(callsigns), cancellationToken);
+            await mediator.Publish(new AcarsStationsUpdatedNotification(callsigns), cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -68,7 +68,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle AcarsConnectedCallsignsUpdated notification");
+            Plugin.AddError(ex, "Failed to handle AcarsStationsUpdated notification");
         }
     }
 

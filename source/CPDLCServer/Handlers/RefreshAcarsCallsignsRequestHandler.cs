@@ -9,7 +9,7 @@ namespace CPDLCServer.Handlers;
 public class RefreshAcarsCallsignsRequestHandler(
     IClientManager clientManager,
     IAircraftRepository aircraftRepository,
-    IAcarsConnectedCallsignsRepository acarsConnectedCallsignsRepository,
+    IAcarsStationRepository acarsConnectedCallsignsRepository,
     IMediator mediator,
     IClock clock,
     ILogger logger) : IRequestHandler<RefreshAcarsCallsignsRequest>
@@ -25,7 +25,7 @@ public class RefreshAcarsCallsignsRequestHandler(
         {
             logger.Information("ACARS connected callsigns changed: {Count} callsigns", activeConnections.Length);
             await mediator.Publish(
-                new AcarsConnectedCallsignsChangedNotification(activeConnections),
+                new AcarsStationsChangedNotification(activeConnections),
                 cancellationToken);
         }
 

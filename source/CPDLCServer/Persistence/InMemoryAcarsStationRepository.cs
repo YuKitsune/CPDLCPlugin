@@ -2,7 +2,7 @@ using CPDLCServer.Extensions;
 
 namespace CPDLCServer.Persistence;
 
-public class InMemoryAcarsConnectedCallsignsRepository : IAcarsConnectedCallsignsRepository
+public class InMemoryAcarsStationRepository : IAcarsStationRepository
 {
     readonly HashSet<string> _callsigns = new(StringComparer.OrdinalIgnoreCase);
     readonly SemaphoreSlim _semaphore = new(1, 1);

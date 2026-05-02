@@ -20,7 +20,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
-        var acarsConnectedCallsignsRepository = new InMemoryAcarsConnectedCallsignsRepository();
+        var acarsConnectedCallsignsRepository = new InMemoryAcarsStationRepository();
         var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
 
@@ -67,7 +67,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
-        var acarsConnectedCallsignsRepository = new InMemoryAcarsConnectedCallsignsRepository();
+        var acarsConnectedCallsignsRepository = new InMemoryAcarsStationRepository();
         var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
 
@@ -116,7 +116,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
         clientManager.AddClient("hoppies-ymmm", acarsClientYmmm);
 
         var aircraftRepository = new TestAircraftRepository();
-        var acarsConnectedCallsignsRepository = new InMemoryAcarsConnectedCallsignsRepository();
+        var acarsConnectedCallsignsRepository = new InMemoryAcarsStationRepository();
         var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
 
@@ -176,7 +176,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
-        var acarsConnectedCallsignsRepository = new InMemoryAcarsConnectedCallsignsRepository();
+        var acarsConnectedCallsignsRepository = new InMemoryAcarsStationRepository();
         var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
 
@@ -216,7 +216,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
-        var acarsConnectedCallsignsRepository = new InMemoryAcarsConnectedCallsignsRepository();
+        var acarsConnectedCallsignsRepository = new InMemoryAcarsStationRepository();
         var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
 
@@ -241,7 +241,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
 
         // Assert
         await mediator.Received(1).Publish(
-            Arg.Is<AcarsConnectedCallsignsChangedNotification>(n =>
+            Arg.Is<AcarsStationsChangedNotification>(n =>
                 n.Callsigns.Length == 1 && n.Callsigns.Contains("UAL123")),
             Arg.Any<CancellationToken>());
     }
@@ -255,7 +255,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
-        var acarsConnectedCallsignsRepository = new InMemoryAcarsConnectedCallsignsRepository();
+        var acarsConnectedCallsignsRepository = new InMemoryAcarsStationRepository();
         var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
 
@@ -283,7 +283,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
 
         // Assert
         await mediator.DidNotReceive().Publish(
-            Arg.Any<AcarsConnectedCallsignsChangedNotification>(),
+            Arg.Any<AcarsStationsChangedNotification>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -296,7 +296,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
-        var acarsConnectedCallsignsRepository = new InMemoryAcarsConnectedCallsignsRepository();
+        var acarsConnectedCallsignsRepository = new InMemoryAcarsStationRepository();
         var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
 
@@ -325,7 +325,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
 
         // Assert
         await mediator.Received(1).Publish(
-            Arg.Is<AcarsConnectedCallsignsChangedNotification>(n =>
+            Arg.Is<AcarsStationsChangedNotification>(n =>
                 n.Callsigns.Length == 2 &&
                 n.Callsigns.Contains("UAL123") &&
                 n.Callsigns.Contains("QFA456")),
@@ -341,7 +341,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
         clientManager.AddClient("hoppies-ybbb", acarsClient);
 
         var aircraftRepository = new TestAircraftRepository();
-        var acarsConnectedCallsignsRepository = new InMemoryAcarsConnectedCallsignsRepository();
+        var acarsConnectedCallsignsRepository = new InMemoryAcarsStationRepository();
         var mediator = Substitute.For<IMediator>();
         var clock = new TestClock();
 
@@ -370,7 +370,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
 
         // Assert
         await mediator.Received(1).Publish(
-            Arg.Is<AcarsConnectedCallsignsChangedNotification>(n =>
+            Arg.Is<AcarsStationsChangedNotification>(n =>
                 n.Callsigns.Length == 1 && n.Callsigns.Contains("UAL123")),
             Arg.Any<CancellationToken>());
     }

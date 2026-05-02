@@ -17,9 +17,9 @@ public class TransmitPendingNdaUplinksCommandHandlerTests
             .AddInMemoryCollection(new Dictionary<string, string?> { ["Handoff:NotificationLeadTime"] = "10" })
             .Build();
 
-    static IAcarsConnectedCallsignsRepository OnlineCallsigns(params string[] callsigns)
+    static IAcarsStationRepository OnlineCallsigns(params string[] callsigns)
     {
-        var repo = Substitute.For<IAcarsConnectedCallsignsRepository>();
+        var repo = Substitute.For<IAcarsStationRepository>();
         repo.All(Arg.Any<CancellationToken>()).Returns(callsigns);
         return repo;
     }

@@ -37,7 +37,7 @@ public class ConnectedNotificationHandler(
 
         // Load ACARS connected callsigns
         logger.Verbose("Loading ACARS connected callsigns");
-        var acarsConnectedCallsigns = await plugin.ConnectionManager.GetAcarsConnectedCallsigns(cancellationToken);
+        var acarsConnectedCallsigns = await plugin.ConnectionManager.GetAcarsStations(cancellationToken);
         await acarsStationStore.Populate(acarsConnectedCallsigns, cancellationToken);
         logger.Information("Loaded {Count} ACARS connected callsign(s)", acarsConnectedCallsigns.Length);
 

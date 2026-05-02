@@ -4,14 +4,14 @@ using Serilog;
 
 namespace CPDLCPlugin.Messages;
 
-public record AcarsConnectedCallsignsUpdatedNotification(string[] Callsigns) : INotification;
+public record AcarsStationsUpdatedNotification(string[] Callsigns) : INotification;
 
-public class AcarsConnectedCallsignsUpdatedNotificationHandler(
+public class AcarsStationsUpdatedNotificationHandler(
     AcarsStationStore acarsStationStore,
     ILogger logger)
-    : INotificationHandler<AcarsConnectedCallsignsUpdatedNotification>
+    : INotificationHandler<AcarsStationsUpdatedNotification>
 {
-    public async Task Handle(AcarsConnectedCallsignsUpdatedNotification notification, CancellationToken cancellationToken)
+    public async Task Handle(AcarsStationsUpdatedNotification notification, CancellationToken cancellationToken)
     {
         logger.Information("ACARS connected callsigns updated: {Count} callsigns", notification.Callsigns.Length);
 
