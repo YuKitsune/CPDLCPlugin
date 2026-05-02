@@ -81,15 +81,28 @@ Maximum character length for messages shown in the extended message view. Messag
 
 Maps ATSU/CPDLC logon codes to the vatSys sector names they cover. The plugin uses this to determine the Next Data Authority (NDA) for each tracked aircraft by walking the FDR route and finding the first sector that belongs to a different ATSU.
 
-Each entry has an `AtsuCode` (the code aircraft logon to) and a `Sectors` array of sector names from the vatSys `Sectors.xml` file. Subsector names do not need to be listed; the plugin resolves them to their parent sector automatically.
+Each entry has an `AtsuCode` (the code aircraft logon to) and a `Sectors` array of sector names from the vatSys `Sectors.xml` file.
 
-**Example:**
+When calculating the NDA, the plugin walks the sector hierarchy from most-specific to least-specific (subsector to parent to grandparent). For each level it collects ATSU code candidates, then selects the first candidate that is currently connected to the ACARS network. This allows FIRs that use individual Hoppie logon codes per controller position to be mapped at the subsector level.
+
+**Example (FIR using a single logon code):**
 ```json
 "AtsuCodes": [
-  { "AtsuCode": "YBBB", "Sectors": ["ARL", "INL", "TSN"] },
+  { "AtsuCode": "YBBB", "Sectors": ["ARL", "INL", "KPL", "TSN"] },
   { "AtsuCode": "YMMM", "Sectors": ["GUN", "BLA", "IND"] }
 ]
 ```
+
+**Example (FIR using per-position logon codes):**
+```json
+"AtsuCodes": [
+  { "AtsuCode": "WIIF",   "Sectors": ["WIIF"] },
+  { "AtsuCode": "WIIFSG", "Sectors": ["WIIFSG", "WIIFBD"] },
+  { "AtsuCode": "WIIFMN", "Sectors": ["WIIFMN", "WIIFIS"] }
+]
+```
+
+In the per-position example, an aircraft entering `WIIFBD` airspace will have `WIIFSG` set as its NDA if that controller is online, falling back to `WIIF` if not.
 
 If a sector appears in more than one entry, the NDA calculation will produce an error for that aircraft. If a sector does not appear in any entry, it is treated as outside CPDLC coverage and skipped.
 
@@ -196,8 +209,8 @@ Array of message groups for organizing messages in the editor. Each group has:
   "MaxDisplayMessageLength": 40,
   "MaxExtendedMessageLength": 80,
   "AtsuCodes": [
-    { "AtsuCode": "YBBB", "Sectors": ["OCN", "ARL", "SDY", "TSN"] },
-    { "AtsuCode": "YMMM", "Sectors": ["ASP", "SNO", "IND", "INE"] }
+    { "AtsuCode": "YBBB", "Sectors": ["ARL", "INL", "KPL", "TSN"] },
+    { "AtsuCode": "YMMM", "Sectors": ["GUN", "BLA", "IND"] }
   ],
   "NdaRecalculationIntervalMinutes": 1,
   "UplinkMessages": {
