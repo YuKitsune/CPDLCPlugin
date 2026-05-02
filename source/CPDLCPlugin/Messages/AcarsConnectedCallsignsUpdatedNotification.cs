@@ -7,7 +7,7 @@ namespace CPDLCPlugin.Messages;
 public record AcarsConnectedCallsignsUpdatedNotification(string[] Callsigns) : INotification;
 
 public class AcarsConnectedCallsignsUpdatedNotificationHandler(
-    AcarsConnectedCallsignStore acarsConnectedCallsignStore,
+    AcarsStationStore acarsStationStore,
     ILogger logger)
     : INotificationHandler<AcarsConnectedCallsignsUpdatedNotification>
 {
@@ -15,7 +15,7 @@ public class AcarsConnectedCallsignsUpdatedNotificationHandler(
     {
         logger.Information("ACARS connected callsigns updated: {Count} callsigns", notification.Callsigns.Length);
 
-        await acarsConnectedCallsignStore.Populate(notification.Callsigns, cancellationToken);
+        await acarsStationStore.Populate(notification.Callsigns, cancellationToken);
 
         WeakReferenceMessenger.Default.Send(new ConnectedAircraftChanged());
     }

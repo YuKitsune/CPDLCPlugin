@@ -87,7 +87,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton<IErrorReporter, ErrorReporter>()
             .AddSingleton<IJurisdictionChecker, JurisdictionChecker>()
             .AddSingleton<AircraftConnectionStore>()
-            .AddSingleton<AcarsConnectedCallsignStore>()
+            .AddSingleton<AcarsStationStore>()
             .AddSingleton<WindowManager>()
             .AddSingleton<DialogueStore>()
             .AddSingleton<SuspendedMessageStore>()
