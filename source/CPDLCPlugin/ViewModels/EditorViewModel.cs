@@ -160,10 +160,6 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         _logger = logger;
 
         Callsign = callsign;
-        DownlinkMessages = downlinkMessages;
-
-        // Automatically select the last downlink message
-        SelectedDownlinkMessage = downlinkMessages.LastOrDefault();
 
         MessageCategoryNames = _uplinkMessagesConfiguration.Groups
             .Select(g => g.Name)
@@ -183,41 +179,41 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         });
     }
 
-    [ObservableProperty] string callsign;
+    [ObservableProperty] string _callsign;
 
-    [ObservableProperty] DownlinkMessageViewModel[] downlinkMessages = [];
+    [ObservableProperty] DownlinkMessageViewModel[] _downlinkMessages = [];
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(
         nameof(SendStandbyUplinkMessageCommand),
         nameof(DeferCommand),
         nameof(SendUnableDueTrafficUplinkMessageCommand),
         nameof(SendUnableDueAirspaceUplinkMessageCommand))]
-    DownlinkMessageViewModel? selectedDownlinkMessage;
+    DownlinkMessageViewModel? _selectedDownlinkMessage;
 
-    [ObservableProperty] DownlinkMessageViewModel? currentlyExtendedDownlinkMessage;
+    [ObservableProperty] DownlinkMessageViewModel? _currentlyExtendedDownlinkMessage;
 
     public bool ShowMessageCategories => !ShowHotButtons;
-    [ObservableProperty] string[] messageCategoryNames = [];
+    [ObservableProperty] string[] _messageCategoryNames = [];
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowMessageCategories))]
-    string? selectedMessageCategory;
+    string? _selectedMessageCategory;
 
-    [ObservableProperty] UplinkMessageTemplateViewModel[] selectedMessageCategoryElements = [];
+    [ObservableProperty] UplinkMessageTemplateViewModel[] _selectedMessageCategoryElements = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowMessageCategories))]
     [NotifyCanExecuteChangedFor(nameof(SuspendCommand))]
-    bool showHotButtons;
+    bool _showHotButtons;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(
         nameof(EscapeCommand),
         nameof(RestoreCommand),
         nameof(SuspendCommand))]
-    UplinkMessageElementViewModel[] uplinkMessageElements = [];
-    [ObservableProperty] UplinkMessageElementViewModel? selectedUplinkMessageElement;
+    UplinkMessageElementViewModel[] _uplinkMessageElements = [];
+    [ObservableProperty] UplinkMessageElementViewModel? _selectedUplinkMessageElement;
 
-    [ObservableProperty] string? error;
+    [ObservableProperty] string? _error;
 
     partial void OnSelectedDownlinkMessageChanged(DownlinkMessageViewModel? _, DownlinkMessageViewModel? newValue)
     {
@@ -770,18 +766,23 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                 downlinkMessageViewModels.Count,
                 downlinkMessageViewModels.Select(vm => new { vm.OriginalMessage.MessageId, vm.OriginalMessage.Content, vm.OriginalMessage.IsClosed, vm.OriginalMessage.IsAcknowledged }));
 
+            // Capture the selected downlink before updating the list so we can try to maintain the selection
+            var selectedDownlinkMessage = SelectedDownlinkMessage;
+
             DownlinkMessages = downlinkMessageViewModels.ToArray();
 
             // Try to maintain the current selection if the message still exists
-            if (SelectedDownlinkMessage is not null)
+            if (selectedDownlinkMessage is not null)
             {
-                var stillExists = downlinkMessageViewModels.Any(vm => vm.OriginalMessage.MessageId == SelectedDownlinkMessage.OriginalMessage?.MessageId);
-                SelectedDownlinkMessage = stillExists
-                    ? downlinkMessageViewModels.First(vm => vm.OriginalMessage.MessageId == SelectedDownlinkMessage.OriginalMessage.MessageId)
-                    : null;
+                SelectedDownlinkMessage = downlinkMessageViewModels.FirstOrDefault(vm =>
+                    vm.Dialogue.Id == selectedDownlinkMessage.Dialogue.Id &&
+                    vm.OriginalMessage.MessageId == selectedDownlinkMessage.OriginalMessage.MessageId);
 
-                _logger.Debug("[{Callsign}] Selection maintained: {Maintained}, SelectedDownlinkMessage: {MessageId}",
-                    Callsign, stillExists, SelectedDownlinkMessage?.OriginalMessage?.MessageId);
+                _logger.Debug("[{Callsign}] Selection maintained: {Maintained}, SelectedDownlinkMessage: {DialogueId}/{MessageId}",
+                    Callsign,
+                    SelectedDownlinkMessage is not null,
+                    SelectedDownlinkMessage?.Dialogue.Id,
+                    SelectedDownlinkMessage?.OriginalMessage.MessageId);
             }
         }
         catch (Exception ex)
