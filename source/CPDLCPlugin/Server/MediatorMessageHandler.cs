@@ -6,6 +6,8 @@ namespace CPDLCPlugin.Server;
 
 public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelegate
 {
+    int _isDisconnecting;
+
     public async Task DialogueChanged(DialogueDto dialogue, CancellationToken cancellationToken)
     {
         try
@@ -104,8 +106,11 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
 
     public void Error(Exception error)
     {
-        Plugin.AddError(error, "Error from SignalR Handler Delegate");
-        _ = DisconnectAsync();
+        Plugin.AddError(error, "Error from SignalR connection");
+        if (Interlocked.CompareExchange(ref _isDisconnecting, 1, 0) == 0)
+        {
+            _ = DisconnectAsync();
+        }
     }
 
     async Task DisconnectAsync()
@@ -117,6 +122,10 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         catch (Exception ex)
         {
             Plugin.AddError(ex, "Failed to disconnect after SignalR error");
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _isDisconnecting, 0);
         }
     }
 }

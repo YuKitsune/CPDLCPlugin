@@ -17,7 +17,8 @@ public class SignalRConnectionManager(
     : IDisposable
 {
     HubConnection? _connection;
-    bool _isDisposed;
+    int _isDisposed;
+    bool _isStopping;
 
     /// <summary>
     /// Gets the current connection state.
@@ -28,16 +29,6 @@ public class SignalRConnectionManager(
     /// Gets whether the connection is currently active.
     /// </summary>
     public bool IsConnected => ConnectionState == HubConnectionState.Connected;
-
-    /// <summary>
-    /// Event raised when the connection state changes.
-    /// </summary>
-    public event EventHandler<HubConnectionState>? ConnectionStateChanged;
-
-    /// <summary>
-    /// Event raised when a connection error occurs.
-    /// </summary>
-    public event EventHandler<Exception>? ConnectionError;
 
     public string ServerEndpoint { get; } = serverEndpoint;
     public string StationIdentifier { get; set; } = string.Empty;
@@ -98,16 +89,8 @@ public class SignalRConnectionManager(
             return;
         }
 
-        try
-        {
-            await _connection.StartAsync();
-            OnConnectionStateChanged(HubConnectionState.Connected);
-        }
-        catch (Exception ex)
-        {
-            OnConnectionError(ex);
-            throw;
-        }
+        await _connection.StartAsync();
+        OnConnectionStateChanged(HubConnectionState.Connected);
     }
 
     /// <summary>
@@ -115,22 +98,15 @@ public class SignalRConnectionManager(
     /// </summary>
     public async Task StopAsync()
     {
-        if (_connection == null || _connection.State == HubConnectionState.Disconnected)
+        var connection = _connection;
+        if (connection == null || connection.State == HubConnectionState.Disconnected)
         {
             logger.Warning("Connection already stopped or not initialized, skipping stop");
             return;
         }
 
-        try
-        {
-            await _connection.StopAsync();
-            OnConnectionStateChanged(HubConnectionState.Disconnected);
-        }
-        catch (Exception ex)
-        {
-            OnConnectionError(ex);
-            throw;
-        }
+        await connection.StopAsync();
+        OnConnectionStateChanged(HubConnectionState.Disconnected);
     }
 
     void RegisterHandlers()
@@ -179,52 +155,44 @@ public class SignalRConnectionManager(
         string content,
         CancellationToken cancellationToken)
     {
-        EnsureConnected();
-        var result = await _connection!.InvokeAsync<UplinkMessageDto>(
+        var connection = GetConnectedOrThrow();
+        return await connection.InvokeAsync<UplinkMessageDto>(
             "SendUplink",
             recipient,
             replyToDownlinkId,
             responseType,
             content,
             cancellationToken: cancellationToken);
-
-        return result;
     }
 
     public async Task<AircraftConnectionDto[]> GetConnectedAircraft(CancellationToken cancellationToken)
     {
-        EnsureConnected();
-        var aircraft = await _connection!.InvokeAsync<AircraftConnectionDto[]>(
+        var connection = GetConnectedOrThrow();
+        return await connection.InvokeAsync<AircraftConnectionDto[]>(
             "GetConnectedAircraft",
             cancellationToken);
-
-        return aircraft;
     }
 
     public async Task<ControllerConnectionDto[]> GetConnectedControllers(CancellationToken cancellationToken)
     {
-        EnsureConnected();
-        var controllers = await _connection!.InvokeAsync<ControllerConnectionDto[]>(
+        var connection = GetConnectedOrThrow();
+        return await connection.InvokeAsync<ControllerConnectionDto[]>(
             "GetConnectedControllers",
             cancellationToken);
-
-        return controllers;
     }
 
     public async Task<string[]> GetAcarsConnectedCallsigns(CancellationToken cancellationToken)
     {
-        EnsureConnected();
-        var callsigns = await _connection!.InvokeAsync<string[]>(
+        var connection = GetConnectedOrThrow();
+        return await connection.InvokeAsync<string[]>(
             "GetAcarsConnectedCallsigns",
             cancellationToken);
-
-        return callsigns;
     }
 
     public async Task AcknowledgeDownlink(Guid dialogueId, int downlinkMessageId, CancellationToken cancellationToken)
     {
-        EnsureConnected();
-        await _connection!.InvokeAsync(
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync(
             "AcknowledgeDownlink",
             dialogueId,
             downlinkMessageId,
@@ -233,8 +201,8 @@ public class SignalRConnectionManager(
 
     public async Task AcknowledgeUplink(Guid dialogueId, int uplinkMessageId, CancellationToken cancellationToken)
     {
-        EnsureConnected();
-        await _connection!.InvokeAsync(
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync(
             "AcknowledgeUplink",
             dialogueId,
             uplinkMessageId,
@@ -243,8 +211,8 @@ public class SignalRConnectionManager(
 
     public async Task ArchiveDialogue(Guid dialogueId, CancellationToken cancellationToken)
     {
-        EnsureConnected();
-        await _connection!.InvokeAsync("ArchiveDialogue", dialogueId, cancellationToken);
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync("ArchiveDialogue", dialogueId, cancellationToken);
     }
 
     public async Task UpdateNextDataAuthority(
@@ -253,8 +221,8 @@ public class SignalRConnectionManager(
         DateTimeOffset? expectedTransferTime,
         CancellationToken cancellationToken)
     {
-        EnsureConnected();
-        await _connection!.InvokeAsync(
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync(
             "UpdateNextDataAuthority",
             callsign,
             nextDataAuthority,
@@ -264,12 +232,10 @@ public class SignalRConnectionManager(
 
     public async Task<DialogueDto[]> GetAllDialogues(CancellationToken cancellationToken)
     {
-        EnsureConnected();
-        var dialogues = await _connection!.InvokeAsync<DialogueDto[]>(
+        var connection = GetConnectedOrThrow();
+        return await connection.InvokeAsync<DialogueDto[]>(
             "GetAllDialogues",
             cancellationToken);
-
-        return dialogues;
     }
 
     /// <summary>
@@ -281,12 +247,19 @@ public class SignalRConnectionManager(
 
         logger.Verbose("Registering SignalR connection lifecycle event handlers");
 
-        _connection.Closed += async error =>
+        _connection.Closed += error =>
         {
             if (error != null)
             {
-                logger.Warning(error, "SignalR connection closed with error");
-                OnConnectionError(error);
+                if (_isStopping)
+                {
+                    logger.Verbose(error, "SignalR connection closed with error during intentional stop");
+                }
+                else
+                {
+                    logger.Warning(error, "SignalR connection closed with error");
+                    OnConnectionError(error);
+                }
             }
             else
             {
@@ -294,7 +267,7 @@ public class SignalRConnectionManager(
             }
 
             OnConnectionStateChanged(HubConnectionState.Disconnected);
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         };
 
         _connection.Reconnecting += error =>
@@ -302,7 +275,6 @@ public class SignalRConnectionManager(
             if (error != null)
             {
                 logger.Warning(error, "SignalR connection lost, attempting to reconnect");
-                OnConnectionError(error);
             }
             else
             {
@@ -324,39 +296,31 @@ public class SignalRConnectionManager(
     void OnConnectionStateChanged(HubConnectionState newState)
     {
         logger.Verbose("Connection state changed to {State}", newState);
-        ConnectionStateChanged?.Invoke(this, newState);
     }
 
     void OnConnectionError(Exception error)
     {
         logger.Error(error, "SignalR connection error occurred");
-        ConnectionError?.Invoke(this, error);
         downlinkHandlerDelegate.Error(error);
     }
 
-    /// <summary>
-    /// Ensures the connection is active before attempting operations.
-    /// </summary>
-    void EnsureConnected()
+    HubConnection GetConnectedOrThrow()
     {
-        if (_connection == null)
+        var connection = _connection ?? throw new InvalidOperationException("Connection not initialized. Call InitializeAsync first.");
+        if (connection.State != HubConnectionState.Connected)
         {
-            throw new InvalidOperationException("Connection not initialized. Call InitializeAsync first.");
+            throw new InvalidOperationException($"Connection is not active. Current state: {connection.State}");
         }
 
-        if (_connection.State != HubConnectionState.Connected)
-        {
-            throw new InvalidOperationException($"Connection is not active. Current state: {_connection.State}");
-        }
+        return connection;
     }
 
     public void Dispose()
     {
-        if (_isDisposed) return;
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
         logger.Verbose("Disposing SignalR connection manager");
         DisposeConnectionAsync().GetAwaiter().GetResult();
-        _isDisposed = true;
         logger.Verbose("SignalR connection manager disposed");
         GC.SuppressFinalize(this);
     }
@@ -367,8 +331,12 @@ public class SignalRConnectionManager(
         {
             try
             {
-                logger.Verbose("Stopping connection during disposal");
-                await _connection.StopAsync();
+                if (_connection.State != HubConnectionState.Disconnected)
+                {
+                    logger.Verbose("Stopping connection during disposal");
+                    _isStopping = true;
+                    await _connection.StopAsync();
+                }
             }
             catch (Exception ex)
             {
@@ -377,6 +345,7 @@ public class SignalRConnectionManager(
             }
             finally
             {
+                _isStopping = false;
                 await _connection.DisposeAsync();
                 _connection = null;
             }
