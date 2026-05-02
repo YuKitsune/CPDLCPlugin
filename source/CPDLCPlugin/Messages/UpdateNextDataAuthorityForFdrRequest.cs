@@ -41,6 +41,9 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
         var oldInfo = ourAircraft.NextDataAuthorityInfo;
 
+        using var serverCallCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        serverCallCts.CancelAfter(TimeSpan.FromSeconds(10));
+
         // Handle state transitions and error display
         if (newInfo is ErrorNextDataAuthorityInfo errorInfo)
         {
@@ -70,7 +73,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 fdr.Callsign,
                 null,
                 null,
-                cancellationToken);
+                serverCallCts.Token);
 
             return;
         }
@@ -92,7 +95,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 fdr.Callsign,
                 null,
                 null,
-                cancellationToken);
+                serverCallCts.Token);
 
             return;
         }
@@ -120,7 +123,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 fdr.Callsign,
                 validInfo.NextDataAuthority,
                 validInfo.ExitTime,
-                cancellationToken);
+                serverCallCts.Token);
         }
     }
 

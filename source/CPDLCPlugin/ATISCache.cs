@@ -68,12 +68,14 @@ public class AtisCache(IClock clock, IErrorReporter errorReporter, ILogger logge
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (lastUpdatedAtisTime == controller.LastATISUpdate)
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
 
-            _logger.Verbose("ATIS loaded for {callsign}", controller.Callsign);
+            if (lastUpdatedAtisTime != controller.LastATISUpdate)
+            {
+                _logger.Verbose("ATIS loaded for {callsign}", controller.Callsign);
+                return controller.ATIS ?? [];
+            }
 
-            return controller.ATIS ?? [];
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
         }
     }
 
