@@ -10,8 +10,7 @@ public class ConnectedNotificationHandler(
     Plugin plugin,
     DialogueStore dialogueStore,
     AircraftConnectionStore aircraftConnectionStore,
-    ControllerConnectionStore controllerConnectionStore,
-    AcarsConnectedCallsignStore acarsConnectedCallsignStore,
+    AcarsStationStore acarsStationStore,
     ILogger logger)
     : INotificationHandler<ConnectedNotification>
 {
@@ -36,16 +35,10 @@ public class ConnectedNotificationHandler(
         await aircraftConnectionStore.Populate(connectedAircraft, cancellationToken);
         logger.Information("Loaded {ConnectionCount} aircraft connection(s)", connectedAircraft.Length);
 
-        // Load controller connections
-        logger.Verbose("Loading all controller connections");
-        var connectedControllers = await plugin.ConnectionManager.GetConnectedControllers(cancellationToken);
-        await controllerConnectionStore.Populate(connectedControllers, cancellationToken);
-        logger.Information("Loaded {ControllerCount} controller connection(s)", connectedControllers.Length);
-
         // Load ACARS connected callsigns
         logger.Verbose("Loading ACARS connected callsigns");
-        var acarsConnectedCallsigns = await plugin.ConnectionManager.GetAcarsConnectedCallsigns(cancellationToken);
-        await acarsConnectedCallsignStore.Populate(acarsConnectedCallsigns, cancellationToken);
+        var acarsConnectedCallsigns = await plugin.ConnectionManager.GetAcarsStations(cancellationToken);
+        await acarsStationStore.Populate(acarsConnectedCallsigns, cancellationToken);
         logger.Information("Loaded {Count} ACARS connected callsign(s)", acarsConnectedCallsigns.Length);
 
         // Relay notification to UI

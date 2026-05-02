@@ -56,11 +56,11 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
     }
 
-    public async Task ControllerConnectionUpdated(ControllerConnectionDto controllerConnectionDto, CancellationToken cancellationToken)
+    public async Task AcarsStationsUpdated(string[] callsigns, CancellationToken cancellationToken)
     {
         try
         {
-            await mediator.Publish(new ControllerConnectionUpdatedNotification(controllerConnectionDto), cancellationToken);
+            await mediator.Publish(new AcarsStationsUpdatedNotification(callsigns), cancellationToken);
         }
         catch (OperationCanceledException)
         {
@@ -68,39 +68,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle ControllerConnectionUpdated notification");
-        }
-    }
-
-    public async Task ControllerConnectionRemoved(string callsign, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await mediator.Publish(new ControllerConnectionRemovedNotification(callsign), cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected when cancellation is requested
-        }
-        catch (Exception ex)
-        {
-            Plugin.AddError(ex, "Failed to handle ControllerConnectionRemoved notification");
-        }
-    }
-
-    public async Task AcarsConnectedCallsignsUpdated(string[] callsigns, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await mediator.Publish(new AcarsConnectedCallsignsUpdatedNotification(callsigns), cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected when cancellation is requested
-        }
-        catch (Exception ex)
-        {
-            Plugin.AddError(ex, "Failed to handle AcarsConnectedCallsignsUpdated notification");
+            Plugin.AddError(ex, "Failed to handle AcarsStationsUpdated notification");
         }
     }
 

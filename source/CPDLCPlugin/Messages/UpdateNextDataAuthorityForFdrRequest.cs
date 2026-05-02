@@ -1,3 +1,4 @@
+using CPDLCPlugin.Configuration;
 using CPDLCServer.Contracts;
 using MediatR;
 using Newtonsoft.Json;
@@ -10,9 +11,9 @@ public record UpdateNextDataAuthorityForFdrRequest(FDP2.FDR Fdr) : IRequest;
 
 public class UpdateNextDataAuthorityForFdrRequestHandler(
     Plugin plugin,
-    AtisCache atisCache,
     AircraftConnectionStore aircraftConnectionStore,
-    ControllerConnectionStore controllerConnectionStore,
+    AcarsStationStore acarsStationStore,
+    PluginConfiguration configuration,
     ILogger logger)
     : IRequestHandler<UpdateNextDataAuthorityForFdrRequest>
 {
@@ -23,8 +24,6 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
             return;
 
-        logger.Information("Calculating next data authority for {Callsign}", fdr.Callsign);
-
         var aircraftConnections = await aircraftConnectionStore.All(cancellationToken);
         var ourAircraft = aircraftConnections.FirstOrDefault(
             c => c.Callsign == fdr.Callsign &&
@@ -33,6 +32,8 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
         if (ourAircraft is null)
             return;
+
+        logger.Verbose("Calculating next data authority for {Callsign}", fdr.Callsign);
 
         var newInfo = await CalculateNextDataAuthority(
             fdr,
@@ -48,7 +49,8 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
         if (newInfo is ErrorNextDataAuthorityInfo errorInfo)
         {
             // Only show error if we're transitioning TO error state (not if already in error)
-            if (oldInfo is not ErrorNextDataAuthorityInfo)
+            if (oldInfo is not ErrorNextDataAuthorityInfo existingErrorInfo ||
+                existingErrorInfo.ErrorMessage != errorInfo.ErrorMessage)
             {
                 logger.Information(
                     "Next data authority calculation failed for {Callsign}: {ErrorMessage}",
@@ -138,67 +140,72 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
         foreach (var sectorEntry in sectorEntryInfos)
         {
-            // Lookup CPDLC codes by frequency in case a controller is extending coverage to another sector
-            var cpdlcCodesByFrequency = await LogonCodeHelper.TryGetLogonCode(
-                sectorEntry.SectorFrequency,
-                atisCache,
-                cancellationToken);
+            logger.Verbose("{Callsign} enters [{SectorIds}] at {EntryTime}", fdr.Callsign, string.Join(", ", sectorEntry.SectorIds), sectorEntry.SectorEntryTime);
 
-            // Lookup CPDLC code by callsign for the most accurate answer
-            var cpdlcCodeByCallsign = await LogonCodeHelper.TryGetLogonCode(
-                sectorEntry.ControllerCallsign,
-                controllerConnectionStore,
-                atisCache,
-                cancellationToken);
-
-            var cpdlcCodes = new HashSet<string>();
-            foreach (var cpdlcCodeByFrequency in cpdlcCodesByFrequency)
+            // Build ATSU code candidates from the sector hierarchy (most-specific first),
+            // deduplicating to avoid redundant online checks.
+            var candidates = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var sectorId in sectorEntry.SectorIds)
             {
-                cpdlcCodes.Add(cpdlcCodeByFrequency);
+                var matches = configuration.AtsuCodes
+                    .Where(m => m.Sectors.Any(s => s.Equals(sectorId, StringComparison.OrdinalIgnoreCase)))
+                    .Select(m => m.AtsuCode)
+                    .ToList();
+
+                if (matches.Count > 1)
+                {
+                    var errorMessage = $"Sector {sectorId} is claimed by multiple ATSU codes in config: {string.Join(", ", matches)}";
+                    logger.Warning(
+                        "Cannot calculate next data authority for {Callsign}: {ErrorMessage}",
+                        fdr.Callsign,
+                        errorMessage);
+                    return new ErrorNextDataAuthorityInfo(errorMessage);
+                }
+
+                if (matches.Count == 1 && seen.Add(matches[0]))
+                    candidates.Add(matches[0]);
             }
 
-            if (!string.IsNullOrEmpty(cpdlcCodeByCallsign))
-                cpdlcCodes.Add(cpdlcCodeByCallsign);
-
-            if (cpdlcCodes.Count == 0)
+            if (candidates.Count == 0)
             {
-                logger.Verbose(
-                    "No CPDLC codes found for sector {SectorId} at {Frequency} for {Callsign}",
-                    sectorEntry.SectorId,
-                    sectorEntry.SectorFrequency,
-                    fdr.Callsign);
+                logger.Verbose("No ATSU codes found in hierarchy for {Callsign}, skipping", fdr.Callsign);
                 continue;
             }
 
-            if (cpdlcCodes.Count > 1)
-            {
-                var errorMessage = $"Multiple CPDLC codes found in next sector {sectorEntry.SectorId}: {string.Join(", ", cpdlcCodes)}";
-                logger.Warning(
-                    "Cannot calculate next data authority for {Callsign}: {ErrorMessage}",
-                    fdr.Callsign,
-                    errorMessage);
-                return new ErrorNextDataAuthorityInfo(errorMessage);
-            }
-
-            var cpdlcCode = cpdlcCodes.Single();
-            if (cpdlcCode.Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
+            // If the most-specific candidate is our own station, this is our airspace.
+            if (candidates[0].Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            logger.Information(
-                "ATSU boundary found for {Callsign}: sector {SectorId} with code {CpdlcCode} at {ExitTime}",
+            // Find the first candidate (most-specific first) that is currently online.
+            foreach (var atsuCode in candidates)
+            {
+                if (atsuCode.Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (await acarsStationStore.IsOnline(atsuCode, cancellationToken))
+                {
+                    logger.Verbose(
+                        "ATSU boundary found for {Callsign}: {AtsuCode} at {ExitTime}",
+                        fdr.Callsign,
+                        atsuCode,
+                        sectorEntry.SectorEntryTime);
+
+                    return new ValidNextDataAuthorityInfo(atsuCode, sectorEntry.SectorEntryTime);
+                }
+            }
+
+            logger.Verbose(
+                "ATSU boundary found for {Callsign} but no candidates online [{Candidates}], continuing",
                 fdr.Callsign,
-                sectorEntry.SectorId,
-                cpdlcCode,
-                sectorEntry.SectorEntryTime);
-
-            return new ValidNextDataAuthorityInfo(cpdlcCode, sectorEntry.SectorEntryTime);
+                string.Join(", ", candidates));
         }
 
-        logger.Information("No ATSU boundary found for {Callsign}", fdr.Callsign);
+        logger.Verbose("No ATSU boundary found for {Callsign}", fdr.Callsign);
         return NoneNextDataAuthorityInfo.Instance;
     }
 
-    record SectorEntryInfo(string SectorId, string ControllerCallsign, int SectorFrequency, DateTimeOffset SectorEntryTime);
+    record SectorEntryInfo(IReadOnlyList<string> SectorIds, DateTimeOffset SectorEntryTime);
 
     static IReadOnlyList<SectorEntryInfo> GetSectorEntryInfos(FDP2.FDR fdr)
     {
@@ -217,16 +224,17 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
             if (sector is null)
                 continue;
 
-            // If this is a subsector, find the smallest parent sector that contains it
-            // (e.g., if flying through ML-SNO subsector, find parent YMMM sector)
-            var parentSector = SectorsVolumes.SectorGroupings.Keys
-                .Where(parent => parent.SubSectors.Contains(sector))
-                .OrderBy(parent => parent.SubSectors.Count)
-                .FirstOrDefault();
-
-            if (parentSector is not null)
+            // Walk the sector hierarchy from most-specific to least-specific.
+            var sectorIds = new List<string>();
+            var current = sector;
+            while (current is not null)
             {
-                sector = parentSector;
+                sectorIds.Add(current.Name);
+                var captured = current;
+                current = SectorsVolumes.SectorGroupings.Keys
+                    .Where(p => p.SubSectors.Contains(captured))
+                    .OrderBy(p => p.SubSectors.Count)
+                    .FirstOrDefault();
             }
 
             var eto = segment.ETO;
@@ -239,7 +247,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 eto.Second,
                 offset: TimeSpan.Zero);
 
-            results.Add(new SectorEntryInfo(sector.Name, sector.Callsign, (int) sector.Frequency, etoDateTimeOffset));
+            results.Add(new SectorEntryInfo(sectorIds.AsReadOnly(), etoDateTimeOffset));
         }
 
         return results.AsReadOnly();

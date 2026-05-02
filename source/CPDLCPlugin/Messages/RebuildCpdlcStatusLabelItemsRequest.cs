@@ -14,7 +14,7 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
     ColourCache colourCache,
     DialogueStore dialogueStore,
     AircraftConnectionStore aircraftConnectionStore,
-    AcarsConnectedCallsignStore acarsConnectedCallsignStore,
+    AcarsStationStore acarsStationStore,
     SuspendedMessageStore suspendedMessageStore,
     IJurisdictionChecker jurisdictionChecker,
     IMediator mediator,
@@ -67,7 +67,7 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
 
                     var hasOpenDownlinkMessages = openDownlinkMessages.Any();
 
-                    var isOnAcarsNetwork = await acarsConnectedCallsignStore.IsConnected(callsign, cancellationToken);
+                    var isOnAcarsNetwork = await acarsStationStore.IsOnline(callsign, cancellationToken);
 
                     var unacknowledgedUnableReceived = openDialogues
                         .SelectMany(d => d.Messages ?? [])

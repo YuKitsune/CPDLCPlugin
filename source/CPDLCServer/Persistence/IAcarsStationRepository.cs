@@ -1,6 +1,6 @@
 namespace CPDLCServer.Persistence;
 
-public interface IAcarsConnectedCallsignsRepository
+public interface IAcarsStationRepository
 {
     Task<string[]> All(CancellationToken cancellationToken);
     Task<bool> Update(string[] callsigns, CancellationToken cancellationToken);

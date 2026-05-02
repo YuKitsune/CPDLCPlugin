@@ -40,6 +40,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
     readonly ColourCache _colourCache;
 
     readonly WorkQueue _workQueue;
+    PluginConfiguration? _configuration;
 
     BackgroundWorker? _ndaRecalculationWorker;
 
@@ -59,13 +60,13 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         _textStatusProvider = new TextStatusLabelItemProvider(_colourCache);
 
         var configuration = ConfigurationLoader.Load();
+        _configuration = configuration;
         ConfigureServices(configuration);
 
         AddToolbarItems();
 
         Network.Connected += NetworkConnected;
         Network.Disconnected += NetworkDisconnected;
-        Network.OnlineATCChanged += NetworkOnlineATCChanged;
 
         WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
         WeakReferenceMessenger.Default.Register<ConnectedAircraftChanged>(this);
@@ -86,12 +87,10 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton<IErrorReporter, ErrorReporter>()
             .AddSingleton<IJurisdictionChecker, JurisdictionChecker>()
             .AddSingleton<AircraftConnectionStore>()
-            .AddSingleton<AcarsConnectedCallsignStore>()
-            .AddSingleton<ControllerConnectionStore>()
+            .AddSingleton<AcarsStationStore>()
             .AddSingleton<WindowManager>()
             .AddSingleton<DialogueStore>()
             .AddSingleton<SuspendedMessageStore>()
-            .AddSingleton<AtisCache>()
             .AddSingleton(_cpdlcStatusProvider)
             .AddSingleton(_colourCache)
             .AddMediatR(c => c.RegisterServicesFromAssemblies(typeof(Plugin).Assembly))
@@ -151,29 +150,17 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
     }
 
-    void NetworkOnlineATCChanged(object sender, EventArgs e)
-    {
-        try
-        {
-            // When ATC change, we need to re-calculate the NextDataAuthority
-            _workQueue.Enqueue(RecalculateNextDataAuthorityForAllAircraft);
-        }
-        catch (Exception ex)
-        {
-            AddError(ex);
-        }
-    }
-
     void StartNdaRecalculationWorker()
     {
-        Log.Information("Starting NDA recalculation worker");
+        var interval = TimeSpan.FromMinutes(_configuration?.NdaRecalculationIntervalMinutes ?? 1);
+        Log.Information("Starting NDA recalculation worker (interval: {Interval})", interval);
         _ndaRecalculationWorker = new BackgroundWorker(async cancellationToken =>
         {
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken);
+                    await Task.Delay(interval, cancellationToken);
                     await RecalculateNextDataAuthorityForAllAircraft();
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -348,7 +335,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             // Record the last known owner of each FDR
             _workQueue.Enqueue(async () =>
             {
-                Log.Debug(
+                Log.Verbose(
                     "{Callsign}: IsTracked {IsTracked}; IsTrackedByMe: {IsTrackedByMe}; Controller Tracking: {CurrentController}; Handoff Controller: {HandoffController}",
                     updated.Callsign,
                     updated.IsTracked,

@@ -11,7 +11,7 @@ namespace CPDLCServer.Hubs;
 public class ControllerHub(
     IControllerRepository controllerRepository,
     IDialogueRepository dialogueRepository,
-    IAcarsConnectedCallsignsRepository acarsConnectedCallsignsRepository,
+    IAcarsStationRepository acarsConnectedCallsignsRepository,
     IMediator mediator,
     ILogger logger)
     : Hub
@@ -136,7 +136,7 @@ public class ControllerHub(
         return result.Controllers;
     }
 
-    public async Task<string[]> GetAcarsConnectedCallsigns()
+    public async Task<string[]> GetAcarsStations()
     {
         return await acarsConnectedCallsignsRepository.All(CancellationToken.None);
     }
