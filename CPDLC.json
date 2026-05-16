@@ -1,6 +1,6 @@
 {
   "ServerEndpoint": "https://vatpac.cpdlc.eoinmotherway.dev/hubs/controller",
-  "Stations": ["YBBB", "YMMM"],
+  "Stations": ["YBBB", "YMMM", "NFFF", "AYPM"],
   "LogLevel": "Verbose",
   "MaxCurrentMessages": 50,
   "MaxArchivedMessages": 50,
@@ -17,6 +17,7 @@
     { "AtsuCode": "VCCF", "Sectors": ["VCCF"] },
     { "AtsuCode": "WIIF", "Sectors": ["WIIF", "WIIFSG", "WIIFBD", "WIIFMN", "WIIFIS"] },
     { "AtsuCode": "WAAF", "Sectors": ["WAAF", "UBLI", "WAAFNA", "WAAFAN", "WAAFPA"] },
+    { "AtsuCode": "NFFF", "Sectors": ["NFFF"] },
     { "AtsuCode": "AYPM", "Sectors": ["AYPM"] },
     { "AtsuCode": "KZAK", "Sectors": ["KZAK", "KZAKE", "KZAKW", "KZAK3", "KZAK5", "KZAK6", "KZAK9"] },
     { "AtsuCode": "ASIW", "Sectors": ["ASIAW"] },
