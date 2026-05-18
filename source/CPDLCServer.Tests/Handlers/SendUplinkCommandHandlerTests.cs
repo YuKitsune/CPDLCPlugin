@@ -151,7 +151,7 @@ public class SendUplinkCommandHandlerTests
         var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        var dialogue = await dialogueRepository.FindDialogueForMessage(
+        var dialogue = await dialogueRepository.FindOpenDialogueByUplink(
             "UAL123",
             result.UplinkMessage.MessageId,
             CancellationToken.None);
@@ -211,7 +211,7 @@ public class SendUplinkCommandHandlerTests
         var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        var dialogue = await dialogueRepository.FindDialogueForMessage(
+        var dialogue = await dialogueRepository.FindOpenDialogueByUplink(
             "UAL123",
             5,
             CancellationToken.None);

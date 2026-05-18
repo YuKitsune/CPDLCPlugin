@@ -106,31 +106,9 @@ public class DownlinkReceivedNotificationHandler(
 
         aircraftConnection.LogLastSeen(clock.UtcNow());
 
-        // Add or update the dialogue
-        dialogue = notification.Downlink.MessageReference.HasValue
-            ? await dialogueRepository.FindDialogueForMessage(
-                notification.Downlink.Sender,
-                notification.Downlink.MessageReference.Value,
-                cancellationToken)
-            : null;
-
-        if (dialogue is null)
-        {
-            dialogue = new Dialogue(notification.Downlink.Sender, notification.Downlink);
-            logger.Information("Dialogue {DialogueId} created for downlink from {Callsign}", dialogue.Id, notification.Downlink.Sender);
-            await dialogueRepository.Add(dialogue, cancellationToken);
-        }
+        if (notification.Downlink.MessageReference.HasValue)
+            await publisher.Publish(new AircraftRepliedToUplinkNotification(notification.Downlink), cancellationToken);
         else
-        {
-            dialogue.AddMessage(notification.Downlink);
-            logger.Information("Downlink from {Callsign} appended to dialogue {DialogueId}", notification.Downlink.Sender, dialogue.Id);
-        }
-
-        // Publish DialogueChangedNotification instead of broadcasting directly
-        await publisher.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
-
-        logger.Information(
-            "Published dialogue change notification for downlink from {From}",
-            notification.Downlink.Sender);
+            await publisher.Publish(new NewDialogueFromDownlinkNotification(notification.Downlink), cancellationToken);
     }
 }

@@ -7,9 +7,9 @@ public interface IDialogueRepository
 {
     Task Add(Dialogue dialogue, CancellationToken cancellationToken);
 
-    Task<Dialogue?> FindDialogueForMessage(
+    Task<Dialogue?> FindOpenDialogueByUplink(
         string aircraftCallsign,
-        int messageId,
+        int uplinkMessageId,
         CancellationToken cancellationToken);
 
     Task<Dialogue?> FindById(Guid id, CancellationToken cancellationToken);

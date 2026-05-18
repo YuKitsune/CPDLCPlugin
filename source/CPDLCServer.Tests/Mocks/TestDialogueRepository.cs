@@ -12,14 +12,14 @@ public class TestDialogueRepository : IDialogueRepository
         return _inner.Add(dialogue, cancellationToken);
     }
 
-    public Task<Dialogue?> FindDialogueForMessage(
+    public Task<Dialogue?> FindOpenDialogueByUplink(
         string aircraftCallsign,
-        int messageId,
+        int uplinkMessageId,
         CancellationToken cancellationToken)
     {
-        return _inner.FindDialogueForMessage(
+        return _inner.FindOpenDialogueByUplink(
             aircraftCallsign,
-            messageId,
+            uplinkMessageId,
             cancellationToken);
     }
 

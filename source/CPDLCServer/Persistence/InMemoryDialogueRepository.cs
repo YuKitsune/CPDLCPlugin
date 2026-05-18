@@ -17,9 +17,9 @@ public class InMemoryDialogueRepository : IDialogueRepository
         }
     }
 
-    public async Task<Dialogue?> FindDialogueForMessage(
+    public async Task<Dialogue?> FindOpenDialogueByUplink(
         string aircraftCallsign,
-        int messageId,
+        int uplinkMessageId,
         CancellationToken cancellationToken)
     {
         using (await _semaphore.LockAsync(cancellationToken))
@@ -27,7 +27,8 @@ public class InMemoryDialogueRepository : IDialogueRepository
             return _dialogues
                 .FirstOrDefault(d =>
                     d.AircraftCallsign == aircraftCallsign &&
-                    d.Messages.Any(m => m.MessageId == messageId));
+                    !d.IsArchived &&
+                    d.Messages.OfType<UplinkMessage>().Any(m => m.MessageId == uplinkMessageId));
         }
     }
 

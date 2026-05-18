@@ -403,7 +403,7 @@ public class DownlinkReceivedNotificationHandlerTests
         await handler.Handle(notification, CancellationToken.None);
 
         // Assert
-        var dialogue = await dialogueRepository.FindDialogueForMessage(
+        var dialogue = await dialogueRepository.FindOpenDialogueByUplink(
             "UAL123",
             1,
             CancellationToken.None);
@@ -469,7 +469,7 @@ public class DownlinkReceivedNotificationHandlerTests
         await handler.Handle(notification, CancellationToken.None);
 
         // Assert
-        var dialogue = await dialogueRepository.FindDialogueForMessage(
+        var dialogue = await dialogueRepository.FindOpenDialogueByUplink(
             "UAL123",
             5,
             CancellationToken.None);

@@ -59,7 +59,7 @@ public class SendUplinkCommandHandler(
 
         // Add or update the dialogue
         var dialogue = request.ReplyToDownlinkId.HasValue
-            ? await dialogueRepository.FindDialogueForMessage(
+            ? await dialogueRepository.FindOpenDialogueByUplink(
                 request.Recipient,
                 request.ReplyToDownlinkId.Value,
                 cancellationToken)
