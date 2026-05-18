@@ -99,3 +99,39 @@ services:
         scope: RUN_AND_BUILD_TIME
         type: SECRET
         value: EV[1:CRa251llH20gzBZHzT2AGYmd3hiIBT2/:TwTUdBBtHUT9+x9MMonshbme6jm/1d1Nj+up9n7SCA==]
+
+        # Nadi FIR (NFFF)
+      - key: Acars__2__Type
+        scope: RUN_AND_BUILD_TIME
+        value: Hoppie
+      - key: Acars__2__FlightSimulationNetwork
+        scope: RUN_AND_BUILD_TIME
+        value: VATSIM
+      - key: Acars__2__StationIdentifier
+        scope: RUN_AND_BUILD_TIME
+        value: NFFF
+      - key: Acars__2__Url
+        scope: RUN_AND_BUILD_TIME
+        value: http://www.hoppie.nl/acars/system/connect.html
+      - key: Acars__2__AuthenticationCode
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: EV[1:nw+XKkNewgXXQ9O1VbOBpH5RPp1AC92G:9SDpsP3c5gkz2aKIGPjuZ6fLiCkNAB1t0JGgBcbW+GM=]
+
+        # Port Moresby FIR (AYPM)
+      - key: Acars__3__Type
+        scope: RUN_AND_BUILD_TIME
+        value: Hoppie
+      - key: Acars__3__FlightSimulationNetwork
+        scope: RUN_AND_BUILD_TIME
+        value: VATSIM
+      - key: Acars__3__StationIdentifier
+        scope: RUN_AND_BUILD_TIME
+        value: AYPM
+      - key: Acars__3__Url
+        scope: RUN_AND_BUILD_TIME
+        value: http://www.hoppie.nl/acars/system/connect.html
+      - key: Acars__3__AuthenticationCode
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: EV[1:J2eChRW3fQxQFeyDNWQzNELUJIQVoqq5:iFyrBysLu8chyk5Dhyavdt2Q7d8ejDJE1tru9eegWw==]
