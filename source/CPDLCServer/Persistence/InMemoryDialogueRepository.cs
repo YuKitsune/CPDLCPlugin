@@ -24,6 +24,15 @@ public class InMemoryDialogueRepository : IDialogueRepository
     {
         using (await _semaphore.LockAsync(cancellationToken))
         {
+            // BUG: It's possible to have messageId collisions, since the server generates incrementing ids, and some
+            //  aircraft have their own incrementing ids ticking along too.
+            //  We need to remove this method, and re-factor how messages are correlated to Dialogues.
+            //  Idea:
+            //      Split into multiple streams:
+            //      1. ReplyToDownlink (DialogueId, MessageId)
+            //      2. CreateDialogueFromUplink (No params)
+            //      3. AddReplyToUplink (UplinkId), Hoppie doesn't track Dialogue IDs, so we need to look through open dialogues for an uplink with that ID.
+            //      4. CreateDialogueFromDownlink (DownlinkId)
             return _dialogues
                 .FirstOrDefault(d =>
                     d.AircraftCallsign == aircraftCallsign &&
