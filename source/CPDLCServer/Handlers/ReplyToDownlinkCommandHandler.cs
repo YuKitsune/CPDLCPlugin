@@ -20,31 +20,32 @@ public class ReplyToDownlinkCommandHandler(
 {
     public async Task<SendUplinkResult> Handle(ReplyToDownlinkCommand request, CancellationToken cancellationToken)
     {
-        logger.Information("Replying to downlink {DownlinkMessageId} in dialogue {DialogueId} for {Recipient}",
-            request.DownlinkMessageId, request.DialogueId, request.Recipient);
-
         var dialogue = await dialogueRepository.FindById(request.DialogueId, cancellationToken);
         if (dialogue is null)
             throw new Exception($"Dialogue {request.DialogueId} not found");
 
+        var callsign = dialogue.AircraftCallsign;
+        logger.Information("Replying to downlink {DownlinkMessageId} in dialogue {DialogueId} for {Callsign}",
+            request.DownlinkMessageId, request.DialogueId, callsign);
+
         var allAircraft = await aircraftRepository.All(cancellationToken);
         var aircraftConnection =
-            allAircraft.FirstOrDefault(a => a.Callsign == request.Recipient && a.DataAuthorityState == DataAuthorityState.CurrentDataAuthority)
-            ?? allAircraft.FirstOrDefault(a => a.Callsign == request.Recipient && a.DataAuthorityState == DataAuthorityState.NextDataAuthority);
+            allAircraft.FirstOrDefault(a => a.Callsign == callsign && a.DataAuthorityState == DataAuthorityState.CurrentDataAuthority)
+            ?? allAircraft.FirstOrDefault(a => a.Callsign == callsign && a.DataAuthorityState == DataAuthorityState.NextDataAuthority);
         if (aircraftConnection is null)
-            throw new Exception($"{request.Recipient} is not connected");
+            throw new Exception($"{callsign} is not connected");
 
         var client = await clientManager.GetAcarsClient(aircraftConnection.AcarsClientId, cancellationToken);
 
         var messageId = await messageIdProvider.GetNextMessageId(
             aircraftConnection.AcarsClientId,
-            request.Recipient,
+            callsign,
             cancellationToken);
 
         var uplinkMessage = new UplinkMessage(
             messageId,
             request.DownlinkMessageId,
-            request.Recipient,
+            callsign,
             request.Sender,
             request.ResponseType,
             AlertType.None,
@@ -58,7 +59,7 @@ public class ReplyToDownlinkCommandHandler(
         await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
 
         await client.Send(uplinkMessage, cancellationToken);
-        logger.Information("Sent CPDLC message from {Sender} to {Recipient}", request.Sender, request.Recipient);
+        logger.Information("Sent CPDLC message from {Sender} to {Callsign}", request.Sender, callsign);
 
         return new SendUplinkResult(uplinkMessage);
     }
