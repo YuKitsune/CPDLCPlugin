@@ -71,7 +71,7 @@ public class ControllerHub(
         await base.OnConnectedAsync();
     }
 
-    public async Task<UplinkMessageDto> BeginDialogue(
+    public async Task BeginDialogue(
         string recipient,
         CpdlcUplinkResponseType responseType,
         string content)
@@ -92,16 +92,14 @@ public class ControllerHub(
             _ => throw new ArgumentOutOfRangeException(nameof(responseType), responseType, null)
         };
 
-        var result = await mediator.Send(new BeginDialogueCommand(
+        await mediator.Send(new BeginDialogueCommand(
             controller.Callsign,
             recipient,
             modelResponseType,
             content));
-
-        return DialogueConverter.ToDto(result.UplinkMessage);
     }
 
-    public async Task<UplinkMessageDto> ReplyToDownlink(
+    public async Task ReplyToDownlink(
         Guid dialogueId,
         int downlinkMessageId,
         CpdlcUplinkResponseType responseType,
@@ -123,14 +121,12 @@ public class ControllerHub(
             _ => throw new ArgumentOutOfRangeException(nameof(responseType), responseType, null)
         };
 
-        var result = await mediator.Send(new ReplyToDownlinkCommand(
+        await mediator.Send(new ReplyToDownlinkCommand(
             controller.Callsign,
             dialogueId,
             downlinkMessageId,
             modelResponseType,
             content));
-
-        return DialogueConverter.ToDto(result.UplinkMessage);
     }
 
     public async Task<AircraftConnectionDto[]> GetConnectedAircraft()

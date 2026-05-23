@@ -32,14 +32,14 @@ public class BeginDialogueCommandHandlerTests
         var command = new BeginDialogueCommand("BN-TSN_FSS", "UAL123", CpdlcUplinkResponseType.WilcoUnable, "CLIMB TO FL410");
 
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        await handler.Handle(command, CancellationToken.None);
 
         // Assert
         var dialogues = await dialogueRepository.All(CancellationToken.None);
         Assert.Single(dialogues);
         Assert.Equal("UAL123", dialogues[0].AircraftCallsign);
         Assert.Single(dialogues[0].Messages);
-        Assert.Equal(result.UplinkMessage, dialogues[0].Messages[0]);
+        Assert.IsType<UplinkMessage>(dialogues[0].Messages[0]);
     }
 
     [Fact]
@@ -65,10 +65,12 @@ public class BeginDialogueCommandHandlerTests
         var command = new BeginDialogueCommand("BN-TSN_FSS", "UAL123", CpdlcUplinkResponseType.WilcoUnable, "CLIMB TO FL410");
 
         // Act
-        var result = await handler.Handle(command, CancellationToken.None);
+        await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.Null(result.UplinkMessage.MessageReference);
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        var uplink = Assert.IsType<UplinkMessage>(dialogues[0].Messages[0]);
+        Assert.Null(uplink.MessageReference);
     }
 
     [Fact]

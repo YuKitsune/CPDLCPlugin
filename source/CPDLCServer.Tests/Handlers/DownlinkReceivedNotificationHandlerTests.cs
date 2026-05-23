@@ -12,6 +12,26 @@ namespace CPDLCServer.Tests.Handlers;
 
 public class DownlinkReceivedNotificationHandlerTests
 {
+    static DownlinkReceivedNotificationHandler BuildHandler(
+        TestAircraftRepository aircraftRepository,
+        TestClientManager clientManager,
+        TestMessageIdProvider messageIdProvider,
+        IMediator mediator,
+        TestClock clock,
+        TestControllerRepository controllerRepository,
+        TestDialogueRepository dialogueRepository,
+        IHubContext<ControllerHub> hubContext) =>
+        new(
+            aircraftRepository,
+            clientManager,
+            messageIdProvider,
+            mediator,
+            clock,
+            controllerRepository,
+            dialogueRepository,
+            hubContext,
+            Logger.None);
+
     [Fact]
     public async Task Handle_PublishesDialogueChangedNotification()
     {
@@ -45,15 +65,10 @@ public class DownlinkReceivedNotificationHandlerTests
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
         var downlink = new ReceivedDownlink(
             1,
@@ -109,15 +124,10 @@ public class DownlinkReceivedNotificationHandlerTests
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
         var downlink = new ReceivedDownlink(
             1,
@@ -169,15 +179,10 @@ public class DownlinkReceivedNotificationHandlerTests
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
         var downlink = new ReceivedDownlink(
             1,
@@ -248,15 +253,10 @@ public class DownlinkReceivedNotificationHandlerTests
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
         var downlink = new ReceivedDownlink(
             1,
@@ -321,15 +321,10 @@ public class DownlinkReceivedNotificationHandlerTests
         clock.SetUtcNow(expectedLastSeen);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
         var downlink = new ReceivedDownlink(
             1,
@@ -370,15 +365,10 @@ public class DownlinkReceivedNotificationHandlerTests
         var dialogueRepository = new TestDialogueRepository();
         var mediator = Substitute.For<IMediator>();
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftRepository,
-            mediator,
-            clock,
-            controllerRepository,
-            dialogueRepository,
-            hubContext,
-            Logger.None);
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
 
         var downlink = new ReceivedDownlink(
             1,
@@ -419,6 +409,8 @@ public class DownlinkReceivedNotificationHandlerTests
         var dialogueRepository = new TestDialogueRepository();
         var mediator = Substitute.For<IMediator>();
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
         // Create existing dialogue with an uplink
         var existingDialogue = new Dialogue("UAL123");
@@ -433,14 +425,7 @@ public class DownlinkReceivedNotificationHandlerTests
             clock.UtcNow());
         await dialogueRepository.Add(existingDialogue, CancellationToken.None);
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftRepository,
-            mediator,
-            clock,
-            controllerRepository,
-            dialogueRepository,
-            hubContext,
-            Logger.None);
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
 
         var downlink = new ReceivedDownlink(
             10,
@@ -483,9 +468,10 @@ public class DownlinkReceivedNotificationHandlerTests
         var dialogueRepository = new TestDialogueRepository();
         var mediator = Substitute.For<IMediator>();
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftRepository, mediator, clock, controllerRepository, dialogueRepository, hubContext, Logger.None);
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
 
         // Downlink has a MessageReference (uplink ID=99) but no open dialogue exists for it
         var downlink = new ReceivedDownlink(
@@ -532,6 +518,8 @@ public class DownlinkReceivedNotificationHandlerTests
         var dialogueRepository = new TestDialogueRepository();
         var mediator = Substitute.For<IMediator>();
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
         // Prior session: uplink ID=5 was sent and fully replied to (dialogue is now closed)
         var priorDialogue = new Dialogue("UAL123");
@@ -547,8 +535,7 @@ public class DownlinkReceivedNotificationHandlerTests
 
         Assert.True(priorDialogue.IsClosed);
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftRepository, mediator, clock, controllerRepository, dialogueRepository, hubContext, Logger.None);
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
 
         // New session: aircraft re-uses MessageReference=5 (same uplink ID as in the old session)
         var downlink = new ReceivedDownlink(
@@ -591,9 +578,10 @@ public class DownlinkReceivedNotificationHandlerTests
         var dialogueRepository = new TestDialogueRepository();
         var mediator = Substitute.For<IMediator>();
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftRepository, mediator, clock, controllerRepository, dialogueRepository, hubContext, Logger.None);
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
 
         var downlink = new ReceivedDownlink(
             1, null, "UAL123",
@@ -616,6 +604,105 @@ public class DownlinkReceivedNotificationHandlerTests
         Assert.Single(dialogues);
         var msg = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
         Assert.Equal("LOGOFF", msg.Content);
+
+        await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_LogonRequest_DispatchesLogonCommand()
+    {
+        // Branch 1: a logon request is forwarded to LogonCommandHandler verbatim and the
+        // notification handler must not touch the dialogue repository itself.
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
+
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
+
+        var downlink = new ReceivedDownlink(
+            1,
+            null,
+            "QFA1",
+            CpdlcDownlinkResponseType.NoResponse,
+            AlertType.None,
+            "REQUEST LOGON",
+            clock.UtcNow());
+
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - LogonCommand dispatched with downlink primitives + AcarsClientId
+        await mediator.Received(1).Send(
+            Arg.Is<LogonCommand>(c =>
+                c.DownlinkId == 1 &&
+                c.DownlinkMessageReference == null &&
+                c.Callsign == "QFA1" &&
+                c.DownlinkContent == "REQUEST LOGON" &&
+                c.AcarsClientId == "hoppies-ybbb"),
+            Arg.Any<CancellationToken>());
+
+        // Notification handler must not have created a dialogue itself - LogonCommandHandler owns it.
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Empty(dialogues);
+    }
+
+    [Fact]
+    public async Task Handle_UnknownAircraft_CreatesDialogueAndTransmitsError()
+    {
+        // Branch 2: a downlink arrives from an aircraft we have no connection for. The handler
+        // creates a dialogue (downlink + system error uplink) and transmits the error via ACARS.
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
+
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
+
+        var downlink = new ReceivedDownlink(
+            7,
+            null,
+            "GHOST1",
+            CpdlcDownlinkResponseType.NoResponse,
+            AlertType.None,
+            "REQUEST DESCENT",
+            clock.UtcNow());
+
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - dialogue contains both the original downlink and the error uplink
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Single(dialogues);
+        Assert.Equal("GHOST1", dialogues[0].AircraftCallsign);
+        Assert.Equal(2, dialogues[0].Messages.Count);
+
+        var receivedDownlink = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
+        Assert.Equal(7, receivedDownlink.MessageId);
+
+        var errorUplink = Assert.IsType<UplinkMessage>(dialogues[0].Messages[1]);
+        Assert.Equal("ERROR. CONNECTION NOT ESTABLISHED.", errorUplink.Content);
+        Assert.Equal("GHOST1", errorUplink.Recipient);
+        Assert.Equal(7, errorUplink.MessageReference);
+
+        // Assert - error uplink transmitted via the ACARS client
+        var client = (TestAcarsClient)await clientManager.GetAcarsClient("hoppies-ybbb", CancellationToken.None);
+        Assert.Single(client.SentMessages);
+        Assert.Equal("ERROR. CONNECTION NOT ESTABLISHED.", client.SentMessages[0].Content);
 
         await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
     }

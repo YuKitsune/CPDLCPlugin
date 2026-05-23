@@ -87,12 +87,13 @@ public class ReplyToDownlinkCommandHandlerTests
             aircraftRepository, clientManager, messageIdProvider, dialogueRepository, mediator, clock, Logger.None);
 
         // Act
-        var result = await handler.Handle(
+        await handler.Handle(
             new ReplyToDownlinkCommand("BN-TSN_FSS", dialogue.Id, 7, CpdlcUplinkResponseType.WilcoUnable, "DESCEND FL350"),
             CancellationToken.None);
 
         // Assert
-        Assert.Equal(7, result.UplinkMessage.MessageReference);
+        var uplink = dialogue.Messages.OfType<UplinkMessage>().Single();
+        Assert.Equal(7, uplink.MessageReference);
     }
 
     [Fact]

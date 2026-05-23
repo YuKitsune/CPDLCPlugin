@@ -1,8 +1,10 @@
+using CPDLCServer.Clients;
 using CPDLCServer.Hubs;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Messages;
 using CPDLCServer.Model;
 using CPDLCServer.Persistence;
+using CPDLCServer.Services;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 
@@ -10,6 +12,8 @@ namespace CPDLCServer.Handlers;
 
 public class DownlinkReceivedNotificationHandler(
     IAircraftRepository aircraftRepository,
+    IClientManager clientManager,
+    IMessageIdProvider messageIdProvider,
     IMediator mediator,
     IClock clock,
     IControllerRepository controllerRepository,
@@ -23,14 +27,20 @@ public class DownlinkReceivedNotificationHandler(
         var downlink = notification.Downlink;
         logger.Information("Downlink message received from {Callsign}", downlink.Sender);
 
-        // Branch 1: Logon request
+        // Scenario 1: Logon request
         if (ControlMessages.IsLogonRequest(downlink))
         {
-            var dialogue = new Dialogue(downlink.Sender);
-            dialogue.AddDownlink(downlink.MessageId, downlink.MessageReference, downlink.Sender, downlink.ResponseType, downlink.AlertType, downlink.Content, downlink.Received);
-            await dialogueRepository.Add(dialogue, cancellationToken);
-
-            await mediator.Send(new LogonCommand(downlink.MessageId, downlink.Sender, notification.AcarsClientId), cancellationToken);
+            await mediator.Send(
+                new LogonCommand(
+                    downlink.MessageId,
+                    downlink.MessageReference,
+                    downlink.Sender,
+                    downlink.ResponseType,
+                    downlink.AlertType,
+                    downlink.Content,
+                    downlink.Received,
+                    notification.AcarsClientId),
+                cancellationToken);
             return;
         }
 
@@ -38,13 +48,11 @@ public class DownlinkReceivedNotificationHandler(
             new(downlink.Sender, notification.AcarsClientId),
             cancellationToken);
 
-        // Branch 2: Unknown aircraft
+        // Scenario 2: Unknown aircraft
         if (aircraftConnection is null)
         {
             logger.Information("{Callsign} is not known by this ATSU, sending error uplink", downlink.Sender);
-            await mediator.Send(
-                new SendUplinkCommand("SYSTEM", downlink.Sender, downlink.MessageId, CpdlcUplinkResponseType.NoResponse, "ERROR. CONNECTION NOT ESTABLISHED."),
-                cancellationToken);
+            await SendUnknownAircraftError(notification, downlink, cancellationToken);
             return;
         }
 
@@ -85,10 +93,13 @@ public class DownlinkReceivedNotificationHandler(
 
         aircraftConnection.LogLastSeen(clock.UtcNow());
 
-        // Branch 3: Aircraft replies to an uplink
+        // Scenario 3: Aircraft replies to an uplink
         if (downlink.MessageReference.HasValue)
         {
-            var dialogue = await dialogueRepository.FindOpenDialogueByUplink(downlink.Sender, downlink.MessageReference.Value, cancellationToken);
+            var dialogue = await dialogueRepository.FindOpenDialogueByUplink(
+                downlink.Sender,
+                downlink.MessageReference.Value,
+                cancellationToken);
             if (dialogue is not null)
             {
                 dialogue.AddDownlink(downlink.MessageId, downlink.MessageReference, downlink.Sender, downlink.ResponseType, downlink.AlertType, downlink.Content, downlink.Received);
@@ -96,25 +107,80 @@ public class DownlinkReceivedNotificationHandler(
             }
             else
             {
-                logger.Warning("No open dialogue found for uplink reference {MessageReference} from {Callsign} - starting new dialogue",
-                    downlink.MessageReference.Value, downlink.Sender);
+                // TODO: This could lead to a bug if the Aircraft thinks we're still in the original message chain.
+                //  Consider returning an error here instead.
+                logger.Warning("No open dialogue found for uplink reference {MessageReference} from {Callsign} - starting new dialogue", downlink.MessageReference.Value, downlink.Sender);
                 dialogue = new Dialogue(downlink.Sender);
-                dialogue.AddDownlink(downlink.MessageId, downlink.MessageReference, downlink.Sender, downlink.ResponseType, downlink.AlertType, downlink.Content, downlink.Received);
+                dialogue.AddDownlink(
+                    downlink.MessageId,
+                    downlink.MessageReference,
+                    downlink.Sender,
+                    downlink.ResponseType,
+                    downlink.AlertType,
+                    downlink.Content,
+                    downlink.Received);
+
                 await dialogueRepository.Add(dialogue, cancellationToken);
             }
 
             await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
-            return;
         }
-
-        // Branch 4: Aircraft initiates a new dialogue
+        else // Scenario 4: Aircraft initiates a new dialogue
         {
             var dialogue = new Dialogue(downlink.Sender);
-            dialogue.AddDownlink(downlink.MessageId, downlink.MessageReference, downlink.Sender, downlink.ResponseType, downlink.AlertType, downlink.Content, downlink.Received);
+            dialogue.AddDownlink(
+                downlink.MessageId,
+                downlink.MessageReference,
+                downlink.Sender,
+                downlink.ResponseType,
+                downlink.AlertType,
+                downlink.Content,
+                downlink.Received);
+
             await dialogueRepository.Add(dialogue, cancellationToken);
             logger.Information("Dialogue {DialogueId} created for downlink from {Callsign}", dialogue.Id, downlink.Sender);
 
             await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
         }
+    }
+
+    async Task SendUnknownAircraftError(
+        DownlinkReceivedNotification notification,
+        ReceivedDownlink downlink,
+        CancellationToken cancellationToken)
+    {
+        var dialogue = new Dialogue(downlink.Sender);
+        dialogue.AddDownlink(
+            downlink.MessageId,
+            downlink.MessageReference,
+            downlink.Sender,
+            downlink.ResponseType,
+            downlink.AlertType,
+            downlink.Content,
+            downlink.Received);
+
+        var messageId = await messageIdProvider.GetNextMessageId(
+            notification.AcarsClientId,
+            downlink.Sender,
+            cancellationToken);
+
+        var uplinkMessage = dialogue.AddUplink(
+            messageId,
+            downlink.MessageId,
+            downlink.Sender,
+            "SYSTEM",
+            CpdlcUplinkResponseType.NoResponse,
+            AlertType.None,
+            "ERROR. CONNECTION NOT ESTABLISHED.",
+            clock.UtcNow());
+
+        await dialogueRepository.Add(dialogue, cancellationToken);
+        logger.Information("Dialogue {DialogueId} created for unknown aircraft {Callsign}", dialogue.Id, downlink.Sender);
+
+        await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
+
+        var client = await clientManager.GetAcarsClient(notification.AcarsClientId, cancellationToken);
+        await client.Send(uplinkMessage, cancellationToken);
+        logger.Information("Sent CPDLC message from SYSTEM to {Callsign}", downlink.Sender);
     }
 }

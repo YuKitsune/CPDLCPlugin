@@ -16,9 +16,9 @@ public class BeginDialogueCommandHandler(
     IMediator mediator,
     IClock clock,
     ILogger logger)
-    : IRequestHandler<BeginDialogueCommand, SendUplinkResult>
+    : IRequestHandler<BeginDialogueCommand>
 {
-    public async Task<SendUplinkResult> Handle(BeginDialogueCommand request, CancellationToken cancellationToken)
+    public async Task Handle(BeginDialogueCommand request, CancellationToken cancellationToken)
     {
         logger.Information("Beginning new dialogue with {Recipient} (Content: {Content})",
             request.Recipient, request.Content);
@@ -56,7 +56,5 @@ public class BeginDialogueCommandHandler(
 
         await client.Send(uplinkMessage, cancellationToken);
         logger.Information("Sent CPDLC message from {Sender} to {Recipient}", request.Sender, request.Recipient);
-
-        return new SendUplinkResult(uplinkMessage);
     }
 }

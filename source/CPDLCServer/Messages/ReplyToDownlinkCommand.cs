@@ -9,4 +9,4 @@ public record ReplyToDownlinkCommand(
     int DownlinkMessageId,
     CpdlcUplinkResponseType ResponseType,
     string Content)
-    : IRequest<SendUplinkResult>;
+    : IRequest;

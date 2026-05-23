@@ -3,16 +3,17 @@ using CPDLCServer.Infrastructure;
 using CPDLCServer.Messages;
 using CPDLCServer.Model;
 using CPDLCServer.Persistence;
+using CPDLCServer.Services;
 using MediatR;
 
 namespace CPDLCServer.Handlers;
-
-// TODO: Unit tests
 
 public class LogonCommandHandler(
     IClientManager clientManager,
     IAircraftRepository aircraftRepository,
     IControllerRepository controllerRepository,
+    IDialogueRepository dialogueRepository,
+    IMessageIdProvider messageIdProvider,
     IClock clock,
     IMediator mediator,
     ILogger logger)
@@ -32,14 +33,7 @@ public class LogonCommandHandler(
         {
             logger.Verbose("Duplicate connection request received from {Callsign} on {ClientId}. Accepting the request.", request.Callsign, request.AcarsClientId);
 
-            await mediator.Send(
-                new SendUplinkCommand(
-                    "SYSTEM",
-                    request.Callsign,
-                    request.DownlinkId,
-                    CpdlcUplinkResponseType.NoResponse,
-                    "LOGON ACCEPTED"),
-                cancellationToken);
+            await Reply(client, request, "LOGON ACCEPTED", cancellationToken);
 
             return;
         }
@@ -61,16 +55,9 @@ public class LogonCommandHandler(
         var activeControllers = await controllerRepository.All(cancellationToken);
         if (activeControllers.Length == 0)
         {
-            logger.Information("New connection request received from {Callsign} on {ClientId}, but no ATC is online. Rejecting the request.", request.Callsign, request.AcarsClientId);
+            logger.Information("New connection request received from {Callsign} on {ClientId}, but no ATS is online. Rejecting the request.", request.Callsign, request.AcarsClientId);
 
-            await mediator.Send(
-                new SendUplinkCommand(
-                    "SYSTEM",
-                    request.Callsign,
-                    ReplyToDownlinkId: request.DownlinkId,
-                    CpdlcUplinkResponseType.NoResponse,
-                    "LOGON REJECTED. NO ATS AVBL."),
-                cancellationToken);
+            await Reply(client, request, "LOGON REJECTED. NO ATS AVBL.", cancellationToken);
 
             await aircraftRepository.Remove(
                 new AircraftKey(request.Callsign, request.AcarsClientId),
@@ -84,14 +71,7 @@ public class LogonCommandHandler(
         // Immediately accept it for now
         aircraft.AcceptLogon(clock.UtcNow());
 
-        await mediator.Send(
-            new SendUplinkCommand(
-                "SYSTEM",
-                request.Callsign,
-                request.DownlinkId,
-                CpdlcUplinkResponseType.NoResponse,
-                "LOGON ACCEPTED"),
-            cancellationToken);
+        await Reply(client, request, "LOGON ACCEPTED", cancellationToken);
 
         await mediator.Publish(
             new AircraftConnectionEstablished(
@@ -100,5 +80,45 @@ public class LogonCommandHandler(
                 request.Callsign,
                 aircraft.DataAuthorityState),
             cancellationToken);
+    }
+
+    async Task Reply(
+        IAcarsClient client,
+        LogonCommand request,
+        string content,
+        CancellationToken cancellationToken)
+    {
+        var dialogue = new Dialogue(request.Callsign);
+        dialogue.AddDownlink(
+            request.DownlinkId,
+            request.DownlinkMessageReference,
+            request.Callsign,
+            request.DownlinkResponseType,
+            request.DownlinkAlertType,
+            request.DownlinkContent,
+            request.DownlinkReceived);
+
+        var messageId = await messageIdProvider.GetNextMessageId(
+            request.AcarsClientId,
+            request.Callsign,
+            cancellationToken);
+
+        var uplinkMessage = dialogue.AddUplink(
+            messageId,
+            request.DownlinkId,
+            request.Callsign,
+            "SYSTEM",
+            CpdlcUplinkResponseType.NoResponse,
+            AlertType.None,
+            content,
+            clock.UtcNow());
+
+        await dialogueRepository.Add(dialogue, cancellationToken);
+        logger.Information("Dialogue {DialogueId} created for logon reply to {Callsign}", dialogue.Id, request.Callsign);
+
+        await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
+
+        await client.Send(uplinkMessage, cancellationToken);
+        logger.Information("Sent CPDLC message from SYSTEM to {Callsign}", request.Callsign);
     }
 }

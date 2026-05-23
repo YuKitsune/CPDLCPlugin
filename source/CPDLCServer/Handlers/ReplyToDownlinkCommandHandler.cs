@@ -16,9 +16,9 @@ public class ReplyToDownlinkCommandHandler(
     IMediator mediator,
     IClock clock,
     ILogger logger)
-    : IRequestHandler<ReplyToDownlinkCommand, SendUplinkResult>
+    : IRequestHandler<ReplyToDownlinkCommand>
 {
-    public async Task<SendUplinkResult> Handle(ReplyToDownlinkCommand request, CancellationToken cancellationToken)
+    public async Task Handle(ReplyToDownlinkCommand request, CancellationToken cancellationToken)
     {
         var dialogue = await dialogueRepository.FindById(request.DialogueId, cancellationToken);
         if (dialogue is null)
@@ -59,7 +59,5 @@ public class ReplyToDownlinkCommandHandler(
 
         await client.Send(uplinkMessage, cancellationToken);
         logger.Information("Sent CPDLC message from {Sender} to {Callsign}", request.Sender, callsign);
-
-        return new SendUplinkResult(uplinkMessage);
     }
 }

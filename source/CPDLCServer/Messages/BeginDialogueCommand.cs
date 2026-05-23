@@ -8,4 +8,4 @@ public record BeginDialogueCommand(
     string Recipient,
     CpdlcUplinkResponseType ResponseType,
     string Content)
-    : IRequest<SendUplinkResult>;
+    : IRequest;
