@@ -6,9 +6,9 @@ namespace CPDLCServer.Tests.Mocks;
 
 public class TestAcarsClient(string stationId) : IAcarsClient
 {
-    private readonly Channel<DownlinkMessage> _channel = Channel.CreateUnbounded<DownlinkMessage>();
+    private readonly Channel<ReceivedDownlink> _channel = Channel.CreateUnbounded<ReceivedDownlink>();
 
-    public ChannelReader<DownlinkMessage> MessageReader => _channel.Reader;
+    public ChannelReader<ReceivedDownlink> MessageReader => _channel.Reader;
     public string StationId => stationId;
 
     public List<string> Connections { get; } = [];

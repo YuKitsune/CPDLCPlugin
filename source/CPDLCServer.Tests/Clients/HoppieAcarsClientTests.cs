@@ -61,6 +61,7 @@ public class HoppieAcarsClientTests : IDisposable
         await client.Connect(CancellationToken.None);
 
         var message = new UplinkMessage(
+            Guid.NewGuid(),
             1,
             null,
             "UAL123",
@@ -99,6 +100,7 @@ public class HoppieAcarsClientTests : IDisposable
         await client.Connect(CancellationToken.None);
 
         var reply = new UplinkMessage(
+            Guid.NewGuid(),
             2,
             5,
             "UAL123",
@@ -139,6 +141,7 @@ public class HoppieAcarsClientTests : IDisposable
         await client.Connect(CancellationToken.None);
 
         var message = new UplinkMessage(
+            Guid.NewGuid(),
             1,
             null,
             "UAL123",
@@ -178,6 +181,7 @@ public class HoppieAcarsClientTests : IDisposable
         await client.Connect(CancellationToken.None);
 
         var message = new UplinkMessage(
+            Guid.NewGuid(),
             1,
             null,
             "UAL123",
@@ -214,6 +218,7 @@ public class HoppieAcarsClientTests : IDisposable
         await client.Connect(CancellationToken.None);
 
         var message = new UplinkMessage(
+            Guid.NewGuid(),
             1,
             null,
             "UAL123",
@@ -255,11 +260,10 @@ public class HoppieAcarsClientTests : IDisposable
         var message = await client.MessageReader.ReadAsync(cts.Token);
 
         // Assert
-        var cpdlcMessage = Assert.IsType<DownlinkMessage>(message);
-        Assert.Equal("UAL123", cpdlcMessage.Sender);
-        Assert.Equal(5, cpdlcMessage.MessageId);
-        Assert.Equal("REQUEST DESCENT", cpdlcMessage.Content);
-        Assert.Equal(CpdlcDownlinkResponseType.ResponseRequired, cpdlcMessage.ResponseType);
+        Assert.Equal("UAL123", message.Sender);
+        Assert.Equal(5, message.MessageId);
+        Assert.Equal("REQUEST DESCENT", message.Content);
+        Assert.Equal(CpdlcDownlinkResponseType.ResponseRequired, message.ResponseType);
     }
 
     [Fact]
@@ -279,12 +283,11 @@ public class HoppieAcarsClientTests : IDisposable
         var message = await client.MessageReader.ReadAsync(cts.Token);
 
         // Assert
-        var cpdlcReply = Assert.IsType<DownlinkMessage>(message);
-        Assert.Equal("UAL123", cpdlcReply.Sender);
-        Assert.Equal(7, cpdlcReply.MessageId);
-        Assert.Equal(3, cpdlcReply.MessageReference);
-        Assert.Equal("WILCO", cpdlcReply.Content);
-        Assert.Equal(CpdlcDownlinkResponseType.NoResponse, cpdlcReply.ResponseType);
+        Assert.Equal("UAL123", message.Sender);
+        Assert.Equal(7, message.MessageId);
+        Assert.Equal(3, message.MessageReference);
+        Assert.Equal("WILCO", message.Content);
+        Assert.Equal(CpdlcDownlinkResponseType.NoResponse, message.ResponseType);
     }
 
     [Fact]
@@ -306,13 +309,11 @@ public class HoppieAcarsClientTests : IDisposable
         var message2 = await client.MessageReader.ReadAsync(cts.Token);
 
         // Assert
-        var cpdlcMessage1 = Assert.IsType<DownlinkMessage>(message1);
-        Assert.Equal("UAL123", cpdlcMessage1.Sender);
-        Assert.Equal("REQUEST DESCENT", cpdlcMessage1.Content);
+        Assert.Equal("UAL123", message1.Sender);
+        Assert.Equal("REQUEST DESCENT", message1.Content);
 
-        var cpdlcMessage2 = Assert.IsType<DownlinkMessage>(message2);
-        Assert.Equal("DAL456", cpdlcMessage2.Sender);
-        Assert.Equal("REQUEST CLIMB", cpdlcMessage2.Content);
+        Assert.Equal("DAL456", message2.Sender);
+        Assert.Equal("REQUEST CLIMB", message2.Content);
     }
 
     [Fact]
@@ -333,8 +334,7 @@ public class HoppieAcarsClientTests : IDisposable
         var message = await client.MessageReader.ReadAsync(cts.Token);
 
         // Assert
-        var cpdlcMessage = Assert.IsType<DownlinkMessage>(message);
-        Assert.Equal("REQUEST CLIMB DUE TO A/C PERFORMANCE", cpdlcMessage.Content);
+        Assert.Equal("REQUEST CLIMB DUE TO A/C PERFORMANCE", message.Content);
     }
 
     [Theory]
@@ -356,8 +356,7 @@ public class HoppieAcarsClientTests : IDisposable
         var message = await client.MessageReader.ReadAsync(cts.Token);
 
         // Assert
-        var cpdlcMessage = Assert.IsType<DownlinkMessage>(message);
-        Assert.Equal(expectedType, cpdlcMessage.ResponseType);
+        Assert.Equal(expectedType, message.ResponseType);
 
         await client.DisposeAsync();
         _clients.Remove(client);
@@ -380,8 +379,7 @@ public class HoppieAcarsClientTests : IDisposable
         var message = await client.MessageReader.ReadAsync(cts.Token);
 
         // Assert
-        var cpdlcMessage = Assert.IsType<DownlinkMessage>(message);
-        Assert.Equal(-1, cpdlcMessage.MessageId);
+        Assert.Equal(-1, message.MessageId);
 
         await client.DisposeAsync();
         _clients.Remove(client);

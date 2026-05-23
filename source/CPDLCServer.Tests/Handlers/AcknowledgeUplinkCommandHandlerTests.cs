@@ -16,7 +16,8 @@ public class AcknowledgeUplinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var uplink = dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -25,8 +26,6 @@ public class AcknowledgeUplinkCommandHandlerTests
             AlertType.None,
             "CLEARED DESCEND FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeUplinkCommandHandler(
@@ -58,7 +57,8 @@ public class AcknowledgeUplinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -67,8 +67,6 @@ public class AcknowledgeUplinkCommandHandlerTests
             AlertType.None,
             "CLEARED DESCEND FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeUplinkCommandHandler(
@@ -97,7 +95,8 @@ public class AcknowledgeUplinkCommandHandlerTests
         var publisher = new TestPublisher();
 
         // Create an uplink that requires a response
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var uplink = dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -106,8 +105,6 @@ public class AcknowledgeUplinkCommandHandlerTests
             AlertType.None,
             "CLEARED DESCEND FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeUplinkCommandHandler(
@@ -138,8 +135,8 @@ public class AcknowledgeUplinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        // Create first uplink
-        var uplink1 = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var uplink1 = dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -149,10 +146,7 @@ public class AcknowledgeUplinkCommandHandlerTests
             "CLEARED DESCEND FL350",
             clock.UtcNow());
 
-        var dialogue = new Dialogue("UAL123", uplink1);
-
-        // Add a second uplink message to the dialogue
-        var uplink2 = new UplinkMessage(
+        var uplink2 = dialogue.AddUplink(
             2,
             null,
             "UAL123",
@@ -162,7 +156,6 @@ public class AcknowledgeUplinkCommandHandlerTests
             "CLEARED DIRECT WAYPOINT",
             clock.UtcNow());
 
-        dialogue.AddMessage(uplink2);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeUplinkCommandHandler(
@@ -218,7 +211,8 @@ public class AcknowledgeUplinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -227,8 +221,6 @@ public class AcknowledgeUplinkCommandHandlerTests
             AlertType.None,
             "CLEARED DESCEND FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeUplinkCommandHandler(
@@ -254,7 +246,8 @@ public class AcknowledgeUplinkCommandHandlerTests
         var publisher = new TestPublisher();
 
         // Create a dialogue with a downlink (not an uplink)
-        var downlink = new DownlinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddDownlink(
             1,
             null,
             "UAL123",
@@ -262,8 +255,6 @@ public class AcknowledgeUplinkCommandHandlerTests
             AlertType.None,
             "REQUEST DESCENT FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", downlink);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeUplinkCommandHandler(

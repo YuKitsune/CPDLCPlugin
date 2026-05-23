@@ -162,9 +162,9 @@ public class SendUplinkCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_AppendsToExistingDialogue_ForUplinkWithReference()
+    public async Task Handle_AlwaysCreatesNewDialogue_EvenWithReference()
     {
-        // Arrange
+        // Arrange - SendUplinkCommand is system-internal only; it always creates a new dialogue
         var clientManager = new TestClientManager();
         var messageIdProvider = new TestMessageIdProvider();
         var dialogueRepository = new TestDialogueRepository();
@@ -177,19 +177,6 @@ public class SendUplinkCommandHandlerTests
         aircraft.AcceptLogon(clock.UtcNow());
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
 
-        // Create existing dialogue with a downlink
-        var downlink = new DownlinkMessage(
-            5,
-            null,
-            "UAL123",
-            CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
-            clock.UtcNow());
-
-        var existingDialogue = new Dialogue("UAL123", downlink);
-        await dialogueRepository.Add(existingDialogue, CancellationToken.None);
-
         var mediator = Substitute.For<IMediator>();
         var handler = new SendUplinkCommandHandler(
             aircraftRepository,
@@ -201,7 +188,7 @@ public class SendUplinkCommandHandlerTests
             Logger.None);
 
         var command = new SendUplinkCommand(
-            "BN-TSN_FSS",
+            "SYSTEM",
             "UAL123",
             5,
             CpdlcUplinkResponseType.NoResponse,
@@ -210,15 +197,12 @@ public class SendUplinkCommandHandlerTests
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
 
-        // Assert
-        var dialogue = await dialogueRepository.FindOpenDialogueByUplink(
-            "UAL123",
-            5,
-            CancellationToken.None);
-
-        Assert.NotNull(dialogue);
-        Assert.Equal(2, dialogue.Messages.Count);
-        Assert.Contains(result.UplinkMessage, dialogue.Messages);
+        // Assert - a new dialogue is created containing only the uplink
+        var allDialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Single(allDialogues);
+        Assert.Single(allDialogues[0].Messages);
+        Assert.Equal(result.UplinkMessage, allDialogues[0].Messages[0]);
+        Assert.Equal(5, result.UplinkMessage.MessageReference);
     }
 
     [Fact]

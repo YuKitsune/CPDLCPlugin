@@ -49,7 +49,7 @@ public class TransmitPendingNdaUplinksCommandHandlerTests
         await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
 
         // Assert
-        await mediator.DidNotReceive().Send(Arg.Any<SendUplinkCommand>(), Arg.Any<CancellationToken>());
+        await mediator.DidNotReceive().Send(Arg.Any<BeginDialogueCommand>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class TransmitPendingNdaUplinksCommandHandlerTests
         await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
 
         // Assert
-        await mediator.DidNotReceive().Send(Arg.Any<SendUplinkCommand>(), Arg.Any<CancellationToken>());
+        await mediator.DidNotReceive().Send(Arg.Any<BeginDialogueCommand>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public class TransmitPendingNdaUplinksCommandHandlerTests
         await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
 
         // Assert
-        await mediator.DidNotReceive().Send(Arg.Any<SendUplinkCommand>(), Arg.Any<CancellationToken>());
+        await mediator.DidNotReceive().Send(Arg.Any<BeginDialogueCommand>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class TransmitPendingNdaUplinksCommandHandlerTests
         await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
 
         // Assert
-        await mediator.DidNotReceive().Send(Arg.Any<SendUplinkCommand>(), Arg.Any<CancellationToken>());
+        await mediator.DidNotReceive().Send(Arg.Any<BeginDialogueCommand>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public class TransmitPendingNdaUplinksCommandHandlerTests
 
         // Assert
         await mediator.Received(1).Send(
-            Arg.Is<SendUplinkCommand>(c =>
+            Arg.Is<BeginDialogueCommand>(c =>
                 c.Sender == "YBBB" &&
                 c.Recipient == "UAL123" &&
                 c.Content == "NEXT DATA AUTHORITY @YMMM@" &&
