@@ -144,18 +144,31 @@ public class SignalRConnectionManager(
         };
     }
 
-    public async Task<UplinkMessageDto> SendUplink(
-        string recipient,
-        int? replyToDownlinkId,
+    public async Task BeginDialogue(string recipient,
         CpdlcUplinkResponseType responseType,
         string content,
         CancellationToken cancellationToken)
     {
         var connection = GetConnectedOrThrow();
-        return await connection.InvokeAsync<UplinkMessageDto>(
-            "SendUplink",
+        await connection.InvokeAsync<UplinkMessageDto>(
+            "BeginDialogue",
             recipient,
-            replyToDownlinkId,
+            responseType,
+            content,
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task ReplyToDownlink(Guid dialogueId,
+        int downlinkMessageId,
+        CpdlcUplinkResponseType responseType,
+        string content,
+        CancellationToken cancellationToken)
+    {
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync<UplinkMessageDto>(
+            "ReplyToDownlink",
+            dialogueId,
+            downlinkMessageId,
             responseType,
             content,
             cancellationToken: cancellationToken);

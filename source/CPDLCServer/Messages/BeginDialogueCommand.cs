@@ -3,12 +3,9 @@ using MediatR;
 
 namespace CPDLCServer.Messages;
 
-public record SendUplinkCommand(
+public record BeginDialogueCommand(
     string Sender,
     string Recipient,
-    int? ReplyToDownlinkId,
     CpdlcUplinkResponseType ResponseType,
     string Content)
-    : IRequest<SendUplinkResult>;
-
-public record SendUplinkResult(UplinkMessage UplinkMessage);
+    : IRequest;

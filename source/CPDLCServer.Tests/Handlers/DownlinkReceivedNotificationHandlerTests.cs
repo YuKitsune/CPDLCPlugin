@@ -12,6 +12,26 @@ namespace CPDLCServer.Tests.Handlers;
 
 public class DownlinkReceivedNotificationHandlerTests
 {
+    static DownlinkReceivedNotificationHandler BuildHandler(
+        TestAircraftRepository aircraftRepository,
+        TestClientManager clientManager,
+        TestMessageIdProvider messageIdProvider,
+        IMediator mediator,
+        TestClock clock,
+        TestControllerRepository controllerRepository,
+        TestDialogueRepository dialogueRepository,
+        IHubContext<ControllerHub> hubContext) =>
+        new(
+            aircraftRepository,
+            clientManager,
+            messageIdProvider,
+            mediator,
+            clock,
+            controllerRepository,
+            dialogueRepository,
+            hubContext,
+            Logger.None);
+
     [Fact]
     public async Task Handle_PublishesDialogueChangedNotification()
     {
@@ -45,19 +65,12 @@ public class DownlinkReceivedNotificationHandlerTests
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var publisher = new TestPublisher();
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            publisher,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
-        var downlinkMessage = new DownlinkMessage(
+        var downlink = new ReceivedDownlink(
             1,
             null,
             "UAL123",
@@ -69,17 +82,20 @@ public class DownlinkReceivedNotificationHandlerTests
         var notification = new DownlinkReceivedNotification(
             "hoppies-ybbb",
             "YBBB",
-            downlinkMessage);
+            downlink);
 
         // Act
         await handler.Handle(notification, CancellationToken.None);
 
-        // Assert - DialogueChangedNotification is published
-        Assert.Single(publisher.PublishedNotifications.OfType<DialogueChangedNotification>());
-        var dialogueNotification = publisher.PublishedNotifications.OfType<DialogueChangedNotification>().First();
-        Assert.Equal("UAL123", dialogueNotification.Dialogue.AircraftCallsign);
-        Assert.Single(dialogueNotification.Dialogue.Messages);
-        Assert.Equal(downlinkMessage, dialogueNotification.Dialogue.Messages.First());
+        // Assert - DialogueChangedNotification is published via mediator
+        await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
+
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Single(dialogues);
+        Assert.Equal("UAL123", dialogues[0].AircraftCallsign);
+        Assert.Single(dialogues[0].Messages);
+        var msg = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
+        Assert.Equal("REQUEST DESCENT", msg.Content);
     }
 
     [Fact]
@@ -108,19 +124,12 @@ public class DownlinkReceivedNotificationHandlerTests
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var publisher = new TestPublisher();
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            publisher,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
-        var downlinkMessage = new DownlinkMessage(
+        var downlink = new ReceivedDownlink(
             1,
             null,
             "UAL123",
@@ -132,15 +141,16 @@ public class DownlinkReceivedNotificationHandlerTests
         var notification = new DownlinkReceivedNotification(
             "hoppies-ybbb",
             "YBBB",
-            downlinkMessage);
+            downlink);
 
         // Act
         await handler.Handle(notification, CancellationToken.None);
 
-        // Assert - DialogueChangedNotification is still published even with no matching controllers
-        Assert.Single(publisher.PublishedNotifications.OfType<DialogueChangedNotification>());
-        var dialogueNotification = publisher.PublishedNotifications.OfType<DialogueChangedNotification>().First();
-        Assert.Equal("UAL123", dialogueNotification.Dialogue.AircraftCallsign);
+        // Assert - dialogue is still created even with no matching controllers
+        await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Single(dialogues);
+        Assert.Equal("UAL123", dialogues[0].AircraftCallsign);
     }
 
     [Fact]
@@ -169,19 +179,12 @@ public class DownlinkReceivedNotificationHandlerTests
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var publisher = new TestPublisher();
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            publisher,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
-        var downlinkMessage = new DownlinkMessage(
+        var downlink = new ReceivedDownlink(
             1,
             null,
             "UAL123",
@@ -193,7 +196,7 @@ public class DownlinkReceivedNotificationHandlerTests
         var notification = new DownlinkReceivedNotification(
             "hoppies-ybbb",
             "YBBB",
-            downlinkMessage);
+            downlink);
 
         // Assert - aircraft starts as NextDataAuthority
         Assert.Equal(DataAuthorityState.NextDataAuthority, aircraft.DataAuthorityState);
@@ -250,19 +253,12 @@ public class DownlinkReceivedNotificationHandlerTests
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var publisher = new TestPublisher();
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            publisher,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
-        var downlinkMessage = new DownlinkMessage(
+        var downlink = new ReceivedDownlink(
             1,
             null,
             "UAL123",
@@ -274,7 +270,7 @@ public class DownlinkReceivedNotificationHandlerTests
         var notification = new DownlinkReceivedNotification(
             "hoppies-ybbb",
             "YBBB",
-            downlinkMessage);
+            downlink);
 
         // Assert - aircraft starts as NextDataAuthority
         Assert.Equal(DataAuthorityState.NextDataAuthority, aircraft.DataAuthorityState);
@@ -325,19 +321,12 @@ public class DownlinkReceivedNotificationHandlerTests
         clock.SetUtcNow(expectedLastSeen);
 
         var dialogueRepository = new TestDialogueRepository();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var publisher = new TestPublisher();
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftManager,
-            mediator,
-            clock,
-            controllerManager,
-            dialogueRepository,
-            hubContext,
-            publisher,
-            Logger.None);
+        var handler = BuildHandler(aircraftManager, clientManager, messageIdProvider, mediator, clock, controllerManager, dialogueRepository, hubContext);
 
-        var downlinkMessage = new DownlinkMessage(
+        var downlink = new ReceivedDownlink(
             1,
             null,
             "UAL123",
@@ -349,7 +338,7 @@ public class DownlinkReceivedNotificationHandlerTests
         var notification = new DownlinkReceivedNotification(
             "hoppies-ybbb",
             "YBBB",
-            downlinkMessage);
+            downlink);
 
         // Assert
         Assert.Equal(logonTime, aircraft.LastSeen);
@@ -376,19 +365,12 @@ public class DownlinkReceivedNotificationHandlerTests
         var dialogueRepository = new TestDialogueRepository();
         var mediator = Substitute.For<IMediator>();
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
-        var publisher = new TestPublisher();
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftRepository,
-            mediator,
-            clock,
-            controllerRepository,
-            dialogueRepository,
-            hubContext,
-            publisher,
-            Logger.None);
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
 
-        var downlink = new DownlinkMessage(
+        var downlink = new ReceivedDownlink(
             1,
             null,
             "UAL123",
@@ -402,15 +384,14 @@ public class DownlinkReceivedNotificationHandlerTests
         // Act
         await handler.Handle(notification, CancellationToken.None);
 
-        // Assert
-        var dialogue = await dialogueRepository.FindDialogueForMessage(
-            "UAL123",
-            1,
-            CancellationToken.None);
-
-        Assert.NotNull(dialogue);
-        Assert.Single(dialogue.Messages);
-        Assert.Equal(downlink, dialogue.Messages[0]);
+        // Assert - a new dialogue was created with the downlink
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Single(dialogues);
+        Assert.Equal("UAL123", dialogues[0].AircraftCallsign);
+        Assert.Single(dialogues[0].Messages);
+        var msg = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
+        Assert.Equal("REQUEST CLIMB FL410", msg.Content);
+        Assert.Equal(1, msg.MessageId);
     }
 
     [Fact]
@@ -428,9 +409,12 @@ public class DownlinkReceivedNotificationHandlerTests
         var dialogueRepository = new TestDialogueRepository();
         var mediator = Substitute.For<IMediator>();
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
 
         // Create existing dialogue with an uplink
-        var uplink = new UplinkMessage(
+        var existingDialogue = new Dialogue("UAL123");
+        existingDialogue.AddUplink(
             5,
             null,
             "UAL123",
@@ -439,22 +423,11 @@ public class DownlinkReceivedNotificationHandlerTests
             AlertType.None,
             "CLIMB TO FL410",
             clock.UtcNow());
-
-        var existingDialogue = new Dialogue("UAL123", uplink);
         await dialogueRepository.Add(existingDialogue, CancellationToken.None);
 
-        var publisher = new TestPublisher();
-        var handler = new DownlinkReceivedNotificationHandler(
-            aircraftRepository,
-            mediator,
-            clock,
-            controllerRepository,
-            dialogueRepository,
-            hubContext,
-            publisher,
-            Logger.None);
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
 
-        var downlink = new DownlinkMessage(
+        var downlink = new ReceivedDownlink(
             10,
             5,
             "UAL123",
@@ -468,14 +441,269 @@ public class DownlinkReceivedNotificationHandlerTests
         // Act
         await handler.Handle(notification, CancellationToken.None);
 
-        // Assert
-        var dialogue = await dialogueRepository.FindDialogueForMessage(
-            "UAL123",
-            5,
-            CancellationToken.None);
+        // Assert - downlink appended to the existing dialogue (use All since WILCO closes the dialogue)
+        var allDialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Single(allDialogues);
+        Assert.Equal(2, allDialogues[0].Messages.Count);
+        var appendedMsg = allDialogues[0].Messages.OfType<DownlinkMessage>().FirstOrDefault(m => m.MessageId == 10);
+        Assert.NotNull(appendedMsg);
+        Assert.Equal("WILCO", appendedMsg.Content);
+    }
 
-        Assert.NotNull(dialogue);
-        Assert.Equal(2, dialogue.Messages.Count);
-        Assert.Contains(downlink, dialogue.Messages);
+    [Fact]
+    public async Task Handle_FallsBackToNewDialogue_WhenNoOpenDialogueMatchesReference()
+    {
+        // Branch 3 fallback: aircraft sends a reply referencing an uplink that no longer has an
+        // open dialogue (e.g. controller manually closed it). The handler must not drop the
+        // message - it creates a new dialogue instead.
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
+
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
+
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
+
+        // Downlink has a MessageReference (uplink ID=99) but no open dialogue exists for it
+        var downlink = new ReceivedDownlink(
+            10,
+            99, // References uplink that doesn't exist in any open dialogue
+            "UAL123",
+            CpdlcDownlinkResponseType.NoResponse,
+            AlertType.None,
+            "WILCO",
+            clock.UtcNow());
+
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - a new dialogue was created as fallback (message is not dropped)
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Single(dialogues);
+        Assert.Equal("UAL123", dialogues[0].AircraftCallsign);
+        Assert.Single(dialogues[0].Messages);
+        var msg = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
+        Assert.Equal(10, msg.MessageId);
+        Assert.Equal(99, msg.MessageReference);
+
+        await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_DoesNotAppendToClosedDialogue_WhenAircraftReusesMessageId()
+    {
+        // Regression: MessageId is scoped per ACARS session. If an aircraft re-uses a downlink
+        // MessageId from a previous (now closed) session, FindOpenDialogueByUplink must not
+        // match the closed dialogue - a new dialogue should be created instead.
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
+
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
+
+        // Prior session: uplink ID=5 was sent and fully replied to (dialogue is now closed)
+        var priorDialogue = new Dialogue("UAL123");
+        priorDialogue.AddUplink(
+            5, null, "UAL123", "YBBB",
+            CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB FL410",
+            clock.UtcNow());
+        priorDialogue.AddDownlink(
+            3, 5, "UAL123",
+            CpdlcDownlinkResponseType.NoResponse, AlertType.None, "WILCO",
+            clock.UtcNow().AddSeconds(30));
+        await dialogueRepository.Add(priorDialogue, CancellationToken.None);
+
+        Assert.True(priorDialogue.IsClosed);
+
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
+
+        // New session: aircraft re-uses MessageReference=5 (same uplink ID as in the old session)
+        var downlink = new ReceivedDownlink(
+            10,
+            5, // Same MessageReference as old session's uplink
+            "UAL123",
+            CpdlcDownlinkResponseType.NoResponse,
+            AlertType.None,
+            "WILCO",
+            clock.UtcNow().AddMinutes(30));
+
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - a NEW dialogue was created (closed dialogue was not reopened or appended to)
+        var allDialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Equal(2, allDialogues.Length);
+
+        var newDialogue = allDialogues.First(d => d.Id != priorDialogue.Id);
+        Assert.Single(newDialogue.Messages); // Only the new downlink
+        Assert.Equal(2, priorDialogue.Messages.Count); // Prior dialogue is unchanged
+    }
+
+    [Fact]
+    public async Task Handle_LogoffMessage_TerminatesConnectionAndCreatesDialogue()
+    {
+        // Logoff messages must: (1) trigger connection termination, (2) still flow through
+        // to create a dialogue so the controller sees the logoff notification.
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
+
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
+
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
+
+        var downlink = new ReceivedDownlink(
+            1, null, "UAL123",
+            CpdlcDownlinkResponseType.NoResponse, AlertType.None,
+            "LOGOFF",
+            clock.UtcNow());
+
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - connection termination was requested
+        await mediator.Received(1).Send(
+            Arg.Is<TerminateConnectionRequest>(r => r.Callsign == "UAL123" && r.AcarsClientId == "hoppies-ybbb"),
+            Arg.Any<CancellationToken>());
+
+        // Assert - logoff message still created a dialogue for the controller to see
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Single(dialogues);
+        var msg = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
+        Assert.Equal("LOGOFF", msg.Content);
+
+        await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_LogonRequest_DispatchesLogonCommand()
+    {
+        // Branch 1: a logon request is forwarded to LogonCommandHandler verbatim and the
+        // notification handler must not touch the dialogue repository itself.
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
+
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
+
+        var downlink = new ReceivedDownlink(
+            1,
+            null,
+            "QFA1",
+            CpdlcDownlinkResponseType.NoResponse,
+            AlertType.None,
+            "REQUEST LOGON",
+            clock.UtcNow());
+
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - LogonCommand dispatched with downlink primitives + AcarsClientId
+        await mediator.Received(1).Send(
+            Arg.Is<LogonCommand>(c =>
+                c.DownlinkId == 1 &&
+                c.DownlinkMessageReference == null &&
+                c.Callsign == "QFA1" &&
+                c.DownlinkContent == "REQUEST LOGON" &&
+                c.AcarsClientId == "hoppies-ybbb"),
+            Arg.Any<CancellationToken>());
+
+        // Notification handler must not have created a dialogue itself - LogonCommandHandler owns it.
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Empty(dialogues);
+    }
+
+    [Fact]
+    public async Task Handle_UnknownAircraft_CreatesDialogueAndTransmitsError()
+    {
+        // Branch 2: a downlink arrives from an aircraft we have no connection for. The handler
+        // creates a dialogue (downlink + system error uplink) and transmits the error via ACARS.
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientManager = new TestClientManager();
+        var messageIdProvider = new TestMessageIdProvider();
+
+        var handler = BuildHandler(aircraftRepository, clientManager, messageIdProvider, mediator, clock, controllerRepository, dialogueRepository, hubContext);
+
+        var downlink = new ReceivedDownlink(
+            7,
+            null,
+            "GHOST1",
+            CpdlcDownlinkResponseType.NoResponse,
+            AlertType.None,
+            "REQUEST DESCENT",
+            clock.UtcNow());
+
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - dialogue contains both the original downlink and the error uplink
+        var dialogues = await dialogueRepository.All(CancellationToken.None);
+        Assert.Single(dialogues);
+        Assert.Equal("GHOST1", dialogues[0].AircraftCallsign);
+        Assert.Equal(2, dialogues[0].Messages.Count);
+
+        var receivedDownlink = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
+        Assert.Equal(7, receivedDownlink.MessageId);
+
+        var errorUplink = Assert.IsType<UplinkMessage>(dialogues[0].Messages[1]);
+        Assert.Equal("ERROR. CONNECTION NOT ESTABLISHED.", errorUplink.Content);
+        Assert.Equal("GHOST1", errorUplink.Recipient);
+        Assert.Equal(7, errorUplink.MessageReference);
+
+        // Assert - error uplink transmitted via the ACARS client
+        var client = (TestAcarsClient)await clientManager.GetAcarsClient("hoppies-ybbb", CancellationToken.None);
+        Assert.Single(client.SentMessages);
+        Assert.Equal("ERROR. CONNECTION NOT ESTABLISHED.", client.SentMessages[0].Content);
+
+        await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
     }
 }

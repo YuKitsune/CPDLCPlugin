@@ -1,12 +1,12 @@
-﻿using CPDLCServer.Contracts;
+using CPDLCServer.Contracts;
 using MediatR;
 using Serilog;
 
 namespace CPDLCPlugin.Messages;
 
-public record SendStandbyUplinkRequest(int DownlinkMessageId, string Recipient) : IRequest;
-public record SendDeferredUplinkRequest(int DownlinkMessageId, string Recipient) : IRequest;
-public record SendUnableUplinkRequest(int DownlinkMessageId, string Recipient, string Reason = "") : IRequest;
+public record SendStandbyUplinkRequest(Guid DialogueId, int DownlinkMessageId, string Recipient) : IRequest;
+public record SendDeferredUplinkRequest(Guid DialogueId, int DownlinkMessageId, string Recipient) : IRequest;
+public record SendUnableUplinkRequest(Guid DialogueId, int DownlinkMessageId, string Recipient, string Reason = "") : IRequest;
 
 public class SendStandbyUplinkRequestHandler(IMediator mediator, ILogger logger)
     : IRequestHandler<SendStandbyUplinkRequest>
@@ -17,8 +17,9 @@ public class SendStandbyUplinkRequestHandler(IMediator mediator, ILogger logger)
             request.Recipient, request.DownlinkMessageId);
 
         await mediator.Send(
-            new SendUplinkRequest(
+            new ReplyToDownlinkRequest(
                 request.Recipient,
+                request.DialogueId,
                 request.DownlinkMessageId,
                 CpdlcUplinkResponseType.NoResponse, // TODO: Is this the correct response type?
                 "STANDBY"),
@@ -35,8 +36,9 @@ public class SendDeferredUplinkRequestHandler(IMediator mediator, ILogger logger
             request.Recipient, request.DownlinkMessageId);
 
         await mediator.Send(
-            new SendUplinkRequest(
+            new ReplyToDownlinkRequest(
                 request.Recipient,
+                request.DialogueId,
                 request.DownlinkMessageId,
                 CpdlcUplinkResponseType.NoResponse, // TODO: Is this the correct response type?
                 "REQUEST DEFERRED"),
@@ -59,8 +61,9 @@ public class SendUnableUplinkRequestHandler(IMediator mediator, ILogger logger)
             request.Recipient, request.DownlinkMessageId, request.Reason ?? "none");
 
         await mediator.Send(
-            new SendUplinkRequest(
+            new ReplyToDownlinkRequest(
                 request.Recipient,
+                request.DialogueId,
                 request.DownlinkMessageId,
                 CpdlcUplinkResponseType.NoResponse, // TODO: Is this the correct response type?
                 content),

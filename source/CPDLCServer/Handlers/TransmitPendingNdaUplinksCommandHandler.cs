@@ -61,10 +61,9 @@ public class TransmitPendingNdaUplinksCommandHandler(
             }
 
             await mediator.Send(
-                new SendUplinkCommand(
+                new BeginDialogueCommand(
                     aircraftConnection.StationId,
                     aircraftConnection.Callsign,
-                    null,
                     CpdlcUplinkResponseType.NoResponse,
                     $"NEXT DATA AUTHORITY @{aircraftConnection.NextDataAuthority}@"),
                 cancellationToken);

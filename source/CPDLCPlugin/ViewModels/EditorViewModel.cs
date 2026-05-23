@@ -282,7 +282,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         try
         {
             // Send the "STANDBY" uplink message
-            await _mediator.Send(new SendStandbyUplinkRequest(SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign));
+            await _mediator.Send(new SendStandbyUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign));
             SelectedDownlinkMessage = null;
             ClearUplinkMessage();
         }
@@ -298,7 +298,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         try
         {
             // Send the "REQUEST DEFERRED" uplink message
-            await _mediator.Send(new SendDeferredUplinkRequest(SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign));
+            await _mediator.Send(new SendDeferredUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign));
             SelectedDownlinkMessage = null;
             ClearUplinkMessage();
         }
@@ -327,7 +327,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         try
         {
             // Send the "UNABLE" and "DUE TO TRAFFIC" uplink messages
-            await _mediator.Send(new SendUnableUplinkRequest(SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign, "DUE TO TRAFFIC."));
+            await _mediator.Send(new SendUnableUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign, "DUE TO TRAFFIC."));
 
             // TODO: Do we need to do this? DialogueChanged will kick-in and remove it anyway
             var newDownlinkMessages = DownlinkMessages.Where(m => m != SelectedDownlinkMessage);
@@ -348,7 +348,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         try
         {
             // Send the "UNABLE" and "DUE TO AIRSPACE RESTRICTION" uplink messages
-            await _mediator.Send(new SendUnableUplinkRequest(SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign, "DUE TO AIRSPACE RESTRICTION."));
+            await _mediator.Send(new SendUnableUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign, "DUE TO AIRSPACE RESTRICTION."));
 
             // TODO: Do we need to do this? DialogueChanged will kick-in and remove it anyway
             var newDownlinkMessages = DownlinkMessages.Where(m => m != SelectedDownlinkMessage);
@@ -585,11 +585,22 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                 _logger.Debug("[{Callsign}] No downlink selected - sending uplink without MessageReference", Callsign);
             }
 
-            await _mediator.Send(new SendUplinkRequest(
-                Callsign,
-                downlinkMessage?.OriginalMessage.MessageId,
-                uplinkMessageResponseType,
-                uplinkMessageContent));
+            if (downlinkMessage is not null)
+            {
+                await _mediator.Send(new ReplyToDownlinkRequest(
+                    Callsign,
+                    downlinkMessage.Dialogue.Id,
+                    downlinkMessage.OriginalMessage.MessageId,
+                    uplinkMessageResponseType,
+                    uplinkMessageContent));
+            }
+            else
+            {
+                await _mediator.Send(new BeginDialogueRequest(
+                    Callsign,
+                    uplinkMessageResponseType,
+                    uplinkMessageContent));
+            }
 
             ClearUplinkMessage();
 

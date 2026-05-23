@@ -77,6 +77,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 1: Regular Uplink/Downlink messages (not acknowledged)
         var group1Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST1",
@@ -90,6 +91,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         };
         var group1Downlink = new DownlinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Sender = "TEST1",
@@ -112,6 +114,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 3: Urgent messages (not acknowledged)
         var group3Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.High,
             Recipient = "TEST3",
@@ -125,6 +128,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         };
         var group3Downlink = new DownlinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.High,
             Sender = "TEST3",
@@ -147,6 +151,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 5: Closed messages (not acknowledged)
         var group5Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST5",
@@ -161,6 +166,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         };
         var group5Downlink = new DownlinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Sender = "TEST5",
@@ -184,6 +190,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 7: Special Closed messages (not acknowledged)
         var group7Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST7",
@@ -206,6 +213,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 9: Failed messages (not acknowledged)
         var group9Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST9",
@@ -227,6 +235,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 11: Pilot Late messages (not acknowledged)
         var group11Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST11",
@@ -248,6 +257,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 13: Controller Late messages (not acknowledged)
         var group13Downlink = new DownlinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Sender = "TEST13",
@@ -266,6 +276,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 15: Special Closed Timeout (pilot late special - Normal video)
         var group15Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST15",
@@ -288,6 +299,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 16: Overflow message (shows asterisk prefix)
         var group16Downlink = new DownlinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Sender = "TEST16",
@@ -306,6 +318,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 2: Regular messages (acknowledged)
         var group2Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST2",
@@ -320,6 +333,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         };
         var group2Downlink = new DownlinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Sender = "TEST2",
@@ -343,6 +357,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 4: Urgent messages (acknowledged)
         var group4Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.High,
             Recipient = "TEST4",
@@ -357,6 +372,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         };
         var group4Downlink = new DownlinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.High,
             Sender = "TEST4",
@@ -380,6 +396,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 6: Closed messages (acknowledged)
         var group6Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST6",
@@ -395,6 +412,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         };
         var group6Downlink = new DownlinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Sender = "TEST6",
@@ -419,6 +437,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 8: Special Closed messages (acknowledged)
         var group8Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST8",
@@ -442,6 +461,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 10: Failed messages (acknowledged)
         var group10Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST10",
@@ -464,6 +484,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 12: Pilot Late messages (acknowledged)
         var group12Uplink = new UplinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Recipient = "TEST12",
@@ -486,6 +507,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         // Group 14: Controller Late messages (acknowledged)
         var group14Downlink = new DownlinkMessageDto
         {
+            DialogueId = Guid.NewGuid(),
             MessageId = messageId++,
             AlertType = AlertType.None,
             Sender = "TEST14",
@@ -569,7 +591,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             if (currentMessageViewModel.Message is not DownlinkMessageDto downlink)
                 return;
 
-            await _mediator.Send(new SendStandbyUplinkRequest(downlink.MessageId, downlink.Sender));
+            await _mediator.Send(new SendStandbyUplinkRequest(downlink.DialogueId, downlink.MessageId, downlink.Sender));
         }
         catch (Exception ex)
         {
@@ -585,7 +607,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             if (currentMessageViewModel.Message is not DownlinkMessageDto downlink)
                 return;
 
-            await _mediator.Send(new SendDeferredUplinkRequest(downlink.MessageId, downlink.Sender));
+            await _mediator.Send(new SendDeferredUplinkRequest(downlink.DialogueId, downlink.MessageId, downlink.Sender));
         }
         catch (Exception ex)
         {
@@ -601,7 +623,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             if (currentMessageViewModel.Message is not DownlinkMessageDto downlink)
                 return;
 
-            await _mediator.Send(new SendUnableUplinkRequest(downlink.MessageId, downlink.Sender));
+            await _mediator.Send(new SendUnableUplinkRequest(downlink.DialogueId, downlink.MessageId, downlink.Sender));
         }
         catch (Exception ex)
         {
@@ -617,7 +639,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             if (currentMessageViewModel.Message is not DownlinkMessageDto downlink)
                 return;
 
-            await _mediator.Send(new SendUnableUplinkRequest(downlink.MessageId, downlink.Sender, Reason: "DUE TO TRAFFIC"));
+            await _mediator.Send(new SendUnableUplinkRequest(downlink.DialogueId, downlink.MessageId, downlink.Sender, Reason: "DUE TO TRAFFIC"));
         }
         catch (Exception ex)
         {
@@ -633,7 +655,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             if (currentMessageViewModel.Message is not DownlinkMessageDto downlink)
                 return;
 
-            await _mediator.Send(new SendUnableUplinkRequest(downlink.MessageId, downlink.Sender, Reason: "DUE TO AIRSPACE RESTRICTION"));
+            await _mediator.Send(new SendUnableUplinkRequest(downlink.DialogueId, downlink.MessageId, downlink.Sender, Reason: "DUE TO AIRSPACE RESTRICTION"));
         }
         catch (Exception ex)
         {

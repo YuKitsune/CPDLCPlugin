@@ -2,23 +2,23 @@ namespace CPDLCServer.Model;
 
 public static class ControlMessages
 {
-    public static bool IsLogonRequest(DownlinkMessage downlinkMessage)
+    public static bool IsLogonRequest(ReceivedDownlink downlink)
     {
-        return downlinkMessage.Content.Contains("REQUEST LOGON");
+        return downlink.Content.Contains("REQUEST LOGON");
     }
 
-    public static bool IsLogoffNotice(DownlinkMessage downlinkMessage)
+    public static bool IsLogoffNotice(ReceivedDownlink downlink)
     {
-        return downlinkMessage.Content.Contains("LOGOFF");
+        return downlink.Content.Contains("LOGOFF");
     }
 
-    public static bool IsEndServiceUplink(UplinkMessage downlinkMessage)
+    public static bool IsEndServiceUplink(UplinkMessage uplink)
     {
-        return downlinkMessage.Content.Contains("END SERVICE");
+        return uplink.Content.Contains("END SERVICE");
     }
 
-    public static bool IsNotCurrentDataAuthority(DownlinkMessage downlinkMessage)
+    public static bool IsNotCurrentDataAuthority(ReceivedDownlink downlink)
     {
-        return downlinkMessage.Content.Contains("NOT CURRENT DATA AUTHORITY");
+        return downlink.Content.Contains("NOT CURRENT DATA AUTHORITY");
     }
 }

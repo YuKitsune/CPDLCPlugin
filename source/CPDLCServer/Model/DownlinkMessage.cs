@@ -1,6 +1,7 @@
 ﻿namespace CPDLCServer.Model;
 
 public class DownlinkMessage(
+    Guid dialogueId,
     int messageId,
     int? messageReference,
     string sender,
@@ -10,6 +11,7 @@ public class DownlinkMessage(
     DateTimeOffset received)
     : ICpdlcMessage
 {
+    public Guid DialogueId { get; } = dialogueId;
     public int MessageId { get; } = messageId;
     public int? MessageReference { get; } = messageReference;
     public string Sender { get; } = sender;

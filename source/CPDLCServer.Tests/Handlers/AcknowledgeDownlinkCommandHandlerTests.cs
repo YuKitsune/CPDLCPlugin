@@ -16,7 +16,8 @@ public class AcknowledgeDownlinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var downlink = new DownlinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var downlink = dialogue.AddDownlink(
             1,
             null,
             "UAL123",
@@ -24,8 +25,6 @@ public class AcknowledgeDownlinkCommandHandlerTests
             AlertType.None,
             "REQUEST DESCENT FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", downlink);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeDownlinkCommandHandler(
@@ -55,7 +54,8 @@ public class AcknowledgeDownlinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var downlink = new DownlinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddDownlink(
             1,
             null,
             "UAL123",
@@ -63,8 +63,6 @@ public class AcknowledgeDownlinkCommandHandlerTests
             AlertType.None,
             "REQUEST DESCENT FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", downlink);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeDownlinkCommandHandler(
@@ -93,7 +91,8 @@ public class AcknowledgeDownlinkCommandHandlerTests
         var publisher = new TestPublisher();
 
         // Create a downlink that requires a response
-        var downlink = new DownlinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var downlink = dialogue.AddDownlink(
             1,
             null,
             "UAL123",
@@ -101,8 +100,6 @@ public class AcknowledgeDownlinkCommandHandlerTests
             AlertType.None,
             "REQUEST DESCENT FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", downlink);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeDownlinkCommandHandler(
@@ -155,7 +152,8 @@ public class AcknowledgeDownlinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var downlink = new DownlinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddDownlink(
             1,
             null,
             "UAL123",
@@ -163,8 +161,6 @@ public class AcknowledgeDownlinkCommandHandlerTests
             AlertType.None,
             "REQUEST DESCENT FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", downlink);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new AcknowledgeDownlinkCommandHandler(

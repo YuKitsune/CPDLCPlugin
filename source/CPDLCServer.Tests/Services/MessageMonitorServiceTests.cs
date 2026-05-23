@@ -20,7 +20,8 @@ public class MessageMonitorServiceTests
         clock.SetUtcNow(startTime);
 
         // Create an uplink that requires a response
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var uplink = dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -29,8 +30,6 @@ public class MessageMonitorServiceTests
             AlertType.None,
             "CLIMB TO FL410",
             startTime);
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -57,7 +56,8 @@ public class MessageMonitorServiceTests
         var startTime = DateTimeOffset.UtcNow;
         clock.SetUtcNow(startTime);
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var uplink = dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -66,8 +66,6 @@ public class MessageMonitorServiceTests
             AlertType.None,
             "CLIMB TO FL410",
             startTime);
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -93,7 +91,8 @@ public class MessageMonitorServiceTests
         clock.SetUtcNow(startTime);
 
         // Create an uplink that doesn't require a response
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var uplink = dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -102,8 +101,6 @@ public class MessageMonitorServiceTests
             AlertType.None,
             "ROGER",
             startTime);
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -129,7 +126,8 @@ public class MessageMonitorServiceTests
         clock.SetUtcNow(startTime);
 
         // Create a downlink that requires a response
-        var downlink = new DownlinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var downlink = dialogue.AddDownlink(
             1,
             null,
             "UAL123",
@@ -137,8 +135,6 @@ public class MessageMonitorServiceTests
             AlertType.None,
             "REQUEST CLIMB FL410",
             startTime);
-
-        var dialogue = new Dialogue("UAL123", downlink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -165,7 +161,8 @@ public class MessageMonitorServiceTests
         var startTime = DateTimeOffset.UtcNow;
         clock.SetUtcNow(startTime);
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        var uplink = dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -178,7 +175,6 @@ public class MessageMonitorServiceTests
         // Close the message
         uplink.Close(startTime);
 
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -204,7 +200,8 @@ public class MessageMonitorServiceTests
         clock.SetUtcNow(startTime);
 
         // Create a self-closing uplink (NoResponse)
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -213,8 +210,6 @@ public class MessageMonitorServiceTests
             AlertType.None,
             "ROGER",
             startTime);
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -240,7 +235,8 @@ public class MessageMonitorServiceTests
         clock.SetUtcNow(startTime);
 
         // Create a closed dialogue with acknowledged message
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -249,8 +245,6 @@ public class MessageMonitorServiceTests
             AlertType.None,
             "ROGER",
             startTime); // NoResponse uplinks are self-closing and auto-acknowledged
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -277,7 +271,8 @@ public class MessageMonitorServiceTests
         var startTime = DateTimeOffset.UtcNow;
         clock.SetUtcNow(startTime);
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -286,8 +281,6 @@ public class MessageMonitorServiceTests
             AlertType.None,
             "ROGER",
             startTime);
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -313,7 +306,8 @@ public class MessageMonitorServiceTests
         clock.SetUtcNow(startTime);
 
         // Create an open dialogue (requires response)
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -322,8 +316,6 @@ public class MessageMonitorServiceTests
             AlertType.None,
             "CLIMB TO FL410",
             startTime);
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -350,7 +342,8 @@ public class MessageMonitorServiceTests
         clock.SetUtcNow(startTime);
 
         // Create a downlink that's closed but not acknowledged
-        var downlink = new DownlinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddDownlink(
             1,
             null,
             "UAL123",
@@ -358,8 +351,6 @@ public class MessageMonitorServiceTests
             AlertType.None,
             "WILCO",
             startTime);
-
-        var dialogue = new Dialogue("UAL123", downlink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
@@ -386,11 +377,11 @@ public class MessageMonitorServiceTests
         clock.SetUtcNow(startTime);
 
         // Create multiple dialogues with different aircraft
-        var uplink1 = new UplinkMessage(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB", startTime);
-        var uplink2 = new UplinkMessage(2, null, "DAL456", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "DESCEND", startTime);
+        var dialogue1 = new Dialogue("UAL123");
+        var uplink1 = dialogue1.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB", startTime);
 
-        var dialogue1 = new Dialogue("UAL123", uplink1);
-        var dialogue2 = new Dialogue("DAL456", uplink2);
+        var dialogue2 = new Dialogue("DAL456");
+        var uplink2 = dialogue2.AddUplink(2, null, "DAL456", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "DESCEND", startTime);
 
         await repository.Add(dialogue1, CancellationToken.None);
         await repository.Add(dialogue2, CancellationToken.None);

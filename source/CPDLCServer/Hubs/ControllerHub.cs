@@ -71,9 +71,8 @@ public class ControllerHub(
         await base.OnConnectedAsync();
     }
 
-    public async Task<UplinkMessageDto> SendUplink(
+    public async Task BeginDialogue(
         string recipient,
-        int? replyToDownlinkId,
         CpdlcUplinkResponseType responseType,
         string content)
     {
@@ -84,7 +83,6 @@ public class ControllerHub(
             throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
         }
 
-        // TODO: Move to converter
         var modelResponseType = responseType switch
         {
             CpdlcUplinkResponseType.NoResponse => Model.CpdlcUplinkResponseType.NoResponse,
@@ -94,16 +92,41 @@ public class ControllerHub(
             _ => throw new ArgumentOutOfRangeException(nameof(responseType), responseType, null)
         };
 
-        var command = new SendUplinkCommand(
+        await mediator.Send(new BeginDialogueCommand(
             controller.Callsign,
             recipient,
-            replyToDownlinkId,
             modelResponseType,
-            content);
+            content));
+    }
 
-        var result = await mediator.Send(command);
+    public async Task ReplyToDownlink(
+        Guid dialogueId,
+        int downlinkMessageId,
+        CpdlcUplinkResponseType responseType,
+        string content)
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
 
-        return DialogueConverter.ToDto(result.UplinkMessage);
+        var modelResponseType = responseType switch
+        {
+            CpdlcUplinkResponseType.NoResponse => Model.CpdlcUplinkResponseType.NoResponse,
+            CpdlcUplinkResponseType.WilcoUnable => Model.CpdlcUplinkResponseType.WilcoUnable,
+            CpdlcUplinkResponseType.AffirmativeNegative => Model.CpdlcUplinkResponseType.AffirmativeNegative,
+            CpdlcUplinkResponseType.Roger => Model.CpdlcUplinkResponseType.Roger,
+            _ => throw new ArgumentOutOfRangeException(nameof(responseType), responseType, null)
+        };
+
+        await mediator.Send(new ReplyToDownlinkCommand(
+            controller.Callsign,
+            dialogueId,
+            downlinkMessageId,
+            modelResponseType,
+            content));
     }
 
     public async Task<AircraftConnectionDto[]> GetConnectedAircraft()

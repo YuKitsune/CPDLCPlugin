@@ -226,7 +226,8 @@ public class AircraftConnectionLostNotificationHandlerTests
         var clock = new TestClock();
 
         // Create an existing dialogue with an open downlink message
-        var existingDownlink = new DownlinkMessage(
+        var existingDialogue = new Dialogue("UAL123");
+        existingDialogue.AddDownlink(
             1,
             null,
             "UAL123",
@@ -234,7 +235,6 @@ public class AircraftConnectionLostNotificationHandlerTests
             AlertType.None,
             "REQUEST DESCENT TO FL350",
             clock.UtcNow());
-        var existingDialogue = new Dialogue("UAL123", existingDownlink);
         await dialogueRepository.Add(existingDialogue, CancellationToken.None);
 
         var messageIdProvider = new TestMessageIdProvider();

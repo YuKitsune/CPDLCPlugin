@@ -83,7 +83,7 @@ public class AircraftConnectionLostNotificationHandler(
                     notification.Callsign,
                     cancellationToken);
 
-                var errorDownlink = new DownlinkMessage(
+                dialogue.AddDownlink(
                     messageId,
                     openMessage.MessageId,
                     notification.Callsign,
@@ -91,8 +91,6 @@ public class AircraftConnectionLostNotificationHandler(
                     AlertType.Medium,
                     "ERROR CONNECTION TIMED OUT",
                     clock.UtcNow());
-
-                dialogue.AddMessage(errorDownlink);
 
                 // Publish DialogueChangedNotification
                 await publisher.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
@@ -111,7 +109,8 @@ public class AircraftConnectionLostNotificationHandler(
                 notification.Callsign,
                 cancellationToken);
 
-            var errorDownlink = new DownlinkMessage(
+            var dialogue = new Dialogue(notification.Callsign);
+            dialogue.AddDownlink(
                 messageId,
                 null,
                 notification.Callsign,
@@ -119,8 +118,6 @@ public class AircraftConnectionLostNotificationHandler(
                 AlertType.Medium,
                 "ERROR CONNECTION TIMED OUT",
                 clock.UtcNow());
-
-            var dialogue = new Dialogue(notification.Callsign, errorDownlink);
 
             await dialogueRepository.Add(dialogue, cancellationToken);
 

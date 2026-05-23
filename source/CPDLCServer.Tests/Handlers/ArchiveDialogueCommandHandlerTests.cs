@@ -16,13 +16,12 @@ public class ArchiveDialogueCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
             CpdlcUplinkResponseType.NoResponse,
             AlertType.None, "ROGER",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         var handler = new ArchiveDialogueCommandHandler(repository, clock, publisher, Logger.None);
@@ -44,20 +43,17 @@ public class ArchiveDialogueCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
             CpdlcUplinkResponseType.WilcoUnable,
             AlertType.None, "CLIMB TO FL350",
             clock.UtcNow());
-
-        var downlink = new DownlinkMessage(
+        var downlink = dialogue.AddDownlink(
             2, 1, "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
             AlertType.None, "WILCO",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", uplink);
-        dialogue.AddMessage(downlink);
         await repository.Add(dialogue, CancellationToken.None);
 
         Assert.True(dialogue.IsClosed);
@@ -82,13 +78,12 @@ public class ArchiveDialogueCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
             CpdlcUplinkResponseType.WilcoUnable,
             AlertType.None, "CLIMB TO FL350",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", uplink);
         await repository.Add(dialogue, CancellationToken.None);
 
         Assert.False(dialogue.IsClosed);
@@ -112,13 +107,12 @@ public class ArchiveDialogueCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var uplink = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
             CpdlcUplinkResponseType.NoResponse,
             AlertType.None, "ROGER",
             clock.UtcNow());
-
-        var dialogue = new Dialogue("UAL123", uplink);
         dialogue.Archive(clock.UtcNow());
         await repository.Add(dialogue, CancellationToken.None);
 

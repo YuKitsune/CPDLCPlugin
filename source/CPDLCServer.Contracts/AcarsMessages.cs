@@ -59,6 +59,7 @@ public record DialogueDto(
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 public abstract class CpdlcMessageDto
 {
+    public required Guid DialogueId { get; init; }
     public required int MessageId { get; init; }
     public int? MessageReference { get; init; }
     public required AlertType AlertType { get; init; }

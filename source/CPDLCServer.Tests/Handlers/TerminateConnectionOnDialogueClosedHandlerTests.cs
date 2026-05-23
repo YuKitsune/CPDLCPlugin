@@ -30,7 +30,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a closed dialogue with END SERVICE
-        var endServiceMessage = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -39,7 +40,6 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             AlertType.None,
             "END SERVICE",
             clock.UtcNow());
-        var dialogue = new Dialogue("UAL123", endServiceMessage);
 
         var notification = new DialogueChangedNotification(dialogue);
 
@@ -75,7 +75,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create an open dialogue with END SERVICE (requires response)
-        var endServiceMessage = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -84,7 +85,6 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             AlertType.None,
             "END SERVICE. CONTACT AUCKLAND ON 123.450.",
             clock.UtcNow());
-        var dialogue = new Dialogue("UAL123", endServiceMessage);
 
         var notification = new DialogueChangedNotification(dialogue);
 
@@ -118,7 +118,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a closed dialogue WITHOUT END SERVICE
-        var message = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -127,7 +128,6 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             AlertType.None,
             "LOGON ACCEPTED",
             clock.UtcNow());
-        var dialogue = new Dialogue("UAL123", message);
 
         var notification = new DialogueChangedNotification(dialogue);
 
@@ -161,8 +161,10 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a dialogue with multiple messages including END SERVICE
+        var dialogue = new Dialogue("UAL123");
+
         // Pilot request
-        var downlink = new DownlinkMessage(
+        dialogue.AddDownlink(
             1,
             null,
             "UAL123",
@@ -170,10 +172,9 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             AlertType.None,
             "REQUEST CLIMB TO FL370",
             clock.UtcNow());
-        var dialogue = new Dialogue("UAL123", downlink);
 
         // Controller response with END SERVICE
-        var uplink = new UplinkMessage(
+        dialogue.AddUplink(
             2,
             1,
             "UAL123",
@@ -182,10 +183,9 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             AlertType.None,
             "CLEARED TO CLIMB TO FL370. CONTACT MELBOURNE 123.45. END SERVICE",
             clock.UtcNow());
-        dialogue.AddMessage(uplink);
 
         // Pilot response (closes the dialogue)
-        var response = new DownlinkMessage(
+        dialogue.AddDownlink(
             3,
             2,
             "UAL123",
@@ -193,7 +193,6 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             AlertType.None,
             "WILCO",
             clock.UtcNow());
-        dialogue.AddMessage(response);
 
         var notification = new DialogueChangedNotification(dialogue);
 
@@ -225,7 +224,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a closed dialogue with END SERVICE
-        var endServiceMessage = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -234,7 +234,6 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             AlertType.None,
             "END SERVICE",
             clock.UtcNow());
-        var dialogue = new Dialogue("UAL123", endServiceMessage);
 
         var notification = new DialogueChangedNotification(dialogue);
 
@@ -268,7 +267,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a closed dialogue with END SERVICE
-        var endServiceMessage = new UplinkMessage(
+        var dialogue = new Dialogue("UAL123");
+        dialogue.AddUplink(
             1,
             null,
             "UAL123",
@@ -277,7 +277,6 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             AlertType.None,
             "END SERVICE",
             clock.UtcNow());
-        var dialogue = new Dialogue("UAL123", endServiceMessage);
 
         var notification = new DialogueChangedNotification(dialogue);
 

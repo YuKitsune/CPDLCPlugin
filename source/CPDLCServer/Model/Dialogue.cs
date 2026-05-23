@@ -18,18 +18,16 @@ public class Dialogue
 {
     readonly List<ICpdlcMessage> _messages = [];
 
-    public Dialogue(string aircraftCallsign, ICpdlcMessage firstMessage)
+    public Dialogue(string aircraftCallsign)
     {
         AircraftCallsign = aircraftCallsign;
-        Opened = firstMessage.Time;
-        AddMessage(firstMessage);
     }
 
     public Guid Id { get; } = Guid.NewGuid();
 
     public string AircraftCallsign { get; }
     public IReadOnlyList<ICpdlcMessage> Messages => _messages.AsReadOnly();
-    public DateTimeOffset Opened { get; }
+    public DateTimeOffset Opened { get; private set; }
     public DateTimeOffset? Closed { get; private set; }
 
     [MemberNotNullWhen(true, nameof(Closed))]
@@ -40,8 +38,40 @@ public class Dialogue
     [MemberNotNullWhen(true, nameof(Archived))]
     public bool IsArchived => Archived.HasValue;
 
-    public void AddMessage(ICpdlcMessage message)
+    public UplinkMessage AddUplink(
+        int messageId,
+        int? messageReference,
+        string recipient,
+        string senderCallsign,
+        CpdlcUplinkResponseType responseType,
+        AlertType alertType,
+        string content,
+        DateTimeOffset sent)
     {
+        var message = new UplinkMessage(Id, messageId, messageReference, recipient, senderCallsign, responseType, alertType, content, sent);
+        AddMessage(message);
+        return message;
+    }
+
+    public DownlinkMessage AddDownlink(
+        int messageId,
+        int? messageReference,
+        string sender,
+        CpdlcDownlinkResponseType responseType,
+        AlertType alertType,
+        string content,
+        DateTimeOffset received)
+    {
+        var message = new DownlinkMessage(Id, messageId, messageReference, sender, responseType, alertType, content, received);
+        AddMessage(message);
+        return message;
+    }
+
+    void AddMessage(ICpdlcMessage message)
+    {
+        if (_messages.Count == 0)
+            Opened = message.Time;
+
         _messages.Add(message);
 
         // Apply closure rules then check if dialogue closes
