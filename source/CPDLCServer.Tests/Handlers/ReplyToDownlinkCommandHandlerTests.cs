@@ -8,10 +8,6 @@ using Serilog.Core;
 
 namespace CPDLCServer.Tests.Handlers;
 
-// Regression tests for issue #34 - "Replies from the CPDLC Editor are starting new messages"
-// Root cause: the old implementation searched for dialogues by MessageId, which is only scoped
-// per-session and collides across message types. The fix uses DialogueId for lookup so replies
-// are always appended to the correct existing dialogue.
 public class ReplyToDownlinkCommandHandlerTests
 {
     [Fact]
@@ -19,6 +15,7 @@ public class ReplyToDownlinkCommandHandlerTests
     {
         // Regression for issue #34: controller replying to a pilot downlink must append
         // to the existing dialogue, not start a new one.
+
         // Arrange
         var clientManager = new TestClientManager();
         var messageIdProvider = new TestMessageIdProvider();
@@ -102,6 +99,7 @@ public class ReplyToDownlinkCommandHandlerTests
         // Regression for issue #34: the old code searched by MessageId, which is not globally
         // unique. Two dialogues for the same aircraft can legitimately have messages with the
         // same MessageId. The fix uses DialogueId for unambiguous lookup.
+
         // Arrange
         var clientManager = new TestClientManager();
         var messageIdProvider = new TestMessageIdProvider();
