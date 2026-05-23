@@ -148,3 +148,5 @@ npm-debug.log
 
 # Database
 *.db*
+
+/logs

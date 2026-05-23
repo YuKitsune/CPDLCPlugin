@@ -42,7 +42,7 @@ public class ReplyToDownlinkCommandHandler(
             callsign,
             cancellationToken);
 
-        var uplinkMessage = new UplinkMessage(
+        var uplinkMessage = dialogue.AddUplink(
             messageId,
             request.DownlinkMessageId,
             callsign,
@@ -52,7 +52,6 @@ public class ReplyToDownlinkCommandHandler(
             request.Content,
             clock.UtcNow());
 
-        dialogue.AddMessage(uplinkMessage);
         logger.Information("Uplink {MessageId} added to dialogue {DialogueId} as reply to downlink {DownlinkMessageId}",
             messageId, request.DialogueId, request.DownlinkMessageId);
 

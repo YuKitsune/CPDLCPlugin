@@ -20,7 +20,7 @@ public class HoppieAcarsClient : IAcarsClient
     readonly IClock _clock;
     readonly ILogger _logger;
 
-    readonly Channel<DownlinkMessage> _messageChannel = Channel.CreateUnbounded<DownlinkMessage>();
+    readonly Channel<ReceivedDownlink> _messageChannel = Channel.CreateUnbounded<ReceivedDownlink>();
     readonly Random _random = Random.Shared;
 
     CancellationTokenSource? _pollCancellationTokenSource;
@@ -29,7 +29,7 @@ public class HoppieAcarsClient : IAcarsClient
 
     bool _disposed;
 
-    public ChannelReader<DownlinkMessage> MessageReader => _messageChannel.Reader;
+    public ChannelReader<ReceivedDownlink> MessageReader => _messageChannel.Reader;
     public string StationId => _configuration.StationIdentifier;
 
     public HoppieAcarsClient(HoppiesConfiguration configuration, HttpClient httpClient, IClock clock, ILogger logger)
@@ -349,7 +349,7 @@ public class HoppieAcarsClient : IAcarsClient
         return (headerParts[0], headerParts[1], packet);
     }
 
-    DownlinkMessage ParseCpdlcDownlink(string from, string packet)
+    ReceivedDownlink ParseCpdlcDownlink(string from, string packet)
     {
         var parts = packet.Split('/', 6);
         if (parts.Length != 6)
@@ -366,7 +366,7 @@ public class HoppieAcarsClient : IAcarsClient
 
         var content = parts[5];
 
-        return new DownlinkMessage(
+        return new ReceivedDownlink(
             messageId,
             replyToId,
             from,

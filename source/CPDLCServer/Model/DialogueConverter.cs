@@ -63,6 +63,7 @@ public static class DialogueConverter
     {
         return new UplinkMessageDto
         {
+            DialogueId = uplink.DialogueId,
             MessageId = uplink.MessageId,
             MessageReference = uplink.MessageReference,
             AlertType = ToDto(uplink.AlertType),
@@ -83,6 +84,7 @@ public static class DialogueConverter
     {
         return new DownlinkMessageDto
         {
+            DialogueId = downlink.DialogueId,
             MessageId = downlink.MessageId,
             MessageReference = downlink.MessageReference,
             AlertType = ToDto(downlink.AlertType),

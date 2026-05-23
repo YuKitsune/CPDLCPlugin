@@ -37,7 +37,8 @@ public class BeginDialogueCommandHandler(
             request.Recipient,
             cancellationToken);
 
-        var uplinkMessage = new UplinkMessage(
+        var dialogue = new Dialogue(request.Recipient);
+        var uplinkMessage = dialogue.AddUplink(
             messageId,
             null,
             request.Recipient,
@@ -47,7 +48,6 @@ public class BeginDialogueCommandHandler(
             request.Content,
             clock.UtcNow());
 
-        var dialogue = new Dialogue(request.Recipient, uplinkMessage);
         await dialogueRepository.Add(dialogue, cancellationToken);
         logger.Information("Dialogue {DialogueId} created for uplink {MessageId} to {Callsign}",
             dialogue.Id, messageId, request.Recipient);

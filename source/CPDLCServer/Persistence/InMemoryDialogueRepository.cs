@@ -27,7 +27,7 @@ public class InMemoryDialogueRepository : IDialogueRepository
             return _dialogues
                 .FirstOrDefault(d =>
                     d.AircraftCallsign == aircraftCallsign &&
-                    !d.IsArchived &&
+                    !d.IsClosed &&
                     d.Messages.OfType<UplinkMessage>().Any(m => m.MessageId == uplinkMessageId));
         }
     }

@@ -3,6 +3,7 @@ namespace CPDLCServer.Model;
 // TODO: Separate formatted and plaintext contents.
 
 public class UplinkMessage(
+    Guid dialogueId,
     int messageId,
     int? messageReference,
     string recipient,
@@ -13,6 +14,7 @@ public class UplinkMessage(
     DateTimeOffset sent)
     : ICpdlcMessage
 {
+    public Guid DialogueId { get; } = dialogueId;
     public int MessageId { get; } = messageId;
     public int? MessageReference { get; } = messageReference;
     public string Recipient { get; } = recipient;

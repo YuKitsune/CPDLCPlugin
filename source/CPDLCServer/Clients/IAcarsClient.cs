@@ -6,7 +6,7 @@ namespace CPDLCServer.Clients;
 
 public interface IAcarsClient : IAsyncDisposable
 {
-    ChannelReader<DownlinkMessage> MessageReader { get; }
+    ChannelReader<ReceivedDownlink> MessageReader { get; }
     string StationId { get; }
     Task Connect(CancellationToken cancellationToken);
     Task Send(UplinkMessage message, CancellationToken cancellationToken);

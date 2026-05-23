@@ -6,5 +6,5 @@ namespace CPDLCServer.Messages;
 public record DownlinkReceivedNotification(
     string AcarsClientId,
     string StationId,
-    DownlinkMessage Downlink)
+    ReceivedDownlink Downlink)
     : INotification;
