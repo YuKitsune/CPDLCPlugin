@@ -44,6 +44,12 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
     BackgroundWorker? _ndaRecalculationWorker;
 
+    ToolStripMenuItem? _installationMenuItem;
+    bool _labelsInstalled;
+
+    const string InstallMenuLabel = "Install label items";
+    const string UninstallMenuLabel = "Uninstall label items";
+
     string IPlugin.Name => Name;
 
     IServiceProvider ServiceProvider { get; set; }
@@ -64,6 +70,8 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         ConfigureServices(configuration);
 
         AddToolbarItems();
+
+        CheckXmlInstallation();
 
         Network.Connected += NetworkConnected;
         Network.Disconnected += NetworkDisconnected;
@@ -326,6 +334,119 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         };
 
         MMI.AddCustomMenuItem(historyMenuItem);
+
+        if (_configuration?.ShowInstallationMenuItems ?? true)
+        {
+            var status = XmlInstaller.GetStatus();
+            if (!string.IsNullOrEmpty(status.ErrorMessage))
+                return;
+
+            _labelsInstalled = status.IsInstalled;
+
+            var toolStripItem = new ToolStripMenuItem(_labelsInstalled ? UninstallMenuLabel : InstallMenuLabel);
+            toolStripItem.Click += (_, _) =>
+            {
+                if (_labelsInstalled)
+                    RunUninstall();
+                else
+                    RunInstall();
+            };
+
+            _installationMenuItem = toolStripItem;
+
+            var menuItem = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                menuItemCategory,
+                toolStripItem);
+            MMI.AddCustomMenuItem(menuItem);
+        }
+    }
+
+    void CheckXmlInstallation()
+    {
+        try
+        {
+            var status = XmlInstaller.GetStatus();
+            if (!string.IsNullOrEmpty(status.ErrorMessage))
+            {
+                Log.Warning("Could not verify Labels.xml/Strips.xml installation: {Error}", status.ErrorMessage);
+                return;
+            }
+
+            if (!status.IsInstalled)
+            {
+                AddError(new InvalidOperationException("CPDLC Label and Strip items must be installed. Please install them from the CPDLC menu."));
+            }
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Failed to verify Labels.xml/Strips.xml installation");
+        }
+    }
+
+    void RunInstall()
+    {
+        try
+        {
+            var result = XmlInstaller.Install();
+            if (result.Succeeded)
+            {
+                SetInstallationMenuState(installed: true);
+                System.Windows.Forms.MessageBox.Show(
+                    "CPDLC label & strip items installed successfully.\n\nPlease restart vatSys to apply the changes.",
+                    Name,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            else
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    $"Failed to install CPDLC label & strip items.\n\n{result.ErrorMessage}",
+                    Name,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Failed to install label & strip items");
+        }
+    }
+
+    void SetInstallationMenuState(bool installed)
+    {
+        _labelsInstalled = installed;
+        if (_installationMenuItem is not null)
+            _installationMenuItem.Text = installed ? UninstallMenuLabel : InstallMenuLabel;
+    }
+
+    void RunUninstall()
+    {
+        try
+        {
+            var result = XmlInstaller.Uninstall();
+            if (result.Succeeded)
+            {
+                SetInstallationMenuState(installed: false);
+                System.Windows.Forms.MessageBox.Show(
+                    "CPDLC label & strip items uninstalled successfully.\n\nPlease restart vatSys to apply the changes.",
+                    Name,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            else
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    $"Failed to uninstall CPDLC label & strip items.\n\n{result.ErrorMessage}",
+                    Name,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Failed to uninstall label & strip items");
+        }
     }
 
     public void OnFDRUpdate(FDP2.FDR updated)

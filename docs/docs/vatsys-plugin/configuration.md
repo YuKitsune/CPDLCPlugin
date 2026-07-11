@@ -117,6 +117,17 @@ Default: `1`
 "NdaRecalculationIntervalMinutes": 1
 ```
 
+### ShowInstallationMenuItems
+
+Controls whether the `Install label & strip items` and `Uninstall label & strip items` entries appear under the `CPDLC` menu. Set to `false` when shipping the plugin with pre-modified profiles to prevent controllers from accidentally reverting the changes.
+
+Default: `true`
+
+**Example:**
+```json
+"ShowInstallationMenuItems": false
+```
+
 ## Uplink Messages
 
 The `UplinkMessages` object defines the available CPDLC messages for the controller to send.

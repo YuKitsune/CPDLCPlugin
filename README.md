@@ -52,9 +52,24 @@ Before installing the CPDLC Plugin, ensure you have the following:
 
 ### Configuring Labels and Strips
 
-The plugin provides custom label and strip items that must be added to your profile's `Labels.xml` and `Strips.xml` files. See [Labels.xml.diff](Labels.xml.diff) and [Strips.xml.diff](Strips.xml.diff) for complete examples.
+The plugin provides custom label and strip items that must be added to your profile's `Labels.xml` and `Strips.xml` files.
 
-#### Labels.xml
+#### Automatic (recommended)
+
+After launching vatSys with the plugin installed, use the `CPDLC > Install label & strip items` menu option to add the custom label and strip items. Restart vatSys to apply the changes.
+
+To revert, use `CPDLC > Uninstall label & strip items`, which restores the original files from a backup.
+
+If your `Labels.xml` or `Strips.xml` files have been customised, the automatic installer will fail. Apply the changes manually using the diffs below.
+
+> [!NOTE]
+> When bundling the plugin in a vatSys profile, you can hide the install and uninstall menu items by setting `ShowInstallationMenuItems` to `false` in `CPDLC.json`.
+
+#### Manual
+
+See [Labels.xml.diff](Labels.xml.diff) and [Strips.xml.diff](Strips.xml.diff) for complete examples.
+
+##### Labels.xml
 
 Replace each occurrence of:
 ```xml
@@ -72,7 +87,7 @@ With:
 <Item Type="CPDLCPLUGIN_TEXTSTATUS_BG" BackgroundColour="Custom" />
 ```
 
-#### Strips.xml
+##### Strips.xml
 
 Replace:
 ```xml
