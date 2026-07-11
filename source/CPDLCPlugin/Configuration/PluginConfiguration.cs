@@ -21,4 +21,9 @@ public class PluginConfiguration
     // How often (in minutes) to recalculate the NDA for all tracked aircraft.
     // NDA is also recalculated on every FDR update, so this is a catch-all interval.
     public int NdaRecalculationIntervalMinutes { get; init; } = 1;
+
+    // When false, the Install/Uninstall label & strip items menu entries are hidden.
+    // ACCs shipping the plugin with pre-modified profiles can disable these to prevent
+    // controllers from accidentally reverting the changes.
+    public bool ShowInstallationMenuItems { get; init; } = true;
 }

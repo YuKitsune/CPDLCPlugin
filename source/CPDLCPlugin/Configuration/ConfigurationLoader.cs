@@ -2,7 +2,6 @@ using System.IO;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using vatsys;
 
 namespace CPDLCPlugin.Configuration;
 
@@ -15,7 +14,7 @@ public static class ConfigurationLoader
         var searchDirectories = new List<string>();
 
         // Search the profile first
-        if (TryFindProfileDirectory(out var profileDirectory))
+        if (ProfileDirectoryResolver.TryGetProfileDirectory(out var profileDirectory))
         {
             searchDirectories.AddRange([
                 Path.Combine(profileDirectory.FullName, "Plugins", "Configs", "CPDLC Plugin"),
@@ -55,19 +54,5 @@ public static class ConfigurationLoader
         })!;
 
         return configuration;
-    }
-
-    // Thanks Max!
-    static bool TryFindProfileDirectory(out DirectoryInfo? directoryInfo)
-    {
-        directoryInfo = null;
-        if (!Profile.Loaded)
-            return false;
-
-        var shortNameObject = typeof(Profile).GetField("shortName", BindingFlags.Static | BindingFlags.NonPublic);
-        var shortName = (string)shortNameObject.GetValue(shortNameObject);
-
-        directoryInfo = new DirectoryInfo(Path.Combine(Helpers.GetFilesFolder(), "Profiles", shortName));
-        return true;
     }
 }

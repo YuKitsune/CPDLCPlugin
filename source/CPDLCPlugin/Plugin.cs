@@ -65,6 +65,8 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
         AddToolbarItems();
 
+        CheckXmlInstallation();
+
         Network.Connected += NetworkConnected;
         Network.Disconnected += NetworkDisconnected;
 
@@ -326,6 +328,101 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         };
 
         MMI.AddCustomMenuItem(historyMenuItem);
+
+        if (_configuration?.ShowInstallationMenuItems ?? true)
+        {
+            var installMenuItem = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                menuItemCategory,
+                new ToolStripMenuItem("Install label & strip items"));
+            installMenuItem.Item.Click += (_, _) => RunInstall();
+            MMI.AddCustomMenuItem(installMenuItem);
+
+            var uninstallMenuItem = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                menuItemCategory,
+                new ToolStripMenuItem("Uninstall label & strip items"));
+            uninstallMenuItem.Item.Click += (_, _) => RunUninstall();
+            MMI.AddCustomMenuItem(uninstallMenuItem);
+        }
+    }
+
+    void CheckXmlInstallation()
+    {
+        try
+        {
+            var status = XmlInstaller.GetStatus();
+            if (!string.IsNullOrEmpty(status.ErrorMessage))
+            {
+                Log.Warning("Could not verify Labels.xml/Strips.xml installation: {Error}", status.ErrorMessage);
+                return;
+            }
+
+            if (!status.IsInstalled)
+            {
+                AddError(new InvalidOperationException("CPDLC Label and Strip items must be installed. Please install them from the CPDLC menu."));
+            }
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Failed to verify Labels.xml/Strips.xml installation");
+        }
+    }
+
+    void RunInstall()
+    {
+        try
+        {
+            var result = XmlInstaller.Install();
+            if (result.Succeeded)
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    "CPDLC label & strip items installed successfully.\n\nPlease restart vatSys to apply the changes.",
+                    Name,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            else
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    $"Failed to install CPDLC label & strip items.\n\n{result.ErrorMessage}",
+                    Name,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Failed to install label & strip items");
+        }
+    }
+
+    void RunUninstall()
+    {
+        try
+        {
+            var result = XmlInstaller.Uninstall();
+            if (result.Succeeded)
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    "CPDLC label & strip items uninstalled successfully.\n\nPlease restart vatSys to apply the changes.",
+                    Name,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            else
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    $"Failed to uninstall CPDLC label & strip items.\n\n{result.ErrorMessage}",
+                    Name,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Failed to uninstall label & strip items");
+        }
     }
 
     public void OnFDRUpdate(FDP2.FDR updated)

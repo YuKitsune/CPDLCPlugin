@@ -49,6 +49,20 @@ vatSys requires separate items for foreground content and background color. The 
 
 vatSys uses the Eurocat CPDLC symbols (`.`, `-`, `+`) for voice capabilities on VATSIM. The plugin repurposes these symbols for their intended CPDLC function, and provides `CPDLCPLUGIN_TEXTSTATUS` as a replacement voice capability indicator.
 
+#### Automatic
+
+After launching vatSys with the plugin installed, use the `CPDLC > Install label & strip items` menu option to add the custom label and strip items. Restart vatSys to apply the changes.
+
+To revert, use `CPDLC > Uninstall label & strip items`, which restores the original files from a backup.
+
+If your `Labels.xml` or `Strips.xml` files have been customised, the automatic installer will fail. Apply the changes manually using the sections below.
+
+:::note
+When bundling the plugin in a vatSys profile, you can hide the install and uninstall menu items by setting `ShowInstallationMenuItems` to `false` in `CPDLC.json`.
+:::
+
+#### Manual
+
 **Labels.xml:** Replace `LABEL_ITEM_CPDLC` with:
 
 ```xml
