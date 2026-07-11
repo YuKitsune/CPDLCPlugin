@@ -331,19 +331,26 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
         if (_configuration?.ShowInstallationMenuItems ?? true)
         {
-            var installMenuItem = new CustomToolStripMenuItem(
-                CustomToolStripMenuItemWindowType.Main,
-                menuItemCategory,
-                new ToolStripMenuItem("Install label & strip items"));
-            installMenuItem.Item.Click += (_, _) => RunInstall();
-            MMI.AddCustomMenuItem(installMenuItem);
+            var status = XmlInstaller.GetStatus();
+            if (!string.IsNullOrEmpty(status.ErrorMessage))
+                return;
 
-            var uninstallMenuItem = new CustomToolStripMenuItem(
+            var label = status.IsInstalled
+                ? "Uninstall label items"
+                : "Install label items";
+
+            var menuItem = new CustomToolStripMenuItem(
                 CustomToolStripMenuItemWindowType.Main,
                 menuItemCategory,
-                new ToolStripMenuItem("Uninstall label & strip items"));
-            uninstallMenuItem.Item.Click += (_, _) => RunUninstall();
-            MMI.AddCustomMenuItem(uninstallMenuItem);
+                new ToolStripMenuItem(label));
+            menuItem.Item.Click += (_, _) =>
+            {
+                if (status.IsInstalled)
+                    RunUninstall();
+                else
+                    RunInstall();
+            };
+            MMI.AddCustomMenuItem(menuItem);
         }
     }
 
