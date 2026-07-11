@@ -44,6 +44,12 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
     BackgroundWorker? _ndaRecalculationWorker;
 
+    ToolStripMenuItem? _installationMenuItem;
+    bool _labelsInstalled;
+
+    const string InstallMenuLabel = "Install label items";
+    const string UninstallMenuLabel = "Uninstall label items";
+
     string IPlugin.Name => Name;
 
     IServiceProvider ServiceProvider { get; set; }
@@ -335,21 +341,23 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             if (!string.IsNullOrEmpty(status.ErrorMessage))
                 return;
 
-            var label = status.IsInstalled
-                ? "Uninstall label items"
-                : "Install label items";
+            _labelsInstalled = status.IsInstalled;
 
-            var menuItem = new CustomToolStripMenuItem(
-                CustomToolStripMenuItemWindowType.Main,
-                menuItemCategory,
-                new ToolStripMenuItem(label));
-            menuItem.Item.Click += (_, _) =>
+            var toolStripItem = new ToolStripMenuItem(_labelsInstalled ? UninstallMenuLabel : InstallMenuLabel);
+            toolStripItem.Click += (_, _) =>
             {
-                if (status.IsInstalled)
+                if (_labelsInstalled)
                     RunUninstall();
                 else
                     RunInstall();
             };
+
+            _installationMenuItem = toolStripItem;
+
+            var menuItem = new CustomToolStripMenuItem(
+                CustomToolStripMenuItemWindowType.Main,
+                menuItemCategory,
+                toolStripItem);
             MMI.AddCustomMenuItem(menuItem);
         }
     }
@@ -383,6 +391,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             var result = XmlInstaller.Install();
             if (result.Succeeded)
             {
+                SetInstallationMenuState(installed: true);
                 System.Windows.Forms.MessageBox.Show(
                     "CPDLC label & strip items installed successfully.\n\nPlease restart vatSys to apply the changes.",
                     Name,
@@ -404,6 +413,13 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
     }
 
+    void SetInstallationMenuState(bool installed)
+    {
+        _labelsInstalled = installed;
+        if (_installationMenuItem is not null)
+            _installationMenuItem.Text = installed ? UninstallMenuLabel : InstallMenuLabel;
+    }
+
     void RunUninstall()
     {
         try
@@ -411,6 +427,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             var result = XmlInstaller.Uninstall();
             if (result.Succeeded)
             {
+                SetInstallationMenuState(installed: false);
                 System.Windows.Forms.MessageBox.Show(
                     "CPDLC label & strip items uninstalled successfully.\n\nPlease restart vatSys to apply the changes.",
                     Name,
