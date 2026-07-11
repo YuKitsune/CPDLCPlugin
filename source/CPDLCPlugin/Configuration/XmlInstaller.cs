@@ -10,39 +10,16 @@ public static class XmlInstaller
     // Replace the CPDLC/WAKETURBCAT/FIELD18RMK block because the new layout inserts CPDLCSTATUS
     // items before WAKETURBCAT and appends TEXTSTATUS items after FIELD18RMK.
     const string LabelsOldBlock =
-        """
-              <Item Type="LABEL_ITEM_CPDLC" Colour="" BackgroundColour="CPDLCDownlink" LeftClick="Label_CPDLC_Menu" MiddleClick="Label_CPDLC_Message_Toggle" RightClick="Label_CPDLC_Editor" />
-              <Item Type="LABEL_ITEM_WAKETURBCAT" Colour="" LeftClick="" MiddleClick="" RightClick="" />
-              <Item Type="LABEL_ITEM_FIELD18RMK" Colour="" LeftClick="Label_Field18_Popup" MiddleClick="" RightClick="Label_Toggle_1" />
-        """;
+        "      <Item Type=\"LABEL_ITEM_CPDLC\" Colour=\"\" BackgroundColour=\"CPDLCDownlink\" LeftClick=\"Label_CPDLC_Menu\" MiddleClick=\"Label_CPDLC_Message_Toggle\" RightClick=\"Label_CPDLC_Editor\" />\r\n      <Item Type=\"LABEL_ITEM_WAKETURBCAT\" Colour=\"\" LeftClick=\"\" MiddleClick=\"\" RightClick=\"\" />\r\n      <Item Type=\"LABEL_ITEM_FIELD18RMK\" Colour=\"\" LeftClick=\"Label_Field18_Popup\" MiddleClick=\"\" RightClick=\"\" />";
 
     const string LabelsNewBlock =
-        """
-              <!-- CPDLC Plugin: CPDLC Status -->
-              <Item Type="CPDLCPLUGIN_CPDLCSTATUS" />
-              <Item Type="CPDLCPLUGIN_CPDLCSTATUS_BG" BackgroundColour="Custom" />
-
-              <Item Type="LABEL_ITEM_WAKETURBCAT" Colour="" LeftClick="" MiddleClick="" RightClick="" />
-              <Item Type="LABEL_ITEM_FIELD18RMK" Colour="" LeftClick="Label_Field18_Popup" MiddleClick="" RightClick="Label_Toggle_1" />
-
-              <!-- CPDLC Plugin: Text Status -->
-              <Item Type="CPDLCPLUGIN_TEXTSTATUS" />
-              <Item Type="CPDLCPLUGIN_TEXTSTATUS_BG" BackgroundColour="Custom" />
-        """;
+        "      <!-- CPDLC Plugin: CPDLC Status -->\r\n      <Item Type=\"CPDLCPLUGIN_CPDLCSTATUS\" />\r\n      <Item Type=\"CPDLCPLUGIN_CPDLCSTATUS_BG\" BackgroundColour=\"Custom\" />\r\n\r\n      <Item Type=\"LABEL_ITEM_WAKETURBCAT\" Colour=\"\" LeftClick=\"\" MiddleClick=\"\" RightClick=\"\" />\r\n      <Item Type=\"LABEL_ITEM_FIELD18RMK\" Colour=\"\" LeftClick=\"Label_Field18_Popup\" MiddleClick=\"\" RightClick=\"\" />\r\n\r\n      <!-- CPDLC Plugin: Text Status -->\r\n      <Item Type=\"CPDLCPLUGIN_TEXTSTATUS\" />\r\n      <Item Type=\"CPDLCPLUGIN_TEXTSTATUS_BG\" BackgroundColour=\"Custom\" />";
 
     const string StripsOldItem =
-        """
-        <StripItem Type="CPDLCStatus" LeftClick="Label_CPDLC_Editor" MinLength="1" />
-        """;
+        "                          <StripItem Type=\"CPDLCStatus\" LeftClick=\"Label_CPDLC_Editor\" MinLength=\"1\" />";
 
     const string StripsNewItem =
-        """
-                                  <!-- CPDLC Plugin: CPDLC Status -->
-                                  <StripItem Type="CPDLCPLUGIN_CPDLCSTATUS" MinLength="1" />
-
-                                  <!-- CPDLC Plugin: Text Status -->
-                                  <StripItem Type="CPDLCPLUGIN_TEXTSTATUS" />
-        """;
+        "                          <!-- CPDLC Plugin: CPDLC Status -->\r\n                          <StripItem Type=\"CPDLCPLUGIN_CPDLCSTATUS\" MinLength=\"1\" />\r\n\r\n                          <!-- CPDLC Plugin: Text Status -->\r\n                          <StripItem Type=\"CPDLCPLUGIN_TEXTSTATUS\" />";
 
     public static InstallationStatus GetStatus()
     {
