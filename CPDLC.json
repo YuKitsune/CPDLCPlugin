@@ -1,5 +1,5 @@
 {
-  "ServerEndpoint": "https://vatpac.cpdlc.eoinmotherway.dev/hubs/controller",
+  "ServerEndpoint": "https://vatpac-cpdlc.eoinmotherway.dev/hubs/controller",
   "Stations": ["YBBB", "YMMM", "NFFF", "AYPM"],
   "LogLevel": "Verbose",
   "MaxCurrentMessages": 50,
