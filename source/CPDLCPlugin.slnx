@@ -3,7 +3,7 @@
     <File Path="../docker-compose.yml" />
     <File Path="../CPDLC.json" />
   </Folder>
-  <Project Path="build/_build.csproj">
+  <Project Path="../build/_build.csproj">
     <Build Project="false" />
   </Project>
   <Project Path="CPDLCPlugin.Tests/CPDLCPlugin.Tests.csproj" />
