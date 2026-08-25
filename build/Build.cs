@@ -4,14 +4,14 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Runtime.Versioning;
-using Nuke.Common;
-using Nuke.Common.CI.GitHubActions;
-using Nuke.Common.Git;
-using Nuke.Common.IO;
-using Nuke.Common.Tools.DotNet;
-using Nuke.Common.Tools.GitHub;
-using Nuke.Common.Tools.GitVersion;
-using Nuke.Common.Tools.ILRepack;
+using Fallout.Common;
+using Fallout.Common.CI.GitHubActions;
+using Fallout.Common.Git;
+using Fallout.Common.IO;
+using Fallout.Common.Tools.DotNet;
+using Fallout.Common.Tools.GitHub;
+using Fallout.Common.Tools.GitVersion;
+using Fallout.Common.Tools.ILRepack;
 using Octokit;
 using Serilog;
 
@@ -34,7 +34,7 @@ namespace _build;
     EnableGitHubToken = true,
     FetchDepth = 0,
     WritePermissions = [GitHubActionsPermissions.Contents])]
-class Build : NukeBuild
+class Build : FalloutBuild
 {
     /// Support plugins are available for:
     ///   - JetBrains ReSharper        https://nuke.build/resharper
