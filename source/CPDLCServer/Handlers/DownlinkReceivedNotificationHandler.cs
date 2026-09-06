@@ -1,10 +1,8 @@
-using CPDLCServer.Clients;
 using CPDLCServer.Hubs;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Messages;
 using CPDLCServer.Model;
 using CPDLCServer.Persistence;
-using CPDLCServer.Services;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 
@@ -12,8 +10,6 @@ namespace CPDLCServer.Handlers;
 
 public class DownlinkReceivedNotificationHandler(
     IAircraftRepository aircraftRepository,
-    IClientManager clientManager,
-    IMessageIdProvider messageIdProvider,
     IMediator mediator,
     IClock clock,
     IControllerRepository controllerRepository,
@@ -51,8 +47,7 @@ public class DownlinkReceivedNotificationHandler(
         // Scenario 2: Unknown aircraft
         if (aircraftConnection is null)
         {
-            logger.Information("{Callsign} is not known by this ATSU, sending error uplink", downlink.Sender);
-            await SendUnknownAircraftError(notification, downlink, cancellationToken);
+            logger.Information("{Callsign} is not known by this ATSU, ignoring downlink", downlink.Sender);
             return;
         }
 
@@ -142,45 +137,5 @@ public class DownlinkReceivedNotificationHandler(
 
             await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
         }
-    }
-
-    async Task SendUnknownAircraftError(
-        DownlinkReceivedNotification notification,
-        ReceivedDownlink downlink,
-        CancellationToken cancellationToken)
-    {
-        var dialogue = new Dialogue(downlink.Sender);
-        dialogue.AddDownlink(
-            downlink.MessageId,
-            downlink.MessageReference,
-            downlink.Sender,
-            downlink.ResponseType,
-            downlink.AlertType,
-            downlink.Content,
-            downlink.Received);
-
-        var messageId = await messageIdProvider.GetNextMessageId(
-            notification.AcarsClientId,
-            downlink.Sender,
-            cancellationToken);
-
-        var uplinkMessage = dialogue.AddUplink(
-            messageId,
-            downlink.MessageId,
-            downlink.Sender,
-            "SYSTEM",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "ERROR. CONNECTION NOT ESTABLISHED.",
-            clock.UtcNow());
-
-        await dialogueRepository.Add(dialogue, cancellationToken);
-        logger.Information("Dialogue {DialogueId} created for unknown aircraft {Callsign}", dialogue.Id, downlink.Sender);
-
-        await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
-
-        var client = await clientManager.GetAcarsClient(notification.AcarsClientId, cancellationToken);
-        await client.Send(uplinkMessage, cancellationToken);
-        logger.Information("Sent CPDLC message from SYSTEM to {Callsign}", downlink.Sender);
     }
 }
