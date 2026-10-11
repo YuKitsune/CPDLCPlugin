@@ -21,9 +21,4 @@ public static class ControlMessages
     {
         return downlink.Content.Contains("NOT CURRENT DATA AUTHORITY");
     }
-
-    public static bool IsNotCurrentAtsu(ReceivedDownlink downlink)
-    {
-        return downlink.Content.Contains("NOT CURRENT ATSU");
-    }
 }
