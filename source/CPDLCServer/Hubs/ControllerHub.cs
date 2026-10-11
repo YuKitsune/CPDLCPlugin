@@ -129,6 +129,24 @@ public class ControllerHub(
             content));
     }
 
+    public async Task RequestConnection(string callsign, string stationId)
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
+
+        await mediator.Send(new SendConnectionRequestCommand(callsign, stationId));
+
+        _logger.Information(
+            "Controller {Callsign} requested a connection between {AircraftCallsign} and {StationId}",
+            controller.Callsign,
+            callsign,
+            stationId);
+    }
+
     public async Task<AircraftConnectionDto[]> GetConnectedAircraft()
     {
         var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);

@@ -7,4 +7,5 @@ public static class WindowKeys
     public const string CurrentMessages = nameof(CurrentMessages);
     public const string History = nameof(History);
     public const string ADSContract = nameof(ADSContract);
+    public const string ConnectionRequest = nameof(ConnectionRequest);
 }

@@ -70,6 +70,16 @@ public class TestClientManager : IClientManager
         return Task.FromResult(configuration);
     }
 
+    public Task<string?> FindAcarsClientId(string stationId, CancellationToken cancellationToken)
+    {
+        var acarsClientId = _clients
+            .Where(c => string.Equals(c.Value.StationId, stationId, StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Key)
+            .FirstOrDefault();
+
+        return Task.FromResult(acarsClientId);
+    }
+
     public bool ClientExists(string acarsClientId)
     {
         return _clients.ContainsKey(acarsClientId);

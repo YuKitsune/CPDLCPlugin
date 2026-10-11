@@ -23,6 +23,13 @@ public class DownlinkReceivedNotificationHandler(
         var downlink = notification.Downlink;
         logger.Information("Downlink message received from {Callsign}", downlink.Sender);
 
+        // Ignore replies to connection requests to prevent error message loops
+        if (ControlMessages.IsNotCurrentAtsu(downlink))
+        {
+            logger.Information("{Callsign} replied NOT CURRENT ATSU, ignoring downlink", downlink.Sender);
+            return;
+        }
+
         // Scenario 1: Logon request
         if (ControlMessages.IsLogonRequest(downlink))
         {
