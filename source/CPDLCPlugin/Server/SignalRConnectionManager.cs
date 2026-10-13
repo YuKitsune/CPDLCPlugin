@@ -122,6 +122,12 @@ public class SignalRConnectionManager(
             WithCancellationToken<string, string>(downlinkHandlerDelegate.AircraftConnectionRemoved)(callsign, stationId));
         _connection.On<string[]>("AcarsStationsUpdated", callsigns =>
             WithCancellationToken<string[]>(downlinkHandlerDelegate.AcarsStationsUpdated)(callsigns));
+        _connection.On<AdscContractDto>("AdscContractUpdated", adscContract =>
+            WithCancellationToken<AdscContractDto>(downlinkHandlerDelegate.AdscContractUpdated)(adscContract));
+        _connection.On<string, string>("AdscContractRemoved", (callsign, stationId) =>
+            WithCancellationToken<string, string>(downlinkHandlerDelegate.AdscContractRemoved)(callsign, stationId));
+        _connection.On<AdscReportDto>("AdscReportReceived", adscReport =>
+            WithCancellationToken<AdscReportDto>(downlinkHandlerDelegate.AdscReportReceived)(adscReport));
     }
 
     Func<T, Task> WithCancellationToken<T>(Func<T, CancellationToken, Task> action)
@@ -229,6 +235,47 @@ public class SignalRConnectionManager(
             nextDataAuthority,
             expectedTransferTime,
             cancellationToken: cancellationToken);
+    }
+
+    public async Task<AtsuSettingsDto> GetAtsuSettings(CancellationToken cancellationToken)
+    {
+        var connection = GetConnectedOrThrow();
+        return await connection.InvokeAsync<AtsuSettingsDto>(
+            "GetAtsuSettings",
+            cancellationToken);
+    }
+
+    public async Task RequestPeriodicAdscContract(
+        string callsign,
+        TimeSpan reportingInterval,
+        CancellationToken cancellationToken)
+    {
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync(
+            "RequestPeriodicAdscContract",
+            callsign,
+            reportingInterval,
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task RequestAdscDemandReport(string callsign, CancellationToken cancellationToken)
+    {
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync("RequestAdscDemandReport", callsign, cancellationToken);
+    }
+
+    public async Task CancelAdscContract(string callsign, CancellationToken cancellationToken)
+    {
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync("CancelAdscContract", callsign, cancellationToken);
+    }
+
+    public async Task<AdscContractDto[]> GetAdscContracts(CancellationToken cancellationToken)
+    {
+        var connection = GetConnectedOrThrow();
+        return await connection.InvokeAsync<AdscContractDto[]>(
+            "GetAdscContracts",
+            cancellationToken);
     }
 
     public async Task<DialogueDto[]> GetAllDialogues(CancellationToken cancellationToken)

@@ -46,6 +46,8 @@ Acars__0__FlightSimulationNetwork=VATSIM
 Acars__0__StationIdentifier=YBBB
 Acars__0__Url=http://www.hoppie.nl/acars/system/connect.html
 Acars__0__AuthenticationCode=your-hoppie-logon-code
+# Reporting interval in minutes of the ADS-C contract requested on CPDLC logon (default: 10)
+Acars__0__DefaultAdscReportingInterval=10
 
 # Handoff Configuration
 # How many minutes before the expected transfer time to send the NEXT DATA AUTHORITY message (default: 10)
@@ -77,6 +79,12 @@ Acars__1__AuthenticationCode=your-ymmm-hoppie-code
 :::note
 `Hoppie` is currently the only supported ACARS network type.
 :::
+
+### ADS-C
+
+When an aircraft logs on with CPDLC, the server requests a periodic ADS-C contract with the aircraft. When the CPDLC connection ends, the server cancels the contract.
+
+Each ATSU has its own default reporting interval, set with `Acars__<index>__DefaultAdscReportingInterval`. Controllers can read this value, and they can request a different interval for an aircraft.
 
 ## Running
 

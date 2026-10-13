@@ -72,6 +72,54 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
     }
 
+    public async Task AdscContractUpdated(AdscContractDto adscContractDto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await mediator.Publish(new AdscContractUpdatedNotification(adscContractDto), cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation is requested
+        }
+        catch (Exception ex)
+        {
+            Plugin.AddError(ex, "Failed to handle AdscContractUpdated notification");
+        }
+    }
+
+    public async Task AdscContractRemoved(string callsign, string stationId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await mediator.Publish(new AdscContractRemovedNotification(callsign, stationId), cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation is requested
+        }
+        catch (Exception ex)
+        {
+            Plugin.AddError(ex, "Failed to handle AdscContractRemoved notification");
+        }
+    }
+
+    public async Task AdscReportReceived(AdscReportDto adscReportDto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await mediator.Publish(new AdscReportReceivedNotification(adscReportDto), cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation is requested
+        }
+        catch (Exception ex)
+        {
+            Plugin.AddError(ex, "Failed to handle AdscReportReceived notification");
+        }
+    }
+
     public void Error(Exception error)
     {
         Plugin.AddError(error, "Error from SignalR connection");

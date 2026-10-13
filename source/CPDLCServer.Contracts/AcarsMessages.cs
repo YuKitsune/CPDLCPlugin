@@ -37,6 +37,31 @@ public enum AlertType
 
 public record ControllerConnectionDto(string StationId, string Callsign, string VatsimCid);
 
+// Read-only settings of the ATSU the controller is connected to
+public record AtsuSettingsDto(
+    string StationId,
+    TimeSpan DefaultAdscReportingInterval);
+
+// ADS-C DTOs for SignalR API
+
+// ReportingInterval is null when only demand reports were requested
+public record AdscContractDto(
+    string Callsign,
+    string StationId,
+    TimeSpan? ReportingInterval,
+    DateTimeOffset Requested);
+
+// Timestamp is the time of the position, as reported by the aircraft.
+// Received is the time the server received the report.
+public record AdscReportDto(
+    string Callsign,
+    string StationId,
+    DateTimeOffset Timestamp,
+    double Latitude,
+    double Longitude,
+    int Altitude,
+    DateTimeOffset Received);
+
 // Dialogue DTOs for SignalR API
 
 public record DialogueDto(
