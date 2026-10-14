@@ -70,6 +70,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         ConfigureServices(configuration);
 
         ApplyAdscTrackPatches(configuration);
+        ApplyFakeAdscReportPatch();
 
         AddToolbarItems();
 
@@ -142,6 +143,51 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         {
             AddError(ex, "Cannot show ADS-C tracks on the ASD");
         }
+    }
+
+    void ApplyFakeAdscReportPatch()
+    {
+        try
+        {
+            FakeAdscReportPatch.Apply(SendFakeAdscReport);
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Cannot use fake ADS-C reports");
+        }
+    }
+
+    // Runs on the UI thread when the ASD is clicked
+    void SendFakeAdscReport(Coordinate position)
+    {
+        var fdr = MMI.SelectedTrack?.GetFDR();
+        if (fdr is null)
+            throw new InvalidOperationException("Select a track with a flight plan before you send a fake ADS-C report");
+
+        if (fdr.PRL == -1)
+            throw new InvalidOperationException($"{fdr.Callsign} has no reported level");
+
+        var now = DateTimeOffset.UtcNow;
+        var report = new CPDLCServer.Contracts.AdscReportDto(
+            fdr.Callsign,
+            ConnectionManager?.StationIdentifier ?? string.Empty,
+            now,
+            position.Latitude,
+            position.Longitude,
+            fdr.PRL,
+            now);
+
+        Log.Information("Sending fake ADS-C report for {Callsign} at {Latitude} {Longitude} {Altitude}",
+            report.Callsign,
+            report.Latitude,
+            report.Longitude,
+            report.Altitude);
+
+        _workQueue.Enqueue(async () =>
+        {
+            var mediator = ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Publish(new AdscReportReceivedNotification(report));
+        });
     }
 
     void NetworkConnected(object sender, EventArgs e)
@@ -355,6 +401,14 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         };
 
         MMI.AddCustomMenuItem(historyMenuItem);
+
+        var fakeAdscReportMenuItem = new CustomToolStripMenuItem(
+            CustomToolStripMenuItemWindowType.Main,
+            menuItemCategory,
+            new ToolStripMenuItem("Fake ADS-C Report"));
+        fakeAdscReportMenuItem.Item.Click += (_, _) => FakeAdscReportPatch.Arm();
+
+        MMI.AddCustomMenuItem(fakeAdscReportMenuItem);
 
         if (_configuration?.ShowInstallationMenuItems ?? true)
         {
