@@ -150,6 +150,22 @@ public partial class ADSContractViewModel : ObservableObject,
     }
 
     [RelayCommand]
+    async Task RequestDemandReport()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(Callsign))
+                return;
+
+            await _mediator.Send(new RequestAdscDemandReportRequest(Callsign));
+        }
+        catch (Exception ex)
+        {
+            _errorReporter.ReportError(ex);
+        }
+    }
+
+    [RelayCommand]
     async Task LoadContract()
     {
         try

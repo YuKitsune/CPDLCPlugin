@@ -229,7 +229,8 @@
                 <Button Grid.Column="1"
                         Style="{StaticResource ButtonBaseStyle}"
                         Width="80" Height="48"
-                        HorizontalAlignment="Left">
+                        HorizontalAlignment="Left"
+                        Command="{Binding RequestDemandReportCommand}">
                     <TextBlock Text="Demand Contract" TextWrapping="Wrap" TextAlignment="Center"/>
                 </Button>
             </Grid>
