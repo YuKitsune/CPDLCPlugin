@@ -1,29 +1,35 @@
 using System.Collections.Concurrent;
+using CPDLCPlugin.Configuration;
 using CPDLCServer.Contracts;
 using vatsys;
 
 namespace CPDLCPlugin;
 
 /// <param name="Report">The latest ADS-C report for the aircraft.</param>
+/// <param name="Shown">The time the report was shown on the ASD.</param>
 /// <param name="Extrapolated">False until the first normal position extrapolation after the report.</param>
-public record AdscTrack(AdscReportDto Report, bool Extrapolated);
+public record AdscTrack(AdscReportDto Report, DateTimeOffset Shown, bool Extrapolated);
 
 /// <summary>
 /// Holds the ADS-C tracks that move flight plan tracks on the ASD.
 /// The patches in <see cref="AdscTrackPatches"/> read this class on the vatSys threads, so all members are synchronous.
 /// </summary>
-public class AdscTrackDisplay(IClock clock)
+public class AdscTrackDisplay(IClock clock, PluginConfiguration configuration)
 {
+    // vatSys extrapolates the flight plan positions every 10 seconds, and also each time it processes a flight plan.
+    // Show the reported position for this minimum time, so that a controller can see the ADSC symbol.
+    readonly TimeSpan _minimumReportedPositionTime = TimeSpan.FromSeconds(configuration.ADSCTrackExtrapolationThreshold);
+
     readonly ConcurrentDictionary<string, AdscTrack> _tracks = new();
 
     /// <summary>
     /// Shows the reported position on the ASD (update position extrapolation), unless a newer report for the same aircraft is shown.
-    /// The position stays until the next flight plan extrapolation.
+    /// The position stays until the first flight plan extrapolation after the ADS-C track extrapolation threshold.
     /// The reported altitude becomes the pilot reported level (PRL) of the flight plan.
     /// </summary>
     public void Show(AdscReportDto report)
     {
-        var track = new AdscTrack(report, Extrapolated: false);
+        var track = new AdscTrack(report, clock.UtcNow(), Extrapolated: false);
         var shownTrack = _tracks.AddOrUpdate(
             report.Callsign,
             track,
@@ -63,14 +69,20 @@ public class AdscTrackDisplay(IClock clock)
     }
 
     /// <summary>
-    /// Returns the normal extrapolated position of the ADS-C track, or null if the aircraft has no ADS-C track.
+    /// Returns the position of the ADS-C track, or null if the aircraft has no ADS-C track.
+    /// Until the ADS-C track extrapolation threshold after the report was shown, this is the reported position.
+    /// After that, this is the normal extrapolated position.
     /// </summary>
     public Coordinate? Extrapolate(FDP2.FDR fdr)
     {
         if (!_tracks.TryGetValue(fdr.Callsign, out var track))
             return null;
 
-        var position = AdscExtrapolation.Extrapolate(track.Report, fdr.ParsedRoute.ToList(), clock.UtcNow());
+        var now = clock.UtcNow();
+        if (now - track.Shown < _minimumReportedPositionTime)
+            return new Coordinate(track.Report.Latitude, track.Report.Longitude);
+
+        var position = AdscExtrapolation.Extrapolate(track.Report, fdr.ParsedRoute.ToList(), now);
 
         // Do not change a newer report that arrived during the extrapolation
         _tracks.TryUpdate(fdr.Callsign, track with { Extrapolated = true }, track);

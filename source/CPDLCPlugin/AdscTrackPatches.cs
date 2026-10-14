@@ -82,10 +82,9 @@ public static class AdscTrackPatches
         if (fdr is null || !_display.TryGetTrack(fdr.Callsign, out var adscTrack))
             return;
 
-        // TODO: Temporary test. The symbols are swapped. Revert this change.
         type = adscTrack.Extrapolated
-            ? TrackSymbols.Types.ADSC
-            : TrackSymbols.Types.ADSCExtrapolated;
+            ? TrackSymbols.Types.ADSCExtrapolated
+            : TrackSymbols.Types.ADSC;
 
         // vatSys does not rotate a symbol when the heading is -1
         aircraftHeading = -1;

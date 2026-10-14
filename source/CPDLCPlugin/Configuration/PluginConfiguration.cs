@@ -26,4 +26,8 @@ public class PluginConfiguration
     // ACCs shipping the plugin with pre-modified profiles can disable these to prevent
     // controllers from accidentally reverting the changes.
     public bool ShowInstallationMenuItems { get; init; } = true;
+
+    // The minimum time (in seconds) that an ADS-C track shows the reported position and the ADSC symbol.
+    // After this time, the track is extrapolated along the route and uses the ADSCExtrapolated symbol.
+    public int ADSCTrackExtrapolationThreshold { get; init; } = 10;
 }
