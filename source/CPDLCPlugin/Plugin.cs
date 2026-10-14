@@ -69,6 +69,8 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         _configuration = configuration;
         ConfigureServices(configuration);
 
+        ApplyAdscTrackPatches(configuration);
+
         AddToolbarItems();
 
         CheckXmlInstallation();
@@ -98,6 +100,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton<AcarsStationStore>()
             .AddSingleton<AdscContractStore>()
             .AddSingleton<AdscReportStore>()
+            .AddSingleton<AdscTrackDisplay>()
             .AddSingleton<AtsuSettingsStore>()
             .AddSingleton<WindowManager>()
             .AddSingleton<DialogueStore>()
@@ -124,6 +127,21 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         Log.Logger = logger;
 
         return logger;
+    }
+
+    void ApplyAdscTrackPatches(PluginConfiguration pluginConfiguration)
+    {
+        try
+        {
+            AdscTrackPatches.Apply(
+                ServiceProvider.GetRequiredService<AdscTrackDisplay>(),
+                ServiceProvider.GetRequiredService<IClock>(),
+                TimeSpan.FromMinutes(pluginConfiguration.AdscExtrapolatedAfterMinutes));
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Cannot show ADS-C tracks on the ASD");
+        }
     }
 
     void NetworkConnected(object sender, EventArgs e)

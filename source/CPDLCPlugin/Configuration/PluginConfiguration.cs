@@ -26,4 +26,7 @@ public class PluginConfiguration
     // ACCs shipping the plugin with pre-modified profiles can disable these to prevent
     // controllers from accidentally reverting the changes.
     public bool ShowInstallationMenuItems { get; init; } = true;
+
+    // ADS-C tracks use the ADSCExtrapolated symbol when the latest report is older than this number of minutes.
+    public int AdscExtrapolatedAfterMinutes { get; init; } = 10;
 }

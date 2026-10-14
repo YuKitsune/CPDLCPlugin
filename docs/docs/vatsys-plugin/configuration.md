@@ -128,6 +128,17 @@ Default: `true`
 "ShowInstallationMenuItems": false
 ```
 
+### AdscExtrapolatedAfterMinutes
+
+An ADS-C track uses the `ADSC` symbol. When the latest ADS-C report is older than this number of minutes, the track uses the `ADSCExtrapolated` symbol.
+
+Default: `10`
+
+**Example:**
+```json
+"AdscExtrapolatedAfterMinutes": 10
+```
+
 ## Uplink Messages
 
 The `UplinkMessages` object defines the available CPDLC messages for the controller to send.
@@ -224,6 +235,7 @@ Array of message groups for organizing messages in the editor. Each group has:
     { "AtsuCode": "YMMM", "Sectors": ["GUN", "BLA", "IND"] }
   ],
   "NdaRecalculationIntervalMinutes": 1,
+  "AdscExtrapolatedAfterMinutes": 10,
   "UplinkMessages": {
     "MasterMessages": [
       {

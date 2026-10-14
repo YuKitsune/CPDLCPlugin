@@ -12,6 +12,7 @@ public class DisconnectedNotificationBridge(
     AcarsStationStore acarsStationStore,
     AdscContractStore adscContractStore,
     AdscReportStore adscReportStore,
+    AdscTrackDisplay adscTrackDisplay,
     AtsuSettingsStore atsuSettingsStore,
     ILogger logger) : INotificationHandler<DisconnectedNotification>
 {
@@ -31,6 +32,9 @@ public class DisconnectedNotificationBridge(
 
         logger.Information("Clearing ADS-C report store");
         await adscReportStore.Clear(cancellationToken);
+
+        logger.Information("Clearing ADS-C tracks");
+        adscTrackDisplay.Clear();
 
         logger.Information("Clearing ATSU settings");
         atsuSettingsStore.Clear();
