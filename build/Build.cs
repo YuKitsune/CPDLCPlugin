@@ -67,6 +67,9 @@ class Build : FalloutBuild
     const string DebugPluginName = "CPDLCPlugin - Debug";
     const string PluginAssemblyFileName = "CPDLCPlugin.dll";
 
+    // ILRepack cannot merge Harmony, so it stays as a separate file next to the plugin
+    const string HarmonyAssemblyFileName = "0Harmony.dll";
+
     string PluginName => Configuration == Configuration.Debug ? DebugPluginName : ReleasePluginName;
 
     // Test projects
@@ -178,7 +181,7 @@ class Build : FalloutBuild
             var mainAssembly = PluginBuildOutputDirectory / PluginAssemblyFileName;
             var assembliesToMerge = PluginBuildOutputDirectory
                 .GlobFiles("*.dll")
-                .Except([mainAssembly])
+                .Except([mainAssembly, PluginBuildOutputDirectory / HarmonyAssemblyFileName])
                 .ToArray();
 
             if (!mainAssembly.FileExists())
