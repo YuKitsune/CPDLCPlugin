@@ -574,6 +574,88 @@ public class HoppieAcarsClientTests : IDisposable
         Assert.Equal(new DateTimeOffset(2026, 10, 31, 23, 59, 0, TimeSpan.Zero), reportMessage.Report.Timestamp);
     }
 
+    [Theory]
+    [InlineData("-33.946100 151.177200", -33.9461, 151.1772)]
+    [InlineData("S33.946100 E151.177200", -33.9461, 151.1772)]
+    [InlineData("33.946100S 151.177200E", -33.9461, 151.1772)]
+    [InlineData("N51.47750 W0.46139", 51.4775, -0.46139)]
+    [InlineData("n51.47750 w0.46139", 51.4775, -0.46139)]
+    public async Task Poll_AdscReportPositionFormats_ParsesPosition(string position, double expectedLatitude, double expectedLongitude)
+    {
+        // Arrange
+        var clock = new TestClock();
+        clock.SetUtcNow(new DateTimeOffset(2026, 10, 13, 12, 0, 0, TimeSpan.Zero));
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 ads-c {{REPORT UAL123 131155 {position} 37000}}}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var client = CreateClient(httpHandler, clock);
+
+        // Act
+        await client.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await client.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var reportMessage = Assert.IsType<ReceivedAdscReport>(message);
+        Assert.Equal(expectedLatitude, reportMessage.Report.Latitude);
+        Assert.Equal(expectedLongitude, reportMessage.Report.Longitude);
+    }
+
+    [Theory]
+    [InlineData("37000", 37000)]
+    [InlineData("10000", 10000)]
+    [InlineData("351", 35100)]
+    [InlineData("9999", 999900)]
+    public async Task Poll_AdscReportAltitude_ParsesAltitudeInFeet(string altitude, int expectedAltitude)
+    {
+        // Arrange
+        var clock = new TestClock();
+        clock.SetUtcNow(new DateTimeOffset(2026, 10, 13, 12, 0, 0, TimeSpan.Zero));
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 ads-c {{REPORT UAL123 131155 -33.946100 151.177200 {altitude}}}}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var client = CreateClient(httpHandler, clock);
+
+        // Act
+        await client.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await client.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var reportMessage = Assert.IsType<ReceivedAdscReport>(message);
+        Assert.Equal(expectedAltitude, reportMessage.Report.Altitude);
+    }
+
+    [Theory]
+    [InlineData("ABC 151.177200")]
+    [InlineData("-33.946100 W151E")]
+    [InlineData("91.000000 151.177200")]
+    [InlineData("-33.946100 181.000000")]
+    [InlineData("E33.946100 N151.177200")]
+    public async Task Poll_AdscReportWithInvalidPosition_IgnoresReport(string position)
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 ads-c {{REPORT UAL123 131155 {position} 37000}}}} {{DAL456 ads-c {{REJECT}}}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var client = CreateClient(httpHandler);
+
+        // Act
+        await client.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await client.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var rejection = Assert.IsType<ReceivedAdscRejection>(message);
+        Assert.Equal("DAL456", rejection.Sender);
+    }
+
     [Fact]
     public async Task Poll_AdscReject_ParsesCorrectly()
     {

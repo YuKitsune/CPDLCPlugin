@@ -310,6 +310,9 @@ public class HoppieAcarsClient : IAcarsClient
 
                     case "ads-c":
                         var adscMessage = ParseAdscDownlink(from, packet);
+                        if (adscMessage is null)
+                            break;
+
                         _logger.Information("Received {MessageType} from {From}", type, from);
                         _adscMessageChannel.Writer.TryWrite(adscMessage);
                         break;
@@ -415,7 +418,7 @@ public class HoppieAcarsClient : IAcarsClient
     // Packet formats:
     //   REPORT <callsign> <ddHHmm> <latitude> <longitude> <altitude> [<optional groups>]
     //   REJECT
-    ReceivedAdscMessage ParseAdscDownlink(string from, string packet)
+    ReceivedAdscMessage? ParseAdscDownlink(string from, string packet)
     {
         var parts = packet.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
@@ -430,18 +433,59 @@ public class HoppieAcarsClient : IAcarsClient
                 if (parts.Length < 6)
                     throw new MessageParseException($"Invalid ADS-C report: Expected 6 or more components, got {parts.Length}: \"{packet}\"");
 
-                // Ignore the optional groups (track, ground speed, meteorological data) for now
+                if (!TryParseCoordinate(parts[3], 'N', 'S', 90, out var latitude) ||
+                    !TryParseCoordinate(parts[4], 'E', 'W', 180, out var longitude))
+                {
+                    _logger.Warning("Ignoring ADS-C report from {From}: Cannot read the position: \"{Packet}\"", from, packet);
+                    return null;
+                }
+
+                // Aircraft do not agree on the format of the optional groups, so ignore them
                 var report = new AdscReport(
                     ParseAdscTimestamp(parts[2]),
-                    double.Parse(parts[3], CultureInfo.InvariantCulture),
-                    double.Parse(parts[4], CultureInfo.InvariantCulture),
-                    int.Parse(parts[5], CultureInfo.InvariantCulture));
+                    latitude,
+                    longitude,
+                    ParseAdscAltitude(parts[5]));
 
                 return new ReceivedAdscReport(from, report, _clock.UtcNow());
 
             default:
                 throw new MessageParseException($"Unsupported ADS-C packet: \"{packet}\"");
         }
+    }
+
+    // Aircraft send coordinates in different formats.
+    // For example, a latitude can be "-33.9461", "S33.9461", or "33.9461S".
+    static bool TryParseCoordinate(string text, char positiveHemisphere, char negativeHemisphere, double maximum, out double coordinate)
+    {
+        coordinate = 0;
+
+        var number = text.ToUpperInvariant();
+        var sign = 1;
+        if (number.Length > 1 && (number[0] == positiveHemisphere || number[0] == negativeHemisphere))
+        {
+            sign = number[0] == negativeHemisphere ? -1 : 1;
+            number = number[1..];
+        }
+        else if (number.Length > 1 && (number[^1] == positiveHemisphere || number[^1] == negativeHemisphere))
+        {
+            sign = number[^1] == negativeHemisphere ? -1 : 1;
+            number = number[..^1];
+        }
+
+        if (!double.TryParse(number, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value))
+            return false;
+
+        coordinate = sign * value;
+        return Math.Abs(coordinate) <= maximum;
+    }
+
+    // Some aircraft send the altitude in feet, and some send it in hundreds of feet.
+    // Below 10,000, the altitude is in hundreds of feet.
+    static int ParseAdscAltitude(string text)
+    {
+        var altitude = int.Parse(text, CultureInfo.InvariantCulture);
+        return altitude < 10_000 ? altitude * 100 : altitude;
     }
 
     // The report time has the day of the month, the hour, and the minute (ddHHmm) in UTC.

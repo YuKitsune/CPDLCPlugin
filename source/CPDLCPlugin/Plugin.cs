@@ -69,7 +69,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         _configuration = configuration;
         ConfigureServices(configuration);
 
-        ApplyAdscTrackPatches(configuration);
+        ApplyAdscTrackPatches();
         ApplyFakeAdscReportPatch();
 
         AddToolbarItems();
@@ -130,14 +130,11 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         return logger;
     }
 
-    void ApplyAdscTrackPatches(PluginConfiguration pluginConfiguration)
+    void ApplyAdscTrackPatches()
     {
         try
         {
-            AdscTrackPatches.Apply(
-                ServiceProvider.GetRequiredService<AdscTrackDisplay>(),
-                ServiceProvider.GetRequiredService<IClock>(),
-                TimeSpan.FromMinutes(pluginConfiguration.AdscExtrapolatedAfterMinutes));
+            AdscTrackPatches.Apply(ServiceProvider.GetRequiredService<AdscTrackDisplay>());
         }
         catch (Exception ex)
         {
