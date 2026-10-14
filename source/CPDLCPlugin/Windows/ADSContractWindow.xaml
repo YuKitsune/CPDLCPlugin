@@ -165,32 +165,29 @@
                    AllowsTransparency="True">
                 <Border Background="{x:Static local:Theme.BackgroundColor}">
                     <controls:BeveledBorder BorderThickness="{x:Static local:Theme.BeveledBorderThickness}" BevelType="Outline">
-                        <StackPanel Margin="4">
-                            <controls:BeveledBorder BorderThickness="{x:Static local:Theme.BeveledBorderThickness}" BevelType="Sunken">
-                                <StackPanel>
-                                    <Button Style="{StaticResource ButtonBaseStyle}"
-                                            Height="24"
-                                            Content="DEF"
-                                            Command="{Binding SelectPeriodCommand}"
-                                            Click="PeriodButton_Click"/>
+                        <StackPanel>
+                           <StackPanel>
+                                <Button Style="{StaticResource ButtonBaseStyle}"
+                                        Height="24"
+                                        Content="DEF"
+                                        Command="{Binding SelectPeriodCommand}"
+                                        Click="PeriodButton_Click"/>
 
-                                    <ItemsControl ItemsSource="{Binding PeriodOptions}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Style="{StaticResource ButtonBaseStyle}"
-                                                        Height="24"
-                                                        Content="{Binding}"
-                                                        Command="{Binding DataContext.SelectPeriodCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                        CommandParameter="{Binding}"
-                                                        Click="PeriodButton_Click"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </StackPanel>
-                            </controls:BeveledBorder>
+                                <ItemsControl ItemsSource="{Binding PeriodOptions}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource ButtonBaseStyle}"
+                                                    Height="24"
+                                                    Content="{Binding}"
+                                                    Command="{Binding DataContext.SelectPeriodCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Click="PeriodButton_Click"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
 
                             <controls:TextInput x:Name="CustomPeriodInput"
-                                                Margin="0,4,0,0"
                                                 MaxCharacters="2"
                                                 DigitsOnly="True"
                                                 KeyDown="CustomPeriodInput_KeyDown"/>
@@ -231,7 +228,7 @@
 
                 <Button Grid.Column="1"
                         Style="{StaticResource ButtonBaseStyle}"
-                        Width="64" Height="48"
+                        Width="80" Height="48"
                         HorizontalAlignment="Left">
                     <TextBlock Text="Demand Contract" TextWrapping="Wrap" TextAlignment="Center"/>
                 </Button>
