@@ -235,7 +235,8 @@ public class ControllerHub(
         return await mediator.Send(new GetAtsuSettingsRequest(controller.StationId));
     }
 
-    public async Task RequestPeriodicAdscContract(string callsign, TimeSpan reportingInterval)
+    // A null reporting interval ends the selected contract and requests the default contract again
+    public async Task RequestPeriodicAdscContract(string callsign, TimeSpan? reportingInterval)
     {
         var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
         if (controller is null)
@@ -244,15 +245,23 @@ public class ControllerHub(
             throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
         }
 
-        await mediator.Send(new RequestPeriodicAdscContractCommand(
-            controller.StationId,
-            callsign,
-            reportingInterval));
+        if (reportingInterval is null)
+        {
+            await mediator.Send(new RequestDefaultAdscContractCommand(controller.StationId, callsign));
+        }
+        else
+        {
+            await mediator.Send(new RequestSelectedAdscContractCommand(
+                controller.StationId,
+                callsign,
+                reportingInterval.Value));
+        }
 
         _logger.Information(
-            "Controller {Callsign} requested periodic ADS-C contract with {AircraftCallsign}",
+            "Controller {Callsign} requested periodic ADS-C contract with {AircraftCallsign} (Interval: {ReportingInterval})",
             controller.Callsign,
-            callsign);
+            callsign,
+            reportingInterval?.ToString() ?? "Default");
     }
 
     public async Task RequestAdscDemandReport(string callsign)

@@ -15,10 +15,9 @@ public class CancelAdscContractCommandHandlerTests
     public async Task Handle_WhenContractExists_SendsCancelAndRemovesContract()
     {
         // Arrange
-        var clock = new TestClock();
         var clientManager = new TestClientManager();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(5), clock.UtcNow());
+        var contract = new AdscContract("UAL123", "YBBB");
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -62,10 +61,9 @@ public class CancelAdscContractCommandHandlerTests
     public async Task Handle_OnlyRemovesContractForStation()
     {
         // Arrange
-        var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var ybbbContract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(5), clock.UtcNow());
-        var ymmmContract = new AdscContract("UAL123", "YMMM", TimeSpan.FromMinutes(5), clock.UtcNow());
+        var ybbbContract = new AdscContract("UAL123", "YBBB");
+        var ymmmContract = new AdscContract("UAL123", "YMMM");
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), ybbbContract, CancellationToken.None);
         await contractRepository.Add(new AdscContractKey("UAL123", "YMMM"), ymmmContract, CancellationToken.None);
 

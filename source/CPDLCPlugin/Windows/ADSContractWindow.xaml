@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:CPDLCPlugin"
         xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
         xmlns:controls="clr-namespace:CPDLCPlugin.Controls"
+        xmlns:converters="clr-namespace:CPDLCPlugin.Converters"
         Background="{x:Static local:Theme.BackgroundColor}"
         d:DataContext="{d:DesignInstance Type=viewModels:ADSContractViewModel}"
         mc:Ignorable="d"
@@ -19,6 +20,9 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/CPDLCPlugin;component/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <converters:AdscContractStateToSymbolConverter x:Key="AdscContractStateToSymbolConverter"/>
+            <converters:TimeConverter x:Key="TimeConverter"/>
         </ResourceDictionary>
     </Window.Resources>
     <Grid>
@@ -49,10 +53,12 @@
                 <TextBox x:Name="CallsignTextBox"
                          Text="{Binding Callsign, UpdateSourceTrigger=PropertyChanged}"
                          VerticalContentAlignment="Center"
+                         KeyDown="CallsignTextBox_KeyDown"
                          Visibility="Collapsed"/>
 
                 <Button x:Name="CallsignButton"
                         Content="{Binding CallsignButtonText}"
+                        Click="CallsignButton_Click"
                         Style="{StaticResource ButtonBaseStyle}"/>
             </Grid>
 
@@ -72,7 +78,7 @@
                    Style="{StaticResource GenericTextStyle}"
                    Margin="0,0,8,0"
                    HorizontalAlignment="Center"
-                   Text="10"/>
+                   Text="{Binding CurrentPeriodMinutes}"/>
             </Border>
 
             <!-- Last Report -->
@@ -91,7 +97,7 @@
                     Style="{StaticResource GenericTextStyle}"
                     Margin="0,0,8,0"
                     HorizontalAlignment="Center"
-                    Text="12:34"/>
+                    Text="{Binding LastReport, Converter={StaticResource TimeConverter}}"/>
             </Border>
         </Grid>
 
@@ -120,7 +126,7 @@
 
             <TextBlock Grid.Row="0" Grid.Column="1"
                        Style="{StaticResource GenericTextStyle}"
-                       Text="✓"/>
+                       Text="{Binding DefaultPeriodTransmissionState, Converter={StaticResource AdscContractStateToSymbolConverter}}"/>
 
             <Border Grid.Row="0" Grid.Column="2"
                 BorderBrush="{x:Static local:Theme.GenericTextColor}"
@@ -130,7 +136,7 @@
                     Style="{StaticResource GenericTextStyle}"
                     Margin="0,0,8,0"
                     HorizontalAlignment="Center"
-                    Text="10"/>
+                    Text="{Binding DefaultPeriod}"/>
             </Border>
 
             <!-- Selected Period -->
@@ -141,7 +147,7 @@
 
             <TextBlock Grid.Row="1" Grid.Column="1"
                        Style="{StaticResource GenericTextStyle}"
-                       Text="→"/>
+                       Text="{Binding SelectedPeriodTransmissionState, Converter={StaticResource AdscContractStateToSymbolConverter}}"/>
 
             <Button Grid.Row="1" Grid.Column="2"
                     Style="{StaticResource ButtonBaseStyle}"
@@ -162,7 +168,7 @@
                     Style="{StaticResource GenericTextStyle}"
                     Margin="0,0,8,0"
                     HorizontalAlignment="Center"
-                    Text="12:34"/>
+                    Text="{Binding SelectedPeriodEndTime, Converter={StaticResource TimeConverter}}"/>
             </Border>
 
             <!-- Demand contract -->
@@ -176,7 +182,7 @@
                 <TextBlock Grid.Column="0"
                            Style="{StaticResource GenericTextStyle}"
                            HorizontalAlignment="Center"
-                           Text="✖"/>
+                           Text="{Binding DemandContractTransmissionState, Converter={StaticResource AdscContractStateToSymbolConverter}}"/>
 
                 <Button Grid.Column="1"
                         Style="{StaticResource ButtonBaseStyle}"

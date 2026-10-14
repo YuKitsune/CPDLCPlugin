@@ -41,6 +41,7 @@ builder.Services.AddRazorPages();
 
 builder.Services.AddHostedService<AcarsConnectivityCheckService>();
 builder.Services.AddHostedService<LostConnectionService>();
+builder.Services.AddHostedService<AdscContractExpiryService>();
 builder.Services.AddHostedService<MessageMonitorService>();
 builder.Services.AddHostedService<NdaUplinkService>();
 

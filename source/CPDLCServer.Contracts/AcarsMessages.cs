@@ -44,12 +44,24 @@ public record AtsuSettingsDto(
 
 // ADS-C DTOs for SignalR API
 
-// ReportingInterval is null when only demand reports were requested
+public enum AdscContractState
+{
+    Sent,
+    Accepted,
+    Rejected
+}
+
+// ReportingInterval is the interval of the latest periodic request. It is null when no periodic contract was requested.
+// SelectedContractEnds is null when no selected contract is in use.
 public record AdscContractDto(
     string Callsign,
     string StationId,
     TimeSpan? ReportingInterval,
-    DateTimeOffset Requested);
+    AdscContractState? DefaultContractState,
+    TimeSpan? SelectedReportingInterval,
+    AdscContractState? SelectedContractState,
+    DateTimeOffset? SelectedContractEnds,
+    AdscContractState? DemandContractState);
 
 // Timestamp is the time of the position, as reported by the aircraft.
 // Received is the time the server received the report.

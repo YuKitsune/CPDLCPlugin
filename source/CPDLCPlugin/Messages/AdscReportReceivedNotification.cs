@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using CPDLCServer.Contracts;
 using MediatR;
 using Serilog;
@@ -26,7 +27,8 @@ public class AdscReportReceivedNotificationHandler(
 
         await adscReportStore.Add(report, cancellationToken);
 
-        // The server sends reports only for active contracts
         adscTrackDisplay.Show(report);
+
+        WeakReferenceMessenger.Default.Send(notification);
     }
 }

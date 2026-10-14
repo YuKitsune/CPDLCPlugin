@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using MediatR;
 using Serilog;
 
@@ -7,7 +8,6 @@ public record AdscContractRemovedNotification(string Callsign, string StationId)
 
 public class AdscContractRemovedNotificationHandler(
     AdscContractStore adscContractStore,
-    AdscTrackDisplay adscTrackDisplay,
     ILogger logger)
     : INotificationHandler<AdscContractRemovedNotification>
 {
@@ -20,9 +20,6 @@ public class AdscContractRemovedNotificationHandler(
             logger.Warning("ADS-C contract for {Callsign} was not tracked on {StationId}", notification.Callsign, notification.StationId);
         }
 
-        // Show the ADS-C track only while the aircraft has a contract with an ATSU
-        var contracts = await adscContractStore.All(cancellationToken);
-        if (contracts.All(c => c.Callsign != notification.Callsign))
-            adscTrackDisplay.Hide(notification.Callsign);
+        WeakReferenceMessenger.Default.Send(notification);
     }
 }

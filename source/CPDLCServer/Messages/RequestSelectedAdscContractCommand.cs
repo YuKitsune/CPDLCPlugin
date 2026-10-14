@@ -2,7 +2,7 @@ using MediatR;
 
 namespace CPDLCServer.Messages;
 
-public record RequestPeriodicAdscContractCommand(
+public record RequestSelectedAdscContractCommand(
     string StationId,
     string Callsign,
     TimeSpan ReportingInterval)

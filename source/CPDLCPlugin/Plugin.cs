@@ -399,6 +399,23 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
         MMI.AddCustomMenuItem(historyMenuItem);
 
+        var adsContractMenuItem = new CustomToolStripMenuItem(
+            CustomToolStripMenuItemWindowType.Main,
+            menuItemCategory,
+            new ToolStripMenuItem("ADS Contract"));
+        adsContractMenuItem.Item.Click += (_, _) =>
+        {
+            _workQueue.Enqueue(async () =>
+            {
+                var selectedCallsign = MMI.SelectedTrack?.GetFDR()?.Callsign;
+
+                var mediator = ServiceProvider.GetRequiredService<IMediator>();
+                await mediator.Send(new OpenADSContractWindowRequest(selectedCallsign));
+            });
+        };
+
+        MMI.AddCustomMenuItem(adsContractMenuItem);
+
         var fakeAdscReportMenuItem = new CustomToolStripMenuItem(
             CustomToolStripMenuItemWindowType.Main,
             menuItemCategory,

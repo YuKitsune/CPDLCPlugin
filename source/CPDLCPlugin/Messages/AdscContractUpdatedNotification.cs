@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using CPDLCServer.Contracts;
 using MediatR;
 using Serilog;
@@ -16,5 +17,7 @@ public class AdscContractUpdatedNotificationHandler(AdscContractStore adscContra
             notification.AdscContractDto.StationId);
 
         await adscContractStore.Upsert(notification.AdscContractDto, cancellationToken);
+
+        WeakReferenceMessenger.Default.Send(notification);
     }
 }

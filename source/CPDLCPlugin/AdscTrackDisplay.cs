@@ -48,12 +48,6 @@ public class AdscTrackDisplay(IClock clock, PluginConfiguration configuration)
             fdr.PredictedPosition.Location = new Coordinate(report.Latitude, report.Longitude);
     }
 
-    public void Hide(string callsign)
-    {
-        if (_tracks.TryRemove(callsign, out _))
-            RestoreFlightPlanPosition(callsign);
-    }
-
     public void Clear()
     {
         var callsigns = _tracks.Keys.ToArray();

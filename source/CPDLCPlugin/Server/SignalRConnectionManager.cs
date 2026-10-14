@@ -245,9 +245,10 @@ public class SignalRConnectionManager(
             cancellationToken);
     }
 
+    // A null reporting interval ends the selected contract and requests the default contract again
     public async Task RequestPeriodicAdscContract(
         string callsign,
-        TimeSpan reportingInterval,
+        TimeSpan? reportingInterval,
         CancellationToken cancellationToken)
     {
         var connection = GetConnectedOrThrow();

@@ -9,17 +9,17 @@ using Serilog.Core;
 
 namespace CPDLCServer.Tests.Handlers;
 
-public class RequestPeriodicAdscContractCommandHandlerTests
+public class RequestSelectedAdscContractCommandHandlerTests
 {
     [Fact]
     public async Task Handle_SendsRequestViaAcarsClientForStation()
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var handler = new RequestPeriodicAdscContractCommandHandler(
+        var handler = new RequestSelectedAdscContractCommandHandler(
             clientManager, new TestAdscContractRepository(), Substitute.For<IMediator>(), new TestClock(), Logger.None);
 
-        var command = new RequestPeriodicAdscContractCommand("YBBB", "UAL123", TimeSpan.FromMinutes(5));
+        var command = new RequestSelectedAdscContractCommand("YBBB", "UAL123", TimeSpan.FromMinutes(5));
 
         // Act
         await handler.Handle(command, CancellationToken.None);
@@ -32,16 +32,16 @@ public class RequestPeriodicAdscContractCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenNoContractExists_AddsContract()
+    public async Task Handle_WhenNoContractExists_AddsSelectedContract()
     {
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
         var mediator = Substitute.For<IMediator>();
-        var handler = new RequestPeriodicAdscContractCommandHandler(
+        var handler = new RequestSelectedAdscContractCommandHandler(
             new TestClientManager(), contractRepository, mediator, clock, Logger.None);
 
-        var command = new RequestPeriodicAdscContractCommand("YBBB", "UAL123", TimeSpan.FromMinutes(5));
+        var command = new RequestSelectedAdscContractCommand("YBBB", "UAL123", TimeSpan.FromMinutes(5));
 
         // Act
         await handler.Handle(command, CancellationToken.None);
@@ -50,7 +50,9 @@ public class RequestPeriodicAdscContractCommandHandlerTests
         var contract = await contractRepository.Find(new AdscContractKey("UAL123", "YBBB"), CancellationToken.None);
         Assert.NotNull(contract);
         Assert.Equal(TimeSpan.FromMinutes(5), contract.ReportingInterval);
-        Assert.Equal(clock.UtcNow(), contract.Requested);
+        Assert.Equal(TimeSpan.FromMinutes(5), contract.SelectedReportingInterval);
+        Assert.Equal(AdscContractState.Sent, contract.SelectedContractState);
+        Assert.Null(contract.DefaultContractState);
 
         await mediator.Received(1).Publish(
             Arg.Is<AdscContractChangedNotification>(n => n.Contract == contract),
@@ -58,29 +60,52 @@ public class RequestPeriodicAdscContractCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenContractExists_ChangesReportingInterval()
+    public async Task Handle_SetsEndTimeFromRequestTime()
     {
         // Arrange
         var clock = new TestClock();
+        var clientManager = new TestClientManager();
+        clientManager.AddConfiguration(TestClientManager.CreateConfiguration("YBBB", 10, selectedAdscContractDuration: 30));
+
         var contractRepository = new TestAdscContractRepository();
-        var existingContract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), clock.UtcNow());
-        await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), existingContract, CancellationToken.None);
+        var handler = new RequestSelectedAdscContractCommandHandler(
+            clientManager, contractRepository, Substitute.For<IMediator>(), clock, Logger.None);
 
-        var handler = new RequestPeriodicAdscContractCommandHandler(
-            new TestClientManager(), contractRepository, Substitute.For<IMediator>(), clock, Logger.None);
-
-        clock.SetUtcNow(clock.UtcNow().AddMinutes(1));
-        var command = new RequestPeriodicAdscContractCommand("YBBB", "UAL123", TimeSpan.FromMinutes(2));
+        var command = new RequestSelectedAdscContractCommand("YBBB", "UAL123", TimeSpan.FromMinutes(5));
 
         // Act
         await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        var contracts = await contractRepository.All(CancellationToken.None);
-        var contract = Assert.Single(contracts);
+        var contract = await contractRepository.Find(new AdscContractKey("UAL123", "YBBB"), CancellationToken.None);
+        Assert.NotNull(contract);
+        Assert.Equal(clock.UtcNow().AddMinutes(30), contract.SelectedContractEnds);
+    }
+
+    [Fact]
+    public async Task Handle_WhenDefaultContractExists_KeepsDefaultContractUntilAccepted()
+    {
+        // Arrange
+        var contractRepository = new TestAdscContractRepository();
+        var existingContract = new AdscContract("UAL123", "YBBB");
+        existingContract.RequestDefaultContract(TimeSpan.FromMinutes(10));
+        existingContract.ReportReceived();
+        await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), existingContract, CancellationToken.None);
+
+        var handler = new RequestSelectedAdscContractCommandHandler(
+            new TestClientManager(), contractRepository, Substitute.For<IMediator>(), new TestClock(), Logger.None);
+
+        var command = new RequestSelectedAdscContractCommand("YBBB", "UAL123", TimeSpan.FromMinutes(2));
+
+        // Act
+        await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var contract = Assert.Single(await contractRepository.All(CancellationToken.None));
         Assert.Same(existingContract, contract);
         Assert.Equal(TimeSpan.FromMinutes(2), contract.ReportingInterval);
-        Assert.Equal(clock.UtcNow(), contract.Requested);
+        Assert.Equal(AdscContractState.Sent, contract.SelectedContractState);
+        Assert.Equal(AdscContractState.Accepted, contract.DefaultContractState);
     }
 
     [Fact]
@@ -89,10 +114,10 @@ public class RequestPeriodicAdscContractCommandHandlerTests
         // Arrange
         var clientManager = new TestClientManager();
         var contractRepository = new TestAdscContractRepository();
-        var handler = new RequestPeriodicAdscContractCommandHandler(
+        var handler = new RequestSelectedAdscContractCommandHandler(
             clientManager, contractRepository, Substitute.For<IMediator>(), new TestClock(), Logger.None);
 
-        var command = new RequestPeriodicAdscContractCommand("YBBB", "UAL123", TimeSpan.FromSeconds(59));
+        var command = new RequestSelectedAdscContractCommand("YBBB", "UAL123", TimeSpan.FromSeconds(59));
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => handler.Handle(command, CancellationToken.None));
@@ -107,10 +132,10 @@ public class RequestPeriodicAdscContractCommandHandlerTests
     {
         // Arrange
         var clientManager = new TestClientManager();
-        var handler = new RequestPeriodicAdscContractCommandHandler(
+        var handler = new RequestSelectedAdscContractCommandHandler(
             clientManager, new TestAdscContractRepository(), Substitute.For<IMediator>(), new TestClock(), Logger.None);
 
-        var command = new RequestPeriodicAdscContractCommand(
+        var command = new RequestSelectedAdscContractCommand(
             "YBBB",
             "UAL123",
             AdscContract.MinimumReportingInterval);

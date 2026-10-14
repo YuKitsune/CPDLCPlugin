@@ -26,7 +26,10 @@ public class TestClientManager : IClientManager
         _configurations[configuration.StationIdentifier] = configuration;
     }
 
-    public static HoppiesConfiguration CreateConfiguration(string stationId, int defaultAdscReportingInterval)
+    public static HoppiesConfiguration CreateConfiguration(
+        string stationId,
+        int defaultAdscReportingInterval,
+        int selectedAdscContractDuration = 60)
     {
         return new HoppiesConfiguration
         {
@@ -34,7 +37,8 @@ public class TestClientManager : IClientManager
             AuthenticationCode = "TEST123",
             FlightSimulationNetwork = "VATSIM",
             StationIdentifier = stationId,
-            DefaultAdscReportingInterval = defaultAdscReportingInterval
+            DefaultAdscReportingInterval = defaultAdscReportingInterval,
+            SelectedAdscContractDuration = selectedAdscContractDuration
         };
     }
 

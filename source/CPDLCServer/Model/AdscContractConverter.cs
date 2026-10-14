@@ -10,7 +10,11 @@ public static class AdscContractConverter
             contract.Callsign,
             contract.StationId,
             contract.ReportingInterval,
-            contract.Requested);
+            ToDto(contract.DefaultContractState),
+            contract.SelectedReportingInterval,
+            ToDto(contract.SelectedContractState),
+            contract.SelectedContractEnds,
+            ToDto(contract.DemandContractState));
     }
 
     public static AdscReportDto ToDto(string callsign, string stationId, AdscReport report, DateTimeOffset received)
@@ -23,5 +27,17 @@ public static class AdscContractConverter
             report.Longitude,
             report.Altitude,
             received);
+    }
+
+    static Contracts.AdscContractState? ToDto(AdscContractState? state)
+    {
+        return state switch
+        {
+            null => null,
+            AdscContractState.Sent => Contracts.AdscContractState.Sent,
+            AdscContractState.Accepted => Contracts.AdscContractState.Accepted,
+            AdscContractState.Rejected => Contracts.AdscContractState.Rejected,
+            _ => throw new ArgumentException($"Unknown ADS-C contract state: {state}")
+        };
     }
 }

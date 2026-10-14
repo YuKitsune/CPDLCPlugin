@@ -12,12 +12,12 @@ namespace CPDLCServer.Tests.Handlers;
 public class RequestAdscContractOnConnectionEstablishedHandlerTests
 {
     [Fact]
-    public async Task Handle_RequestsContractWithDefaultIntervalForStation()
+    public async Task Handle_RequestsDefaultContract()
     {
         // Arrange
         var mediator = Substitute.For<IMediator>();
         var handler = new RequestAdscContractOnConnectionEstablishedHandler(
-            new TestClientManager(), new TestAdscContractRepository(), mediator, Logger.None);
+            new TestAdscContractRepository(), mediator, Logger.None);
 
         var notification = new AircraftConnectionEstablished(
             "hoppies-ymmm", "YMMM", "UAL123", DataAuthorityState.NextDataAuthority);
@@ -25,26 +25,23 @@ public class RequestAdscContractOnConnectionEstablishedHandlerTests
         // Act
         await handler.Handle(notification, CancellationToken.None);
 
-        // Assert - TestClientManager sets the YMMM default to 20 minutes
+        // Assert
         await mediator.Received(1).Send(
-            Arg.Is<RequestPeriodicAdscContractCommand>(c =>
-                c.StationId == "YMMM" &&
-                c.Callsign == "UAL123" &&
-                c.ReportingInterval == TimeSpan.FromMinutes(20)),
+            Arg.Is<RequestDefaultAdscContractCommand>(c => c.StationId == "YMMM" && c.Callsign == "UAL123"),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_WhenPeriodicContractExists_DoesNotRequestContract()
+    public async Task Handle_WhenSelectedContractExists_DoesNotRequestContract()
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(5), DateTimeOffset.UtcNow);
+        var contract = new AdscContract("UAL123", "YBBB");
+        contract.RequestSelectedContract(TimeSpan.FromMinutes(5), DateTimeOffset.UtcNow.AddHours(1));
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
-        var handler = new RequestAdscContractOnConnectionEstablishedHandler(
-            new TestClientManager(), contractRepository, mediator, Logger.None);
+        var handler = new RequestAdscContractOnConnectionEstablishedHandler(contractRepository, mediator, Logger.None);
 
         var notification = new AircraftConnectionEstablished(
             "hoppies-ybbb", "YBBB", "UAL123", DataAuthorityState.NextDataAuthority);
@@ -57,16 +54,16 @@ public class RequestAdscContractOnConnectionEstablishedHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenOnlyDemandContractExists_RequestsContract()
+    public async Task Handle_WhenOnlyDemandReportExists_RequestsDefaultContract()
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", null, DateTimeOffset.UtcNow);
+        var contract = new AdscContract("UAL123", "YBBB");
+        contract.RequestDemandReport();
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
-        var handler = new RequestAdscContractOnConnectionEstablishedHandler(
-            new TestClientManager(), contractRepository, mediator, Logger.None);
+        var handler = new RequestAdscContractOnConnectionEstablishedHandler(contractRepository, mediator, Logger.None);
 
         var notification = new AircraftConnectionEstablished(
             "hoppies-ybbb", "YBBB", "UAL123", DataAuthorityState.NextDataAuthority);
@@ -74,12 +71,34 @@ public class RequestAdscContractOnConnectionEstablishedHandlerTests
         // Act
         await handler.Handle(notification, CancellationToken.None);
 
-        // Assert - TestClientManager sets the YBBB default to 10 minutes
+        // Assert
         await mediator.Received(1).Send(
-            Arg.Is<RequestPeriodicAdscContractCommand>(c =>
-                c.StationId == "YBBB" &&
-                c.Callsign == "UAL123" &&
-                c.ReportingInterval == TimeSpan.FromMinutes(10)),
+            Arg.Is<RequestDefaultAdscContractCommand>(c => c.StationId == "YBBB" && c.Callsign == "UAL123"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenDefaultContractIsRejected_RequestsDefaultContract()
+    {
+        // Arrange
+        var contractRepository = new TestAdscContractRepository();
+        var contract = new AdscContract("UAL123", "YBBB");
+        contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
+        contract.Reject();
+        await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
+
+        var mediator = Substitute.For<IMediator>();
+        var handler = new RequestAdscContractOnConnectionEstablishedHandler(contractRepository, mediator, Logger.None);
+
+        var notification = new AircraftConnectionEstablished(
+            "hoppies-ybbb", "YBBB", "UAL123", DataAuthorityState.NextDataAuthority);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert
+        await mediator.Received(1).Send(
+            Arg.Is<RequestDefaultAdscContractCommand>(c => c.StationId == "YBBB" && c.Callsign == "UAL123"),
             Arg.Any<CancellationToken>());
     }
 
@@ -89,11 +108,11 @@ public class RequestAdscContractOnConnectionEstablishedHandlerTests
         // Arrange
         var mediator = Substitute.For<IMediator>();
         mediator
-            .Send(Arg.Any<RequestPeriodicAdscContractCommand>(), Arg.Any<CancellationToken>())
+            .Send(Arg.Any<RequestDefaultAdscContractCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new HttpRequestException("Hoppie is down")));
 
         var handler = new RequestAdscContractOnConnectionEstablishedHandler(
-            new TestClientManager(), new TestAdscContractRepository(), mediator, Logger.None);
+            new TestAdscContractRepository(), mediator, Logger.None);
 
         var notification = new AircraftConnectionEstablished(
             "hoppies-ybbb", "YBBB", "UAL123", DataAuthorityState.NextDataAuthority);

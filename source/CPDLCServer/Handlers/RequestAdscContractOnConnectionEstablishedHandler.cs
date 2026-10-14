@@ -1,4 +1,3 @@
-using CPDLCServer.Clients;
 using CPDLCServer.Messages;
 using CPDLCServer.Persistence;
 using MediatR;
@@ -6,7 +5,6 @@ using MediatR;
 namespace CPDLCServer.Handlers;
 
 public class RequestAdscContractOnConnectionEstablishedHandler(
-    IClientManager clientManager,
     IAdscContractRepository adscContractRepository,
     IMediator mediator,
     ILogger logger)
@@ -17,11 +15,11 @@ public class RequestAdscContractOnConnectionEstablishedHandler(
         // A failure here must not stop the other handlers for the new CPDLC connection
         try
         {
-            // Keep a periodic contract that a controller requested before the logon
+            // Keep a periodic contract that a controller requested before the logon, unless the aircraft rejected it
             var contract = await adscContractRepository.Find(
                 new AdscContractKey(notification.Callsign, notification.StationId),
                 cancellationToken);
-            if (contract?.ReportingInterval is not null)
+            if (contract is not null && contract.HasPeriodicContract)
             {
                 logger.Information(
                     "{Callsign} already has a periodic ADS-C contract with {StationId}",
@@ -30,13 +28,8 @@ public class RequestAdscContractOnConnectionEstablishedHandler(
                 return;
             }
 
-            var configuration = await clientManager.GetConfigurationForStation(notification.StationId, cancellationToken);
-
             await mediator.Send(
-                new RequestPeriodicAdscContractCommand(
-                    notification.StationId,
-                    notification.Callsign,
-                    TimeSpan.FromMinutes(configuration.DefaultAdscReportingInterval)),
+                new RequestDefaultAdscContractCommand(notification.StationId, notification.Callsign),
                 cancellationToken);
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)

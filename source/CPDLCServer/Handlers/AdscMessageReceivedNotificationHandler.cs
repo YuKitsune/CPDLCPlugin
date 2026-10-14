@@ -29,9 +29,28 @@ public class AdscMessageReceivedNotificationHandler(
         switch (message)
         {
             case ReceivedAdscReport reportMessage:
+                if (!contract.IsActive)
+                {
+                    logger.Information(
+                        "{Callsign} rejected the ADS-C contract with {StationId}, ignoring ADS-C report",
+                        message.Sender,
+                        notification.StationId);
+                    return;
+                }
+
                 logger.Information(
                     "ADS-C report received from {Callsign}",
                     message.Sender);
+
+                if (contract.ReportReceived())
+                {
+                    logger.Information(
+                        "{Callsign} accepted the ADS-C contract with {StationId}",
+                        message.Sender,
+                        notification.StationId);
+
+                    await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
+                }
 
                 await mediator.Publish(
                     new AdscReportReceivedNotification(
@@ -43,15 +62,21 @@ public class AdscMessageReceivedNotificationHandler(
                 break;
 
             case ReceivedAdscRejection:
-                await adscContractRepository.Remove(contractKey, cancellationToken);
+                var selectedContractRejected = contract.Reject();
                 logger.Information(
                     "{Callsign} rejected the ADS-C contract with {StationId}",
                     message.Sender,
                     notification.StationId);
 
-                await mediator.Publish(
-                    new AdscContractRemovedNotification(message.Sender, notification.StationId),
-                    cancellationToken);
+                await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
+
+                // Re-establish the default contract
+                if (selectedContractRejected)
+                {
+                    await mediator.Send(
+                        new RequestDefaultAdscContractCommand(notification.StationId, message.Sender),
+                        cancellationToken);
+                }
                 break;
 
             default:
