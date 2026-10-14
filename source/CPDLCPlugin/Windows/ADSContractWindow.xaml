@@ -51,6 +51,7 @@
 
             <Grid Grid.Column="1" Width="120" Height="32">
                 <TextBox x:Name="CallsignTextBox"
+                         CharacterCasing="Upper"
                          Text="{Binding Callsign, UpdateSourceTrigger=PropertyChanged}"
                          VerticalContentAlignment="Center"
                          KeyDown="CallsignTextBox_KeyDown"
@@ -231,8 +232,9 @@
                 <Button Grid.Column="1"
                         Style="{StaticResource ButtonBaseStyle}"
                         Width="64" Height="48"
-                        HorizontalAlignment="Left"
-                        Content="Demand Contract"/>
+                        HorizontalAlignment="Left">
+                    <TextBlock Text="Demand Contract" TextWrapping="Wrap" TextAlignment="Center"/>
+                </Button>
             </Grid>
         </Grid>
     </Grid>

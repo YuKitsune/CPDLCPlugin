@@ -42,6 +42,7 @@
 
             <Grid Grid.Column="1" Width="120" Height="32">
                 <TextBox x:Name="CallsignTextBox"
+                         CharacterCasing="Upper"
                          Text="{Binding Callsign, UpdateSourceTrigger=PropertyChanged}"
                          VerticalContentAlignment="Center"
                          KeyDown="CallsignTextBox_KeyDown"
