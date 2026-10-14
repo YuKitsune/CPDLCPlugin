@@ -36,5 +36,27 @@ public partial class ADSContractWindow : Window
 
         e.Handled = true;
     }
+
+    void SelectedPeriodButton_Click(object sender, RoutedEventArgs e)
+    {
+        CustomPeriodInput.Value = string.Empty;
+        PeriodPopup.IsOpen = true;
+    }
+
+    void PeriodButton_Click(object sender, RoutedEventArgs e)
+    {
+        PeriodPopup.IsOpen = false;
+    }
+
+    void CustomPeriodInput_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+            return;
+
+        _viewModel.SelectCustomPeriodCommand.Execute(CustomPeriodInput.Value);
+        PeriodPopup.IsOpen = false;
+
+        e.Handled = true;
+    }
 }
 

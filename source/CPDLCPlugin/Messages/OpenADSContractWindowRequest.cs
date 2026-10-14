@@ -12,6 +12,7 @@ public class OpenADSContractWindowRequestHandler(
     AdscContractStore adscContractStore,
     AdscReportStore adscReportStore,
     AtsuSettingsStore atsuSettingsStore,
+    IMediator mediator,
     IGuiInvoker guiInvoker,
     IErrorReporter errorReporter)
     : IRequestHandler<OpenADSContractWindowRequest>
@@ -27,6 +28,7 @@ public class OpenADSContractWindowRequestHandler(
                     adscContractStore,
                     adscReportStore,
                     atsuSettingsStore,
+                    mediator,
                     guiInvoker,
                     errorReporter,
                     request.Callsign);
