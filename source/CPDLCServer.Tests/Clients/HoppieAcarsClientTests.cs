@@ -1,6 +1,7 @@
 using System.Net;
 using CPDLCServer.Clients;
 using CPDLCServer.Model;
+using CPDLCServer.Persistence;
 using CPDLCServer.Tests.Mocks;
 using Serilog.Core;
 
@@ -17,6 +18,7 @@ public class HoppieAcarsClientTests : IDisposable
     };
 
     private readonly List<HoppieAcarsClient> _clients = new();
+    private readonly TestAdscMessageLogRepository _adscMessageLogRepository = new();
 
     public void Dispose()
     {
@@ -44,6 +46,7 @@ public class HoppieAcarsClientTests : IDisposable
             _configuration,
             httpClient,
             clock ?? new TestClock(),
+            _adscMessageLogRepository,
             Logger.None);
         _clients.Add(client);
         return client;
@@ -699,6 +702,74 @@ public class HoppieAcarsClientTests : IDisposable
         Assert.Equal("DAL456", adscMessage.Sender);
         Assert.False(client.MessageReader.TryRead(out _));
         Assert.False(client.AdscMessageReader.TryRead(out _));
+    }
+
+    [Fact]
+    public async Task RequestPeriodicAdscContract_LogsUplinkPacket()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var clock = new TestClock();
+        var client = CreateClient(httpHandler, clock);
+
+        // Act
+        await client.RequestPeriodicAdscContract("UAL123", TimeSpan.FromMinutes(5), CancellationToken.None);
+
+        // Assert
+        var entry = Assert.Single(await _adscMessageLogRepository.All(CancellationToken.None));
+        Assert.Equal(clock.UtcNow(), entry.Time);
+        Assert.Equal("Hoppies/YBBB", entry.AcarsClientId);
+        Assert.Equal("YBBB", entry.StationId);
+        Assert.Equal("UAL123", entry.Callsign);
+        Assert.Equal(AdscMessageDirection.Uplink, entry.Direction);
+        Assert.Equal("REQUEST PERIODIC 300", entry.Packet);
+    }
+
+    [Fact]
+    public async Task RequestAdscDemandReport_WhenSendFails_DoesNotLogPacket()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.InternalServerError, "error");
+        var client = CreateClient(httpHandler);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            client.RequestAdscDemandReport("UAL123", CancellationToken.None));
+        Assert.Empty(await _adscMessageLogRepository.All(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Poll_AdscMessages_LogsDownlinkPackets()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(
+            HttpStatusCode.OK,
+            "ok {UAL123 cpdlc {/data2/5//Y/REQUEST DESCENT}} {UAL123 ads-c {REPORT UAL123 131155 ABC 151.177200 37000}} {DAL456 ads-c {REJECT}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var client = CreateClient(httpHandler);
+
+        // Act
+        await client.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        // The packet is logged before the message is written to the reader
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await client.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var entries = await _adscMessageLogRepository.All(CancellationToken.None);
+        Assert.Equal(2, entries.Length);
+        Assert.All(entries, e => Assert.Equal(AdscMessageDirection.Downlink, e.Direction));
+
+        // The report cannot be parsed, but it is logged
+        Assert.Equal("UAL123", entries[1].Callsign);
+        Assert.Equal("REPORT UAL123 131155 ABC 151.177200 37000", entries[1].Packet);
+
+        Assert.Equal("DAL456", entries[0].Callsign);
+        Assert.Equal("REJECT", entries[0].Packet);
     }
 
     private async Task<Dictionary<string, string>> ParseFormDataFromRequest(HttpRequestMessage request)

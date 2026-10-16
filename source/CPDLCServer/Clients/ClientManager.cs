@@ -2,6 +2,7 @@ using CPDLCServer.Exceptions;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Messages;
 using CPDLCServer.Model;
+using CPDLCServer.Persistence;
 using MediatR;
 
 namespace CPDLCServer.Clients;
@@ -19,6 +20,7 @@ public class ClientManager : BackgroundService, IClientManager
     readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     readonly Dictionary<string, AcarsClientHandle> _clients = [];
     readonly IClock _clock;
+    readonly IAdscMessageLogRepository _adscMessageLogRepository;
     readonly ILogger _logger;
     readonly IMediator _mediator;
 
@@ -26,6 +28,7 @@ public class ClientManager : BackgroundService, IClientManager
         IConfiguration configuration,
         IMediator mediator,
         IClock clock,
+        IAdscMessageLogRepository adscMessageLogRepository,
         ILogger logger)
     {
         var acarsConfigurationSection = configuration.GetSection("Acars");
@@ -54,6 +57,7 @@ public class ClientManager : BackgroundService, IClientManager
 
         _mediator = mediator;
         _clock = clock;
+        _adscMessageLogRepository = adscMessageLogRepository;
         _logger = logger.ForContext<ClientManager>();
     }
 
@@ -207,6 +211,7 @@ public class ClientManager : BackgroundService, IClientManager
             configuration,
             httpClient,
             _clock,
+            _adscMessageLogRepository,
             _logger.ForContext<HoppieAcarsClient>());
     }
 

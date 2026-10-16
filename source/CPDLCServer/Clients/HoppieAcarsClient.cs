@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using CPDLCServer.Exceptions;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Model;
+using CPDLCServer.Persistence;
 
 namespace CPDLCServer.Clients;
 
@@ -18,6 +19,7 @@ public class HoppieAcarsClient : IAcarsClient
     readonly HoppiesConfiguration _configuration;
     readonly HttpClient _httpClient;
     readonly IClock _clock;
+    readonly IAdscMessageLogRepository _adscMessageLogRepository;
     readonly ILogger _logger;
 
     readonly Channel<ReceivedDownlink> _messageChannel = Channel.CreateUnbounded<ReceivedDownlink>();
@@ -34,12 +36,13 @@ public class HoppieAcarsClient : IAcarsClient
     public ChannelReader<ReceivedAdscMessage> AdscMessageReader => _adscMessageChannel.Reader;
     public string StationId => _configuration.StationIdentifier;
 
-    public HoppieAcarsClient(HoppiesConfiguration configuration, HttpClient httpClient, IClock clock, ILogger logger)
+    public HoppieAcarsClient(HoppiesConfiguration configuration, HttpClient httpClient, IClock clock, IAdscMessageLogRepository adscMessageLogRepository, ILogger logger)
     {
         _configuration = configuration;
         _httpClient = httpClient;
         _httpClient.Timeout = TimeSpan.FromSeconds(15);
         _clock = clock;
+        _adscMessageLogRepository = adscMessageLogRepository;
         _logger = logger.ForContext("ClientId", _configuration.ClientId);
     }
 
@@ -74,7 +77,7 @@ public class HoppieAcarsClient : IAcarsClient
         if (reportingIntervalSeconds <= 0)
             throw new ArgumentOutOfRangeException(nameof(reportingInterval), reportingInterval, "Reporting interval must be one second or more");
 
-        await SendPacket(callsign, "ads-c", $"REQUEST PERIODIC {reportingIntervalSeconds}", cancellationToken);
+        await SendAdscPacket(callsign, $"REQUEST PERIODIC {reportingIntervalSeconds}", cancellationToken);
     }
 
     // Hoppie has no separate demand contract. A periodic request with an interval of zero asks for one report.
@@ -83,7 +86,7 @@ public class HoppieAcarsClient : IAcarsClient
         if (_disposed)
             throw new ObjectDisposedException(nameof(HoppieAcarsClient));
 
-        await SendPacket(callsign, "ads-c", "REQUEST PERIODIC 0", cancellationToken);
+        await SendAdscPacket(callsign, "REQUEST PERIODIC 0", cancellationToken);
     }
 
     public async Task CancelAdscContract(string callsign, CancellationToken cancellationToken)
@@ -91,7 +94,25 @@ public class HoppieAcarsClient : IAcarsClient
         if (_disposed)
             throw new ObjectDisposedException(nameof(HoppieAcarsClient));
 
-        await SendPacket(callsign, "ads-c", "REQUEST CANCEL", cancellationToken);
+        await SendAdscPacket(callsign, "REQUEST CANCEL", cancellationToken);
+    }
+
+    async Task SendAdscPacket(string callsign, string packet, CancellationToken cancellationToken)
+    {
+        await SendPacket(callsign, "ads-c", packet, cancellationToken);
+        await LogAdscPacket(callsign, AdscMessageDirection.Uplink, packet, cancellationToken);
+    }
+
+    async Task LogAdscPacket(string callsign, AdscMessageDirection direction, string packet, CancellationToken cancellationToken)
+    {
+        var entry = new AdscMessageLogEntry(
+            _clock.UtcNow(),
+            _configuration.ClientId,
+            _configuration.StationIdentifier,
+            callsign,
+            direction,
+            packet);
+        await _adscMessageLogRepository.Add(entry, cancellationToken);
     }
 
     async Task SendPacket(string to, string messageType, string packet, CancellationToken cancellationToken)
@@ -242,7 +263,7 @@ public class HoppieAcarsClient : IAcarsClient
 
                     if (!string.IsNullOrWhiteSpace(responseText) && responseText != "ok")
                     {
-                        ParseAndPublishDownlinkMessages(responseText);
+                        await ParseAndPublishDownlinkMessages(responseText, cancellationToken);
                     }
                 }
                 catch (HttpRequestException ex)
@@ -273,7 +294,7 @@ public class HoppieAcarsClient : IAcarsClient
         }
     }
 
-    void ParseAndPublishDownlinkMessages(string responseText)
+    async Task ParseAndPublishDownlinkMessages(string responseText, CancellationToken cancellationToken)
     {
         try
         {
@@ -309,6 +330,9 @@ public class HoppieAcarsClient : IAcarsClient
                         break;
 
                     case "ads-c":
+                        // Log the packet before it is parsed, so that packets that cannot be parsed are also in the log
+                        await LogAdscPacket(from, AdscMessageDirection.Downlink, packet, cancellationToken);
+
                         var adscMessage = ParseAdscDownlink(from, packet);
                         if (adscMessage is null)
                             break;
