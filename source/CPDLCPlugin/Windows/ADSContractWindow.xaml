@@ -8,7 +8,7 @@
         xmlns:controls="clr-namespace:CPDLCPlugin.Controls"
         xmlns:converters="clr-namespace:CPDLCPlugin.Converters"
         Background="{x:Static local:Theme.BackgroundColor}"
-        d:DataContext="{d:DesignInstance Type=viewModels:ADSContractViewModel}"
+        d:DataContext="{d:DesignInstance Type=viewModels:ADSContractViewModel, IsDesignTimeCreatable=True}"
         mc:Ignorable="d"
         Title="ADS CONTRACT WINDOW"
         Height="220"

@@ -52,6 +52,31 @@ public partial class ADSContractViewModel : ObservableObject,
         }
     }
 
+    // Example data for the XAML designer. Do not use at runtime.
+    public ADSContractViewModel()
+    {
+        _plugin = null!;
+        _adscContractStore = null!;
+        _adscReportStore = null!;
+        _atsuSettingsStore = null!;
+        _mediator = null!;
+        _guiInvoker = null!;
+        _errorReporter = null!;
+
+        _callsign = "QFA123";
+        CurrentPeriodMinutes = 5;
+        LastReport = DateTimeOffset.UtcNow.AddMinutes(-2);
+
+        DefaultPeriod = 10;
+        DefaultPeriodTransmissionState = AdscContractState.Accepted;
+
+        SelectedPeriod = 5;
+        SelectedPeriodTransmissionState = AdscContractState.Sent;
+        SelectedPeriodEndTime = DateTimeOffset.UtcNow.AddMinutes(60);
+
+        DemandContractTransmissionState = AdscContractState.Rejected;
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CallsignButtonText))]
     string _callsign;
