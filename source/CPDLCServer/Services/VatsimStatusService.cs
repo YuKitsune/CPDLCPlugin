@@ -79,7 +79,7 @@ public class VatsimStatusService : IHostedService, IDisposable
                     await DownloadPilots(timeoutCts.Token);
                     await _mediator.Send(new ProduceVatsimAdscReportsRequest(), timeoutCts.Token);
 
-                    await Task.Delay(_configuration.PollingInterval, stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(_configuration.PollingIntervalSeconds), stoppingToken);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
@@ -88,7 +88,7 @@ public class VatsimStatusService : IHostedService, IDisposable
                 catch (Exception ex)
                 {
                     _logger.Error(ex, "Error downloading VATSIM status data");
-                    await Task.Delay(_configuration.PollingInterval, stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(_configuration.PollingIntervalSeconds), stoppingToken);
                 }
             }
         }

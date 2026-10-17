@@ -60,8 +60,8 @@ Handoff__NotificationLeadTime=10
 VatsimStatus__Enabled=false
 # The URL of the VATSIM status data (default: https://data.vatsim.net/v3/vatsim-data.json)
 VatsimStatus__Url=https://data.vatsim.net/v3/vatsim-data.json
-# The time between downloads of the VATSIM status data, as hh:mm:ss (default: 00:02:00)
-VatsimStatus__PollingInterval=00:02:00
+# The time in seconds between downloads of the VATSIM status data (default: 120)
+VatsimStatus__PollingIntervalSeconds=120
 # Also make reports for aircraft that do not have D1 or G1 in Item 10b of the flight plan (default: false)
 VatsimStatus__AllowNonEquippedAircraft=false
 ```
@@ -112,7 +112,7 @@ The minimum reporting interval is 2 minutes.
 
 Not all aircraft support ADS-C over Hoppie's network. When `VatsimStatus__Enabled` is `true`, the server makes ADS-C reports from the [VATSIM status data](https://data.vatsim.net/v3/vatsim-data.json) for these aircraft.
 
-The server downloads the VATSIM status data at the interval set by `VatsimStatus__PollingInterval` (2 minutes by default). Then it makes a report for each aircraft that has a contract, when all of these conditions are true:
+The server downloads the VATSIM status data at the interval set by `VatsimStatus__PollingIntervalSeconds` (120 seconds by default). Then it makes a report for each aircraft that has a contract, when all of these conditions are true:
 
 - The contract is not rejected.
 - The contract needs a report: a demand request was sent, or a periodic report is due.
