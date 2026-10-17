@@ -11,8 +11,8 @@ namespace CPDLCServer.Model;
 /// </summary>
 public class AdscContract(string callsign, string stationId)
 {
-    // The ACARS clients poll for messages every 20 to 75 seconds. A shorter interval gives no more data.
-    public static readonly TimeSpan MinimumReportingInterval = TimeSpan.FromSeconds(60);
+    // The server downloads the VATSIM status data every 2 minutes. A shorter interval gives no more data.
+    public static readonly TimeSpan MinimumReportingInterval = TimeSpan.FromMinutes(2);
 
     public string Callsign { get; } = callsign;
     public string StationId { get; } = stationId;

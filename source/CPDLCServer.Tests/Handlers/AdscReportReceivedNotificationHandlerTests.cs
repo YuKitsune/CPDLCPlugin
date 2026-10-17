@@ -36,7 +36,7 @@ public class AdscReportReceivedNotificationHandlerTests
         var notification = new AdscReportReceivedNotification(
             "UAL123",
             "YBBB",
-            new AdscReport(timestamp, -33.9461, 151.1772, 37000),
+            new AdscReport(timestamp, -33.9461, 151.1772, 37000, Model.AdscReportSource.Hoppie),
             received);
 
         // Act
@@ -49,7 +49,7 @@ public class AdscReportReceivedNotificationHandlerTests
                 ids.Contains("ConnectionId-1") &&
                 ids.Contains("ConnectionId-2")));
 
-        var expectedDto = new AdscReportDto("UAL123", "YBBB", timestamp, -33.9461, 151.1772, 37000, received);
+        var expectedDto = new AdscReportDto("UAL123", "YBBB", timestamp, -33.9461, 151.1772, 37000, received, Contracts.AdscReportSource.Hoppie);
         await clientProxy.Received(1).SendCoreAsync(
             "AdscReportReceived",
             Arg.Is<object[]>(args => args.Length == 1 && expectedDto.Equals(args[0])),
@@ -67,7 +67,7 @@ public class AdscReportReceivedNotificationHandlerTests
         var notification = new AdscReportReceivedNotification(
             "UAL123",
             "YBBB",
-            new AdscReport(DateTimeOffset.UtcNow, -33.9461, 151.1772, 37000),
+            new AdscReport(DateTimeOffset.UtcNow, -33.9461, 151.1772, 37000, Model.AdscReportSource.Hoppie),
             DateTimeOffset.UtcNow);
 
         // Act
@@ -86,7 +86,7 @@ public class AdscReportReceivedNotificationHandlerTests
             reportRepository, new TestControllerRepository(), Substitute.For<IHubContext<ControllerHub>>(), Logger.None);
 
         var timestamp = new DateTimeOffset(2026, 10, 13, 11, 55, 0, TimeSpan.Zero);
-        var report = new AdscReport(timestamp, -33.9461, 151.1772, 37000);
+        var report = new AdscReport(timestamp, -33.9461, 151.1772, 37000, Model.AdscReportSource.Hoppie);
         var received = timestamp.AddSeconds(40);
         var notification = new AdscReportReceivedNotification("UAL123", "YBBB", report, received);
 

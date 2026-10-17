@@ -12,6 +12,11 @@ public class TestAdscReportRepository : IAdscReportRepository
         return _inner.Add(report, cancellationToken);
     }
 
+    public Task<AircraftAdscReport?> Find(string callsign, CancellationToken cancellationToken)
+    {
+        return _inner.Find(callsign, cancellationToken);
+    }
+
     public Task<AircraftAdscReport[]> All(CancellationToken cancellationToken)
     {
         return _inner.All(cancellationToken);

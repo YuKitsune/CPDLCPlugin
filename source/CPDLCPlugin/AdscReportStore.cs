@@ -14,14 +14,21 @@ public class AdscReportStore
     /// <summary>
     /// Stores the report, unless the store has a newer report for the same aircraft.
     /// An aircraft can report to more than one ATSU, so reports can arrive out of order.
+    /// A report from Hoppie always replaces a report from VATSIM.
     /// </summary>
     public async Task Add(AdscReportDto report, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken);
         try
         {
-            if (_latestReports.TryGetValue(report.Callsign, out var existing) && existing.Timestamp > report.Timestamp)
-                return;
+            if (_latestReports.TryGetValue(report.Callsign, out var existing))
+            {
+                var replacesVatsimReport = report.Source == AdscReportSource.Hoppie &&
+                    existing.Source == AdscReportSource.VATSIM;
+
+                if (!replacesVatsimReport && existing.Timestamp > report.Timestamp)
+                    return;
+            }
 
             _latestReports[report.Callsign] = report;
         }

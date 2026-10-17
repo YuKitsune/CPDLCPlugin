@@ -115,16 +115,28 @@
 
             <!-- Default Period -->
             <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource PeriodLabelStyle}" Text="Default Period"/>
-            <TextBlock Grid.Row="0" Grid.Column="1"
-                       Text="{Binding DefaultPeriodTransmissionState, Converter={StaticResource AdscContractStateToSymbolConverter}}"/>
+            <TextBlock Grid.Row="0" Grid.Column="1">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource AdscContractStateToSymbolConverter}">
+                        <Binding Path="DefaultPeriodTransmissionState"/>
+                        <Binding Path="IsUsingVatsimData"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
             <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource ValueBorderStyle}">
                 <TextBlock Style="{StaticResource ValueTextStyle}" Text="{Binding DefaultPeriod}"/>
             </Border>
 
             <!-- Selected Period -->
             <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource PeriodLabelStyle}" Text="Selected Period"/>
-            <TextBlock Grid.Row="1" Grid.Column="1"
-                       Text="{Binding SelectedPeriodTransmissionState, Converter={StaticResource AdscContractStateToSymbolConverter}}"/>
+            <TextBlock Grid.Row="1" Grid.Column="1">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource AdscContractStateToSymbolConverter}">
+                        <Binding Path="SelectedPeriodTransmissionState"/>
+                        <Binding Path="IsUsingVatsimData"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
             <Button x:Name="SelectedPeriodButton"
                     Grid.Row="1" Grid.Column="2"
                     Content="{Binding SelectedPeriodButtonText}"
@@ -178,8 +190,14 @@
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0"
-                           HorizontalAlignment="Center"
-                           Text="{Binding DemandContractTransmissionState, Converter={StaticResource AdscContractStateToSymbolConverter}}"/>
+                           HorizontalAlignment="Center">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource AdscContractStateToSymbolConverter}">
+                            <Binding Path="DemandContractTransmissionState"/>
+                            <Binding Path="IsUsingVatsimData"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
 
                 <Button Grid.Column="1"
                         Width="80" Height="40"

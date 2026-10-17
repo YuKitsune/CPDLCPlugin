@@ -36,6 +36,8 @@ builder.Services.AddSingleton<IDialogueRepository, InMemoryDialogueRepository>()
 builder.Services.AddSingleton<IAdscContractRepository, InMemoryAdscContractRepository>();
 builder.Services.AddSingleton<IAdscMessageLogRepository, InMemoryAdscMessageLogRepository>();
 builder.Services.AddSingleton<IAdscReportRepository, InMemoryAdscReportRepository>();
+builder.Services.AddSingleton<IVatsimPilotRepository, InMemoryVatsimPilotRepository>();
+builder.Services.AddSingleton(builder.Configuration.GetSection("VatsimStatus").Get<VatsimStatusConfiguration>() ?? new VatsimStatusConfiguration());
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddSignalR()
     .AddJsonProtocol();
@@ -44,6 +46,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddHostedService<AcarsConnectivityCheckService>();
 builder.Services.AddHostedService<LostConnectionService>();
 builder.Services.AddHostedService<AdscContractExpiryService>();
+builder.Services.AddHostedService<VatsimStatusService>();
 builder.Services.AddHostedService<MessageMonitorService>();
 builder.Services.AddHostedService<NdaUplinkService>();
 

@@ -26,7 +26,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         var mediator = Substitute.For<IMediator>();
         var handler = new AdscMessageReceivedNotificationHandler(contractRepository, mediator, Logger.None);
 
-        var report = new AdscReport(clock.UtcNow(), -33.9461, 151.1772, 37000);
+        var report = new AdscReport(clock.UtcNow(), -33.9461, 151.1772, 37000, AdscReportSource.Hoppie);
         var received = clock.UtcNow().AddSeconds(30);
         var notification = new AdscMessageReceivedNotification(
             "hoppies-ybbb",
@@ -225,7 +225,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         return new AdscMessageReceivedNotification(
             $"hoppies-{stationId.ToLowerInvariant()}",
             stationId,
-            new ReceivedAdscReport("UAL123", new AdscReport(now, -33.9461, 151.1772, 37000), now));
+            new ReceivedAdscReport("UAL123", new AdscReport(now, -33.9461, 151.1772, 37000, AdscReportSource.Hoppie), now));
     }
 
     static AdscMessageReceivedNotification CreateRejection(string stationId)

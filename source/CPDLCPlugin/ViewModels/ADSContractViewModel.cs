@@ -86,6 +86,9 @@ public partial class ADSContractViewModel : ObservableObject,
     [ObservableProperty] int? _currentPeriodMinutes;
     [ObservableProperty] DateTimeOffset? _lastReport;
 
+    // True when the server made the latest report from the VATSIM status data
+    [ObservableProperty] bool _isUsingVatsimData;
+
     [ObservableProperty] int? _defaultPeriod;
     [ObservableProperty] AdscContractState? _defaultPeriodTransmissionState;
 
@@ -113,6 +116,7 @@ public partial class ADSContractViewModel : ObservableObject,
             {
                 ShowContract(null);
                 LastReport = null;
+                IsUsingVatsimData = false;
                 return;
             }
 
@@ -124,6 +128,7 @@ public partial class ADSContractViewModel : ObservableObject,
 
             var report = await _adscReportStore.Find(Callsign, CancellationToken.None);
             LastReport = report?.Timestamp;
+            IsUsingVatsimData = report?.Source == AdscReportSource.VATSIM;
         }
         catch (Exception ex)
         {
@@ -165,9 +170,9 @@ public partial class ADSContractViewModel : ObservableObject,
     [RelayCommand]
     async Task SelectCustomPeriod(string text)
     {
-        if (!int.TryParse(text, out var minutes) || minutes < 1)
+        if (!int.TryParse(text, out var minutes) || minutes < 2)
         {
-            _errorReporter.ReportError(new ArgumentException($"Period must be 1 to 99 minutes: {text}"));
+            _errorReporter.ReportError(new ArgumentException($"Period must be 2 to 99 minutes: {text}"));
             return;
         }
 

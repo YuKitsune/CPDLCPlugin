@@ -5,4 +5,5 @@ public record AdscReport(
     DateTimeOffset Timestamp,
     double Latitude,
     double Longitude,
-    int Altitude);
+    int Altitude,
+    AdscReportSource Source);

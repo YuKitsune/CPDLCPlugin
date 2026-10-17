@@ -26,6 +26,7 @@ public class AdscTrackDisplay(IClock clock, PluginConfiguration configuration)
     /// Shows the reported position on the ASD (update position extrapolation), unless a newer report for the same aircraft is shown.
     /// The position stays until the first flight plan extrapolation after the ADS-C track extrapolation threshold.
     /// The reported altitude becomes the pilot reported level (PRL) of the flight plan.
+    /// A report from Hoppie always replaces a report from VATSIM.
     /// </summary>
     public void Show(AdscReportDto report)
     {
@@ -33,7 +34,13 @@ public class AdscTrackDisplay(IClock clock, PluginConfiguration configuration)
         var shownTrack = _tracks.AddOrUpdate(
             report.Callsign,
             track,
-            (_, existing) => existing.Report.Timestamp > report.Timestamp ? existing : track);
+            (_, existing) =>
+            {
+                var replacesVatsimReport = report.Source == AdscReportSource.Hoppie &&
+                    existing.Report.Source == AdscReportSource.VATSIM;
+
+                return !replacesVatsimReport && existing.Report.Timestamp > report.Timestamp ? existing : track;
+            });
 
         if (!ReferenceEquals(shownTrack, track))
             return;

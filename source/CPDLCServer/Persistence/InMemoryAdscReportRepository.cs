@@ -13,12 +13,26 @@ public class InMemoryAdscReportRepository : IAdscReportRepository
     {
         using (await _semaphore.LockAsync(cancellationToken))
         {
-            // An aircraft can report to more than one ATSU, so reports can arrive out of order
-            if (_reports.TryGetValue(report.Callsign, out var existing) &&
-                existing.Report.Timestamp > report.Report.Timestamp)
-                return;
+            if (_reports.TryGetValue(report.Callsign, out var existing))
+            {
+                // A report from Hoppie always replaces a report from VATSIM
+                var replacesVatsimReport = report.Report.Source == AdscReportSource.Hoppie &&
+                    existing.Report.Source == AdscReportSource.VATSIM;
+
+                // An aircraft can report to more than one ATSU, so reports can arrive out of order
+                if (!replacesVatsimReport && existing.Report.Timestamp > report.Report.Timestamp)
+                    return;
+            }
 
             _reports[report.Callsign] = report;
+        }
+    }
+
+    public async Task<AircraftAdscReport?> Find(string callsign, CancellationToken cancellationToken)
+    {
+        using (await _semaphore.LockAsync(cancellationToken))
+        {
+            return _reports.GetValueOrDefault(callsign);
         }
     }
 

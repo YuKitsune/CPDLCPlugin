@@ -6,6 +6,14 @@
 
     string FormatInterval(TimeSpan? interval) => interval is null ? "-" : $"{interval.Value.TotalMinutes:0.#} min";
 
+    // A star shows that the contract uses the VATSIM status data
+    string FormatReportSource(AdscReportSource? source) => source switch
+    {
+        AdscReportSource.Hoppie => "Hoppie",
+        AdscReportSource.VATSIM => "★ VATSIM",
+        _ => "-"
+    };
+
     string GetStateBadgeClass(AdscContractState? state) => state switch
     {
         AdscContractState.Sent => "bg-info",
@@ -47,6 +55,7 @@
                             <th>Selected</th>
                             <th>Selected Ends</th>
                             <th>Demand</th>
+                            <th>Report Source</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -61,6 +70,7 @@
                                 <td><span class="badge @GetStateBadgeClass(contract.SelectedContractState)">@(contract.SelectedContractState?.ToString() ?? "-")</span></td>
                                 <td>@(contract.SelectedContractEnds?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</td>
                                 <td><span class="badge @GetStateBadgeClass(contract.DemandContractState)">@(contract.DemandContractState?.ToString() ?? "-")</span></td>
+                                <td>@FormatReportSource(Model.ReportSources.TryGetValue(contract.Callsign, out var source) ? source : null)</td>
                             </tr>
                         }
                     </tbody>

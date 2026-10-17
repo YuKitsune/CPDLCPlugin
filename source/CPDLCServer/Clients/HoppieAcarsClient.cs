@@ -469,7 +469,8 @@ public class HoppieAcarsClient : IAcarsClient
                     ParseAdscTimestamp(parts[2]),
                     latitude,
                     longitude,
-                    ParseAdscAltitude(parts[5]));
+                    ParseAdscAltitude(parts[5]),
+                    AdscReportSource.Hoppie);
 
                 return new ReceivedAdscReport(from, report, _clock.UtcNow());
 

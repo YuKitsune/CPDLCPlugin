@@ -54,6 +54,14 @@ Acars__0__SelectedAdscContractDuration=60
 # Handoff Configuration
 # How many minutes before the expected transfer time to send the NEXT DATA AUTHORITY message (default: 10)
 Handoff__NotificationLeadTime=10
+
+# ADS-C from VATSIM status data
+# Make ADS-C reports from the VATSIM status data when Hoppie does not supply them (default: false)
+VatsimStatus__Enabled=false
+# The URL of the VATSIM status data (default: https://data.vatsim.net/v3/vatsim-data.json)
+VatsimStatus__Url=https://data.vatsim.net/v3/vatsim-data.json
+# Also make reports for aircraft that do not have D1 or G1 in Item 10b of the flight plan (default: false)
+VatsimStatus__AllowNonEquippedAircraft=false
 ```
 
 ### Multiple ACARS Connections
@@ -94,7 +102,28 @@ The aircraft does not acknowledge a request. The first report after a request ac
 
 The server keeps the latest report for each aircraft. When a controller connects, the plugin loads these reports, so that the controller sees the ADS-C tracks immediately.
 
-The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, and a log of all the ADS-C messages that the server sent and received.
+The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, the source of the latest report for each aircraft, and a log of all the ADS-C messages that the server sent and received.
+
+The minimum reporting interval is 2 minutes.
+
+### ADS-C from VATSIM Status Data
+
+Hoppie does not supply ADS-C reports from all aircraft. When `VatsimStatus__Enabled` is `true`, the server makes ADS-C reports from the [VATSIM status data](https://data.vatsim.net/v3/vatsim-data.json) for these aircraft.
+
+The server downloads the VATSIM status data every 2 minutes. Then it makes a report for each aircraft that has a contract, when all of these conditions are true:
+
+- The contract is not rejected.
+- The contract needs a report: a demand request was sent, or a periodic report is due.
+- There is no report from Hoppie, or the latest report from Hoppie is more than two reporting intervals late.
+- The aircraft is in the VATSIM status data.
+- The aircraft has `D1` or `G1` in Item 10b of the flight plan, or `VatsimStatus__AllowNonEquippedAircraft` is `true`. An aircraft without a flight plan is not equipped.
+
+A report from the VATSIM status data accepts the contract, the same as a report from the aircraft. The time of the report is the time that VATSIM last updated the position of the aircraft.
+
+The server continues to send all the requests to the aircraft through Hoppie. A report from Hoppie always replaces a report from the VATSIM status data, and stops the VATSIM reports. If the Hoppie reports stop for more than two reporting intervals, the VATSIM reports start again. A demand request without a periodic contract has no reporting interval. Thus, after a report from Hoppie, the server does not use the VATSIM status data for a demand-only contract.
+
+Each report has a source: `Hoppie` or `VATSIM`.
+
 ## Running
 
 ### Docker
