@@ -15,7 +15,7 @@ public class RequestAdscDemandReportRequestHandler(
         logger.Verbose("Requesting ADS-C demand report for {Callsign}", request.Callsign);
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
         {
-            logger.Warning("Not connected to server");
+            logger.Warning("Cannot request ADS-C demand report for {Callsign}: not connected to server", request.Callsign);
             return;
         }
 
