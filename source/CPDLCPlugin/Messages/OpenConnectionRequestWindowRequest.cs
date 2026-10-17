@@ -41,7 +41,6 @@ public class OpenConnectionRequestWindowRequestHandler(
             {
                 form.HasMinimizeButton = false;
                 form.MinimizeBox = false;
-                form.HasCloseButton = false;
                 form.HasSendBackButton = false;
             });
 
