@@ -63,7 +63,7 @@ public partial class ADSContractViewModel : ObservableObject,
         _guiInvoker = null!;
         _errorReporter = null!;
 
-        _callsign = "QFA123";
+        _callsign = "QFA123AB";
         CurrentPeriodMinutes = 5;
         LastReport = DateTimeOffset.UtcNow.AddMinutes(-2);
 

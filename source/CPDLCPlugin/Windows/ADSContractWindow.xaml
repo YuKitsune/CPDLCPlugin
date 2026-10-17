@@ -11,8 +11,8 @@
         d:DataContext="{d:DesignInstance Type=viewModels:ADSContractViewModel, IsDesignTimeCreatable=True}"
         mc:Ignorable="d"
         Title="ADS CONTRACT WINDOW"
-        Height="220"
-        Width="640"
+        Height="Auto"
+        Width="Auto"
         SizeToContent="Height"
         ResizeMode="NoResize">
     <Window.Resources>
@@ -37,10 +37,10 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="32"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="64"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <!-- Callsign -->
@@ -49,7 +49,7 @@
                        Margin="0,0,8,0"
                        Text="ACID:"/>
 
-            <Grid Grid.Column="1" Width="120" Height="32">
+            <Grid Grid.Column="1" Width="80" Height="24">
                 <TextBox x:Name="CallsignTextBox"
                          CharacterCasing="Upper"
                          Text="{Binding Callsign, UpdateSourceTrigger=PropertyChanged}"
@@ -67,17 +67,17 @@
             <TextBlock Grid.Column="2"
                        Style="{StaticResource GenericTextStyle}"
                        HorizontalAlignment="Right"
-                       Margin="16,0,16,0"
+                       Margin="24,0,16,0"
                        Text="Current Period"/>
 
             <Border
                 Grid.Column="3"
                 BorderBrush="{x:Static local:Theme.GenericTextColor}"
                 BorderThickness="1"
-                Height="32">
+                Height="24">
                 <TextBlock
                    Style="{StaticResource GenericTextStyle}"
-                   Margin="0,0,8,0"
+                   Margin="8,0,8,0"
                    HorizontalAlignment="Center"
                    Text="{Binding CurrentPeriodMinutes}"/>
             </Border>
@@ -86,36 +86,37 @@
             <TextBlock Grid.Column="4"
                        Style="{StaticResource GenericTextStyle}"
                        HorizontalAlignment="Right"
-                       Margin="16,0,16,0"
+                       Margin="24,0,16,0"
                        Text="Last Report"/>
 
             <Border
                 Grid.Column="5"
                 BorderBrush="{x:Static local:Theme.GenericTextColor}"
                 BorderThickness="1"
-                Height="32">
+                Height="24">
                 <TextBlock
                     Style="{StaticResource GenericTextStyle}"
-                    Margin="0,0,8,0"
+                    Margin="8,0,8,0"
                     HorizontalAlignment="Center"
                     Text="{Binding LastReport, Converter={StaticResource TimeConverter}}"/>
             </Border>
         </Grid>
 
+        <!-- Divider -->
         <controls:BeveledLine Grid.Row="1" Height="{x:Static local:Theme.BeveledLineWidth}" Orientation="Horizontal" Flipped="true"/>
 
         <!-- Period Details -->
         <Grid Grid.Row="2" Margin="16">
             <Grid.RowDefinitions>
-                <RowDefinition Height="40"/>
-                <RowDefinition Height="40"/>
-                <RowDefinition Height="40"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="32"/>
-                <ColumnDefinition Width="64"/>
+                <ColumnDefinition Width="24"/>
+                <ColumnDefinition Width="56"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -132,10 +133,10 @@
             <Border Grid.Row="0" Grid.Column="2"
                 BorderBrush="{x:Static local:Theme.GenericTextColor}"
                 BorderThickness="1"
-                Height="32">
+                Height="24">
                 <TextBlock
                     Style="{StaticResource GenericTextStyle}"
-                    Margin="0,0,8,0"
+                    Margin="8,0,8,0"
                     HorizontalAlignment="Center"
                     Text="{Binding DefaultPeriod}"/>
             </Border>
@@ -205,10 +206,10 @@
             <Border Grid.Row="2" Grid.Column="2"
                     BorderBrush="{x:Static local:Theme.GenericTextColor}"
                     BorderThickness="1"
-                    Height="32">
+                    Height="24">
                 <TextBlock
                     Style="{StaticResource GenericTextStyle}"
-                    Margin="0,0,8,0"
+                    Margin="8,0,8,0"
                     HorizontalAlignment="Center"
                     Text="{Binding SelectedPeriodEndTime, Converter={StaticResource TimeConverter}}"/>
             </Border>
@@ -228,7 +229,7 @@
 
                 <Button Grid.Column="1"
                         Style="{StaticResource ButtonBaseStyle}"
-                        Width="80" Height="48"
+                        Width="80" Height="40"
                         HorizontalAlignment="Left"
                         Command="{Binding RequestDemandReportCommand}">
                     <TextBlock Text="Demand Contract" TextWrapping="Wrap" TextAlignment="Center"/>
