@@ -31,6 +31,23 @@ public class AdscReportStore
         }
     }
 
+    public async Task Populate(AdscReportDto[] reports, CancellationToken cancellationToken = default)
+    {
+        await _semaphore.WaitAsync(cancellationToken);
+        try
+        {
+            _latestReports.Clear();
+            foreach (var report in reports)
+            {
+                _latestReports[report.Callsign] = report;
+            }
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
     public async Task<AdscReportDto?> Find(string callsign, CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken);

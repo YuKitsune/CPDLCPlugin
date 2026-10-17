@@ -279,6 +279,14 @@ public class SignalRConnectionManager(
             cancellationToken);
     }
 
+    public async Task<AdscReportDto[]> GetAdscReports(CancellationToken cancellationToken)
+    {
+        var connection = GetConnectedOrThrow();
+        return await connection.InvokeAsync<AdscReportDto[]>(
+            "GetAdscReports",
+            cancellationToken);
+    }
+
     public async Task<DialogueDto[]> GetAllDialogues(CancellationToken cancellationToken)
     {
         var connection = GetConnectedOrThrow();

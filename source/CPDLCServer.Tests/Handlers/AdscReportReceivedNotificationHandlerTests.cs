@@ -28,7 +28,8 @@ public class AdscReportReceivedNotificationHandlerTests
         var clientProxy = Substitute.For<IClientProxy>();
         hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
 
-        var handler = new AdscReportReceivedNotificationHandler(controllerRepository, hubContext, Logger.None);
+        var handler = new AdscReportReceivedNotificationHandler(
+            new TestAdscReportRepository(), controllerRepository, hubContext, Logger.None);
 
         var timestamp = new DateTimeOffset(2026, 10, 13, 11, 55, 0, TimeSpan.Zero);
         var received = timestamp.AddSeconds(40);
@@ -61,7 +62,7 @@ public class AdscReportReceivedNotificationHandlerTests
         // Arrange
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
         var handler = new AdscReportReceivedNotificationHandler(
-            new TestControllerRepository(), hubContext, Logger.None);
+            new TestAdscReportRepository(), new TestControllerRepository(), hubContext, Logger.None);
 
         var notification = new AdscReportReceivedNotification(
             "UAL123",
@@ -74,5 +75,27 @@ public class AdscReportReceivedNotificationHandlerTests
 
         // Assert
         hubContext.Clients.DidNotReceive().Clients(Arg.Any<IReadOnlyList<string>>());
+    }
+
+    [Fact]
+    public async Task Handle_StoresReportWhenNoControllersConnected()
+    {
+        // Arrange
+        var reportRepository = new TestAdscReportRepository();
+        var handler = new AdscReportReceivedNotificationHandler(
+            reportRepository, new TestControllerRepository(), Substitute.For<IHubContext<ControllerHub>>(), Logger.None);
+
+        var timestamp = new DateTimeOffset(2026, 10, 13, 11, 55, 0, TimeSpan.Zero);
+        var report = new AdscReport(timestamp, -33.9461, 151.1772, 37000);
+        var received = timestamp.AddSeconds(40);
+        var notification = new AdscReportReceivedNotification("UAL123", "YBBB", report, received);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(
+            [new AircraftAdscReport("UAL123", "YBBB", report, received)],
+            await reportRepository.All(CancellationToken.None));
     }
 }

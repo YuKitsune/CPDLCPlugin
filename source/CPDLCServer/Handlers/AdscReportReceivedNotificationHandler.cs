@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace CPDLCServer.Handlers;
 
 public class AdscReportReceivedNotificationHandler(
+    IAdscReportRepository adscReportRepository,
     IControllerRepository controllerRepository,
     IHubContext<ControllerHub> hubContext,
     ILogger logger)
@@ -15,6 +16,11 @@ public class AdscReportReceivedNotificationHandler(
 {
     public async Task Handle(AdscReportReceivedNotification notification, CancellationToken cancellationToken)
     {
+        // Keep the report, so that controllers who connect later can load it
+        await adscReportRepository.Add(
+            new AircraftAdscReport(notification.Callsign, notification.StationId, notification.Report, notification.Received),
+            cancellationToken);
+
         var controllers = await controllerRepository.All(cancellationToken);
         if (controllers.Length == 0)
         {
