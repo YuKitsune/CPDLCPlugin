@@ -2,6 +2,7 @@ using CPDLCPlugin.Configuration;
 using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
 using System.Drawing;
+using System.Windows.Forms;
 using MediatR;
 
 namespace CPDLCPlugin.Messages;
@@ -38,7 +39,7 @@ public class OpenHistoryWindowRequestHandler(
                 // Only the height can change
                 form.Size = new Size(467, 320);
                 form.MinimumSize = new Size(467, 24);
-                form.MaximumSize = new Size(467, 0);
+                form.MaximumSize = new Size(467, SystemInformation.VirtualScreen.Height);
             });
 
         return Task.CompletedTask;
