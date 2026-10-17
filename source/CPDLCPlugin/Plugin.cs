@@ -93,6 +93,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton<IClock>(new SystemClock())
             .AddSingleton<IGuiInvoker, GuiInvoker>()
             .AddSingleton<IErrorReporter, ErrorReporter>()
+            .AddSingleton<IServerConnection, PluginServerConnection>()
             .AddSingleton<IJurisdictionChecker, JurisdictionChecker>()
             .AddSingleton<AircraftConnectionStore>()
             .AddSingleton<AcarsStationStore>()
@@ -209,7 +210,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
                 continue;
 
             var mediator = ServiceProvider.GetRequiredService<IMediator>();
-            await mediator.Send(new UpdateNextDataAuthorityForFdrRequest(fdr));
+            await mediator.Send(new UpdateNextDataAuthorityRequest(fdr.Callsign, fdr.GetSectorEntries()));
         }
     }
 
@@ -482,7 +483,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             _workQueue.Enqueue(async () =>
             {
                 var handoffMediator = ServiceProvider.GetRequiredService<IMediator>();
-                await handoffMediator.Send(new UpdateNextDataAuthorityForFdrRequest(updated));
+                await handoffMediator.Send(new UpdateNextDataAuthorityRequest(updated.Callsign, updated.GetSectorEntries()));
             });
 
             // Re-build the CPDLC status label items
