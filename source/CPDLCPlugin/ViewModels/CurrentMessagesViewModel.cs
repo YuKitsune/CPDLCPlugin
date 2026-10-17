@@ -40,8 +40,8 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
 
         WeakReferenceMessenger.Default.Register(this);
 
-        // Initial load
-        _ = LoadDialoguesAsync();
+        // Initial load. The window stays open when there are no messages, so that it can open empty.
+        _ = LoadDialoguesAsync(closeIfEmpty: false);
     }
 
     public void Dispose()
@@ -534,7 +534,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
     [ObservableProperty]
     CurrentMessageViewModel? currentlyExtendedMessage;
 
-    async Task LoadDialoguesAsync()
+    async Task LoadDialoguesAsync(bool closeIfEmpty)
     {
         try
         {
@@ -558,7 +558,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             }
 
             // Close the window if there are no messages left
-            if (Dialogues.Count == 0)
+            if (closeIfEmpty && Dialogues.Count == 0)
             {
                 _windowHandle.Close();
             }
@@ -579,7 +579,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             if (_disposed)
                 return;
 
-            await LoadDialoguesAsync();
+            await LoadDialoguesAsync(closeIfEmpty: true);
         });
     }
 
