@@ -88,6 +88,17 @@ public class Dialogue
         Archived = now;
     }
 
+    // Close all open messages when no response can arrive (e.g. the aircraft connection is lost)
+    public void Abort(DateTimeOffset now)
+    {
+        foreach (var message in _messages.Where(m => !m.IsClosed))
+        {
+            message.Close(now);
+        }
+
+        TryClose(now);
+    }
+
     public void AcknowledgeDownlink(int downlinkMessageId, DateTimeOffset now)
     {
         var downlink = _messages.OfType<DownlinkMessage>()

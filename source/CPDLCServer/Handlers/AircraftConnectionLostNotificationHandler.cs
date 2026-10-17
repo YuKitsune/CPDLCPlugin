@@ -83,6 +83,7 @@ public class AircraftConnectionLostNotificationHandler(
                     notification.Callsign,
                     cancellationToken);
 
+                var now = clock.UtcNow();
                 dialogue.AddDownlink(
                     messageId,
                     openMessage.MessageId,
@@ -90,7 +91,10 @@ public class AircraftConnectionLostNotificationHandler(
                     CpdlcDownlinkResponseType.NoResponse,
                     AlertType.Medium,
                     "ERROR CONNECTION TIMED OUT",
-                    clock.UtcNow());
+                    now);
+
+                // No response can arrive, so close the remaining open messages
+                dialogue.Abort(now);
 
                 // Publish DialogueChangedNotification
                 await publisher.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
