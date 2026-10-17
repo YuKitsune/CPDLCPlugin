@@ -66,6 +66,7 @@ public partial class ADSContractViewModel : ObservableObject,
         _callsign = "QFA123AB";
         CurrentPeriodMinutes = 60;
         LastReport = DateTimeOffset.UtcNow.AddMinutes(-2);
+        LastReportSource = AdscReportSource.VATSIM;
 
         DefaultPeriod = 10;
         DefaultPeriodTransmissionState = AdscContractState.Accepted;
@@ -85,6 +86,7 @@ public partial class ADSContractViewModel : ObservableObject,
 
     [ObservableProperty] int? _currentPeriodMinutes;
     [ObservableProperty] DateTimeOffset? _lastReport;
+    [ObservableProperty] AdscReportSource? _lastReportSource;
 
     [ObservableProperty] int? _defaultPeriod;
     [ObservableProperty] AdscContractState? _defaultPeriodTransmissionState;
@@ -113,6 +115,7 @@ public partial class ADSContractViewModel : ObservableObject,
             {
                 ShowContract(null);
                 LastReport = null;
+                LastReportSource = null;
                 return;
             }
 
@@ -124,6 +127,7 @@ public partial class ADSContractViewModel : ObservableObject,
 
             var report = await _adscReportStore.Find(Callsign, CancellationToken.None);
             LastReport = report?.Timestamp;
+            LastReportSource = report?.Source;
         }
         catch (Exception ex)
         {

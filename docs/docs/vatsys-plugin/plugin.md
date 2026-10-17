@@ -196,8 +196,6 @@ The plugin uses the route estimates of the flight plan to calculate the speed of
 The vatSys profile sets how the symbols look, so the exact symbols may vary.
 By default, the `ADSC` symbol is a filled triangle, and the `ADSCExtrapolated` is a hollow triangle.
 
-A squashed diamond symbol shows a  server-generated report using VATSIM data when there is no report from ACARS.
-
 A radar track always has priority. When the flight plan is coupled to a radar track, the plugin does not move the track.
 
 ### ADS Contract Window
@@ -217,6 +215,7 @@ The window shows:
 - **Default Period:** The default reporting interval of your ATSU, in minutes
 - **Selected Period:** The reporting interval that a controller selected, in minutes. `DEF` shows that the default period is selected.
 - **Selected Period End:** The time when the selected contract ends. Then the server requests the default contract again.
+- **Source:** The source of the latest report. `Hoppie` is a report from the aircraft through ACARS. `VATSIM` is a server-generated report using VATSIM data when there is no report from ACARS.
 
 A symbol next to each contract shows the state of the request:
 
