@@ -416,6 +416,26 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
         MMI.AddCustomMenuItem(adsContractMenuItem);
 
+#if DEBUG
+        var editorMenuItem = new CustomToolStripMenuItem(
+            CustomToolStripMenuItemWindowType.Main,
+            menuItemCategory,
+            new ToolStripMenuItem("CPDLC Editor"));
+        editorMenuItem.Item.Click += (_, _) =>
+        {
+            _workQueue.Enqueue(async () =>
+            {
+                var selectedCallsign = MMI.SelectedTrack?.GetFDR()?.Callsign;
+                if (selectedCallsign is null)
+                    throw new InvalidOperationException("Select a track with a flight plan before you open the CPDLC Editor");
+
+                var mediator = ServiceProvider.GetRequiredService<IMediator>();
+                await mediator.Send(new OpenEditorWindowRequest(selectedCallsign));
+            });
+        };
+
+        MMI.AddCustomMenuItem(editorMenuItem);
+
         var fakeAdscReportMenuItem = new CustomToolStripMenuItem(
             CustomToolStripMenuItemWindowType.Main,
             menuItemCategory,
@@ -423,6 +443,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         fakeAdscReportMenuItem.Item.Click += (_, _) => FakeAdscReportPatch.Arm();
 
         MMI.AddCustomMenuItem(fakeAdscReportMenuItem);
+#endif
 
         if (_configuration?.ShowInstallationMenuItems ?? true)
         {
