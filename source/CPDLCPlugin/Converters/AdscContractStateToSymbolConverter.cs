@@ -4,24 +4,25 @@ using CPDLCServer.Contracts;
 
 namespace CPDLCPlugin.Converters;
 
-// Values: the AdscContractState, then true when the server made the latest report from the VATSIM status data
-public class AdscContractStateToSymbolConverter : IMultiValueConverter
+[ValueConversion(typeof(AdscTransmissionState), typeof(string))]
+public class AdscContractStateToSymbolConverter : IValueConverter
 {
-    public object? Convert(object?[] values, Type targetType, object? parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        var isUsingVatsimData = values.Length > 1 && values[1] is true;
+        if (value is not AdscTransmissionState transmissionState)
+            return string.Empty;
 
-        return values[0] switch
+        return transmissionState.State switch
         {
             AdscContractState.Sent => "→",
-            AdscContractState.Accepted when isUsingVatsimData => "★",
+            AdscContractState.Accepted when transmissionState.IsUsingVatsimData => "★",
             AdscContractState.Accepted => "✓",
             AdscContractState.Rejected => "×",
             _ => string.Empty
         };
     }
 
-    public object?[] ConvertBack(object? value, Type[] targetTypes, object? parameter, CultureInfo culture)
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
     }
