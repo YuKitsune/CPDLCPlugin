@@ -22,6 +22,7 @@ public class OpenConnectionRequestWindowRequestHandler(
 
         windowManager.FocusOrCreateWindow(
             WindowKeys.ConnectionRequest,
+            "CPDLC Connection Request",
             windowHandle =>
             {
                 var currentStationIdentifier = plugin.ConnectionManager?.StationIdentifier;
@@ -33,8 +34,15 @@ public class OpenConnectionRequestWindowRequestHandler(
                     pluginConfiguration.Stations,
                     string.IsNullOrEmpty(currentStationIdentifier) ? pluginConfiguration.Stations.First() : currentStationIdentifier!);
 
-                var control = new ConnectionRequestWindow(viewModel);
+                var control = new ConnectionRequestView(viewModel);
                 return control;
+            },
+            configureForm: form =>
+            {
+                form.HasMinimizeButton = false;
+                form.MinimizeBox = false;
+                form.HasCloseButton = false;
+                form.HasSendBackButton = false;
             });
 
         return Task.CompletedTask;
