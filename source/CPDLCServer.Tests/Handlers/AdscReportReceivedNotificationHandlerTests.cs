@@ -36,7 +36,7 @@ public class AdscReportReceivedNotificationHandlerTests
         var notification = new AdscReportReceivedNotification(
             "UAL123",
             "YBBB",
-            new AdscReport(timestamp, -33.9461, 151.1772, 37000, Model.AdscReportSource.Hoppie),
+            new AdscReport(timestamp, -33.9461, 151.1772, 37000, CPDLCServer.Model.AdscReportSource.Hoppie),
             received);
 
         // Act
@@ -67,7 +67,7 @@ public class AdscReportReceivedNotificationHandlerTests
         var notification = new AdscReportReceivedNotification(
             "UAL123",
             "YBBB",
-            new AdscReport(DateTimeOffset.UtcNow, -33.9461, 151.1772, 37000, Model.AdscReportSource.Hoppie),
+            new AdscReport(DateTimeOffset.UtcNow, -33.9461, 151.1772, 37000, CPDLCServer.Model.AdscReportSource.Hoppie),
             DateTimeOffset.UtcNow);
 
         // Act
@@ -86,7 +86,7 @@ public class AdscReportReceivedNotificationHandlerTests
             reportRepository, new TestControllerRepository(), Substitute.For<IHubContext<ControllerHub>>(), Logger.None);
 
         var timestamp = new DateTimeOffset(2026, 10, 13, 11, 55, 0, TimeSpan.Zero);
-        var report = new AdscReport(timestamp, -33.9461, 151.1772, 37000, Model.AdscReportSource.Hoppie);
+        var report = new AdscReport(timestamp, -33.9461, 151.1772, 37000, CPDLCServer.Model.AdscReportSource.Hoppie);
         var received = timestamp.AddSeconds(40);
         var notification = new AdscReportReceivedNotification("UAL123", "YBBB", report, received);
 
