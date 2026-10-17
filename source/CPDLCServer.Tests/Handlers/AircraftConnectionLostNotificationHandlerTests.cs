@@ -271,4 +271,73 @@ public class AircraftConnectionLostNotificationHandlerTests
         Assert.Equal(AlertType.Medium, errorMessage.AlertType);
         Assert.Equal(1, errorMessage.MessageReference); // References the open downlink
     }
+
+    [Fact]
+    public async Task Handle_ClosesOpenDialogue_SoItCanBeArchived()
+    {
+        // Arrange
+        var aircraftManager = new TestAircraftRepository();
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(DateTimeOffset.UtcNow);
+        aircraft.AcceptLogon(DateTimeOffset.UtcNow);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
+
+        var controllerManager = new TestControllerRepository();
+        var controller = new ControllerInfo(
+            Guid.NewGuid(),
+            "ConnectionId-1",
+            "YBBB",
+            "BN-TSN_FSS",
+            "1234567");
+        await controllerManager.Add(controller, CancellationToken.None);
+
+        var dialogueRepository = new TestDialogueRepository();
+        var clock = new TestClock();
+
+        // Create an existing dialogue with an open downlink message
+        var existingDialogue = new Dialogue("UAL123");
+        var openDownlink = existingDialogue.AddDownlink(
+            1,
+            null,
+            "UAL123",
+            CpdlcDownlinkResponseType.ResponseRequired,
+            AlertType.None,
+            "REQUEST DESCENT TO FL350",
+            clock.UtcNow());
+        await dialogueRepository.Add(existingDialogue, CancellationToken.None);
+
+        var messageIdProvider = new TestMessageIdProvider();
+        messageIdProvider.SetNextId(2);
+        var publisher = new TestPublisher();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientProxy = Substitute.For<IClientProxy>();
+        hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
+
+        var handler = new AircraftConnectionLostNotificationHandler(
+            aircraftManager,
+            controllerManager,
+            dialogueRepository,
+            hubContext,
+            messageIdProvider,
+            publisher,
+            clock,
+            Logger.None);
+
+        var notification = new AircraftConnectionLost("hoppies-ybbb", "UAL123");
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - all messages and the dialogue are closed
+        Assert.True(openDownlink.IsClosed);
+        Assert.All(existingDialogue.Messages, m => Assert.True(m.IsClosed));
+        Assert.True(existingDialogue.IsClosed);
+
+        // Act - archive the aborted dialogue
+        var archiveHandler = new ArchiveDialogueCommandHandler(dialogueRepository, clock, publisher, Logger.None);
+        await archiveHandler.Handle(new ArchiveDialogueCommand(existingDialogue.Id), CancellationToken.None);
+
+        // Assert - the dialogue is archived
+        Assert.True(existingDialogue.IsArchived);
+    }
 }
