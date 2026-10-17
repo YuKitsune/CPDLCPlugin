@@ -76,7 +76,11 @@ public class AdscTrackDisplay(IClock clock, PluginConfiguration configuration)
         if (now - track.Shown < _minimumReportedPositionTime)
             return new Coordinate(track.Report.Latitude, track.Report.Longitude);
 
-        var position = AdscExtrapolation.Extrapolate(track.Report, fdr.ParsedRoute.ToList(), now);
+        // Boundary points (ZPOINT) can be at the same position as a waypoint with the same estimate, so use only the waypoints
+        var waypoints = fdr.ParsedRoute
+            .Where(s => s.Type == FDP2.FDR.ExtractedRoute.Segment.SegmentTypes.WAYPOINT)
+            .ToList();
+        var position = AdscExtrapolation.Extrapolate(track.Report, waypoints, now);
 
         // Do not change a newer report that arrived during the extrapolation
         _tracks.TryUpdate(fdr.Callsign, track with { Extrapolated = true }, track);
