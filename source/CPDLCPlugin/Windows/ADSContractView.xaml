@@ -1,0 +1,193 @@
+﻿<UserControl x:Class="CPDLCPlugin.Windows.ADSContractView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:CPDLCPlugin"
+        xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
+        xmlns:controls="clr-namespace:CPDLCPlugin.Controls"
+        xmlns:converters="clr-namespace:CPDLCPlugin.Converters"
+        Background="{x:Static local:Theme.BackgroundColor}"
+        d:DataContext="{d:DesignInstance Type=viewModels:ADSContractViewModel, IsDesignTimeCreatable=True}"
+        mc:Ignorable="d">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/CPDLCPlugin;component/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:AdscContractStateToSymbolConverter x:Key="AdscContractStateToSymbolConverter"/>
+            <converters:TimeConverter x:Key="TimeConverter"/>
+
+            <Style TargetType="TextBlock" BasedOn="{StaticResource GenericTextStyle}"/>
+
+            <Style TargetType="Button" BasedOn="{StaticResource ButtonBaseStyle}">
+                <Setter Property="Height" Value="24"/>
+            </Style>
+
+            <!-- A label in the header -->
+            <Style x:Key="HeaderLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource GenericTextStyle}">
+                <Setter Property="HorizontalAlignment" Value="Right"/>
+                <Setter Property="Margin" Value="24,0,16,0"/>
+            </Style>
+
+            <!-- A label in the period details -->
+            <Style x:Key="PeriodLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource GenericTextStyle}">
+                <Setter Property="Margin" Value="0,0,32,0"/>
+            </Style>
+
+            <!-- A read-only value in a box -->
+            <Style x:Key="ValueBorderStyle" TargetType="Border">
+                <Setter Property="BorderBrush" Value="{x:Static local:Theme.GenericTextColor}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Height" Value="24"/>
+            </Style>
+
+            <Style x:Key="ValueTextStyle" TargetType="TextBlock" BasedOn="{StaticResource GenericTextStyle}">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="8,0"/>
+            </Style>
+
+            <!-- Text in a button. The button sets the font and the color. -->
+            <Style x:Key="WrappingButtonTextStyle" TargetType="TextBlock">
+                <Setter Property="TextWrapping" Value="Wrap"/>
+                <Setter Property="TextAlignment" Value="Center"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="16">
+
+            <!-- Callsign -->
+            <TextBlock Margin="0,0,8,0" Text="ACID:"/>
+
+            <Grid Width="80" Height="24">
+                <TextBox x:Name="CallsignTextBox"
+                         CharacterCasing="Upper"
+                         Text="{Binding Callsign, UpdateSourceTrigger=PropertyChanged}"
+                         VerticalContentAlignment="Center"
+                         KeyDown="CallsignTextBox_KeyDown"
+                         Visibility="Collapsed"/>
+
+                <Button x:Name="CallsignButton"
+                        Content="{Binding CallsignButtonText}"
+                        Click="CallsignButton_Click"/>
+            </Grid>
+
+            <!-- Current Period -->
+            <TextBlock Style="{StaticResource HeaderLabelStyle}" Text="Current Period"/>
+            <Border Style="{StaticResource ValueBorderStyle}" Width="32">
+                <TextBlock Style="{StaticResource ValueTextStyle}" Text="{Binding CurrentPeriodMinutes}"/>
+            </Border>
+
+            <!-- Last Report -->
+            <TextBlock Style="{StaticResource HeaderLabelStyle}" Text="Last Report"/>
+            <Border Style="{StaticResource ValueBorderStyle}" Width="56">
+                <TextBlock Style="{StaticResource ValueTextStyle}"
+                           Text="{Binding LastReport, Converter={StaticResource TimeConverter}}"/>
+            </Border>
+        </StackPanel>
+
+        <!-- Divider -->
+        <controls:BeveledLine Grid.Row="1" Height="{x:Static local:Theme.BeveledLineWidth}" Orientation="Horizontal" Flipped="true"/>
+
+        <!-- Period Details -->
+        <Grid Grid.Row="2" Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="32"/>
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="24"/>
+                <ColumnDefinition Width="56"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Default Period -->
+            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource PeriodLabelStyle}" Text="Default Period"/>
+            <TextBlock Grid.Row="0" Grid.Column="1"
+                       Text="{Binding DefaultPeriodTransmissionState, Converter={StaticResource AdscContractStateToSymbolConverter}}"/>
+            <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource ValueBorderStyle}">
+                <TextBlock Style="{StaticResource ValueTextStyle}" Text="{Binding DefaultPeriod}"/>
+            </Border>
+
+            <!-- Selected Period -->
+            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource PeriodLabelStyle}" Text="Selected Period"/>
+            <TextBlock Grid.Row="1" Grid.Column="1"
+                       Text="{Binding SelectedPeriodTransmissionState, Converter={StaticResource AdscContractStateToSymbolConverter}}"/>
+            <Button x:Name="SelectedPeriodButton"
+                    Grid.Row="1" Grid.Column="2"
+                    Content="{Binding SelectedPeriodButtonText}"
+                    Click="SelectedPeriodButton_Click"/>
+
+            <!-- Period Popup -->
+            <Popup x:Name="PeriodPopup"
+                   PlacementTarget="{Binding ElementName=SelectedPeriodButton}"
+                   Placement="Bottom"
+                   StaysOpen="False"
+                   AllowsTransparency="True">
+                <Border Background="{x:Static local:Theme.BackgroundColor}">
+                    <controls:BeveledBorder BorderThickness="{x:Static local:Theme.BeveledBorderThickness}" BevelType="Outline">
+                        <StackPanel>
+                            <Button Content="DEF"
+                                    Command="{Binding SelectPeriodCommand}"
+                                    Click="PeriodButton_Click"/>
+
+                            <ItemsControl ItemsSource="{Binding PeriodOptions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding}"
+                                                Command="{Binding DataContext.SelectPeriodCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}"
+                                                Click="PeriodButton_Click"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <controls:TextInput x:Name="CustomPeriodInput"
+                                                MaxCharacters="2"
+                                                DigitsOnly="True"
+                                                KeyDown="CustomPeriodInput_KeyDown"/>
+                        </StackPanel>
+                    </controls:BeveledBorder>
+                </Border>
+            </Popup>
+
+            <!-- Selected Period End -->
+            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource PeriodLabelStyle}" Text="Selected Period End"/>
+            <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource ValueBorderStyle}">
+                <TextBlock Style="{StaticResource ValueTextStyle}"
+                           Text="{Binding SelectedPeriodEndTime, Converter={StaticResource TimeConverter}}"/>
+            </Border>
+
+            <!-- Demand Contract -->
+            <Grid Grid.Row="0" Grid.Column="3" Grid.RowSpan="3" Margin="16,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="48"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           HorizontalAlignment="Center"
+                           Text="{Binding DemandContractTransmissionState, Converter={StaticResource AdscContractStateToSymbolConverter}}"/>
+
+                <Button Grid.Column="1"
+                        Width="80" Height="40"
+                        HorizontalAlignment="Left"
+                        Command="{Binding RequestDemandReportCommand}">
+                    <TextBlock Style="{StaticResource WrappingButtonTextStyle}" Text="Demand Contract"/>
+                </Button>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

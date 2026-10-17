@@ -1,11 +1,11 @@
-﻿using System.Windows;
+﻿using System.Windows.Controls;
 using CPDLCPlugin.ViewModels;
 
 namespace CPDLCPlugin.Windows;
 
-public partial class SetupWindow : Window
+public partial class SetupView : UserControl
 {
-    public SetupWindow(SetupViewModel viewModel)
+    public SetupView(SetupViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;

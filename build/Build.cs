@@ -176,9 +176,15 @@ class Build : FalloutBuild
         .Executes(() =>
         {
             var mainAssembly = PluginBuildOutputDirectory / PluginAssemblyFileName;
+            AbsolutePath[] nonMergedAssemblies =
+            [
+                // ILRepack cannot merge Harmony, so it stays as a separate file next to the plugin
+                PluginBuildOutputDirectory / "0Harmony.dll"
+            ];
+            
             var assembliesToMerge = PluginBuildOutputDirectory
                 .GlobFiles("*.dll")
-                .Except([mainAssembly])
+                .Except([mainAssembly, ..nonMergedAssemblies])
                 .ToArray();
 
             if (!mainAssembly.FileExists())

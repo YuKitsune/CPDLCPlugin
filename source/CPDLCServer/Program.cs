@@ -33,6 +33,9 @@ builder.Services.AddSingleton<IMessageIdProvider, MessageIdProvider>();
 builder.Services.AddSingleton<IAircraftRepository, InMemoryAircraftRepository>();
 builder.Services.AddSingleton<IAcarsStationRepository, InMemoryAcarsStationRepository>();
 builder.Services.AddSingleton<IDialogueRepository, InMemoryDialogueRepository>();
+builder.Services.AddSingleton<IAdscContractRepository, InMemoryAdscContractRepository>();
+builder.Services.AddSingleton<IAdscMessageLogRepository, InMemoryAdscMessageLogRepository>();
+builder.Services.AddSingleton<IAdscReportRepository, InMemoryAdscReportRepository>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddSignalR()
     .AddJsonProtocol();
@@ -40,6 +43,7 @@ builder.Services.AddRazorPages();
 
 builder.Services.AddHostedService<AcarsConnectivityCheckService>();
 builder.Services.AddHostedService<LostConnectionService>();
+builder.Services.AddHostedService<AdscContractExpiryService>();
 builder.Services.AddHostedService<MessageMonitorService>();
 builder.Services.AddHostedService<NdaUplinkService>();
 

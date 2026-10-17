@@ -69,6 +69,9 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         _configuration = configuration;
         ConfigureServices(configuration);
 
+        ApplyAdscTrackPatches();
+        ApplyFakeAdscReportPatch();
+
         AddToolbarItems();
 
         CheckXmlInstallation();
@@ -97,6 +100,10 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton<IJurisdictionChecker, JurisdictionChecker>()
             .AddSingleton<AircraftConnectionStore>()
             .AddSingleton<AcarsStationStore>()
+            .AddSingleton<AdscContractStore>()
+            .AddSingleton<AdscReportStore>()
+            .AddSingleton<AdscTrackDisplay>()
+            .AddSingleton<AtsuSettingsStore>()
             .AddSingleton<WindowManager>()
             .AddSingleton<DialogueStore>()
             .AddSingleton<SuspendedMessageStore>()
@@ -122,6 +129,63 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         Log.Logger = logger;
 
         return logger;
+    }
+
+    void ApplyAdscTrackPatches()
+    {
+        try
+        {
+            AdscTrackPatches.Apply(ServiceProvider.GetRequiredService<AdscTrackDisplay>());
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Cannot show ADS-C tracks on the ASD");
+        }
+    }
+
+    void ApplyFakeAdscReportPatch()
+    {
+        try
+        {
+            FakeAdscReportPatch.Apply(SendFakeAdscReport);
+        }
+        catch (Exception ex)
+        {
+            AddError(ex, "Cannot use fake ADS-C reports");
+        }
+    }
+
+    // Runs on the UI thread when the ASD is clicked
+    void SendFakeAdscReport(Coordinate position)
+    {
+        var fdr = MMI.SelectedTrack?.GetFDR();
+        if (fdr is null)
+            throw new InvalidOperationException("Select a track with a flight plan before you send a fake ADS-C report");
+
+        if (fdr.PRL == -1)
+            throw new InvalidOperationException($"{fdr.Callsign} has no reported level");
+
+        var now = DateTimeOffset.UtcNow;
+        var report = new CPDLCServer.Contracts.AdscReportDto(
+            fdr.Callsign,
+            ConnectionManager?.StationIdentifier ?? string.Empty,
+            now,
+            position.Latitude,
+            position.Longitude,
+            fdr.PRL,
+            now);
+
+        Log.Information("Sending fake ADS-C report for {Callsign} at {Latitude} {Longitude} {Altitude}",
+            report.Callsign,
+            report.Latitude,
+            report.Longitude,
+            report.Altitude);
+
+        _workQueue.Enqueue(async () =>
+        {
+            var mediator = ServiceProvider.GetRequiredService<IMediator>();
+            await mediator.Publish(new AdscReportReceivedNotification(report));
+        });
     }
 
     void NetworkConnected(object sender, EventArgs e)
@@ -335,6 +399,52 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         };
 
         MMI.AddCustomMenuItem(historyMenuItem);
+
+        var adsContractMenuItem = new CustomToolStripMenuItem(
+            CustomToolStripMenuItemWindowType.Main,
+            menuItemCategory,
+            new ToolStripMenuItem("ADS Contract"));
+        adsContractMenuItem.Item.Click += (_, _) =>
+        {
+            _workQueue.Enqueue(async () =>
+            {
+                var selectedCallsign = MMI.SelectedTrack?.GetFDR()?.Callsign;
+
+                var mediator = ServiceProvider.GetRequiredService<IMediator>();
+                await mediator.Send(new OpenADSContractWindowRequest(selectedCallsign));
+            });
+        };
+
+        MMI.AddCustomMenuItem(adsContractMenuItem);
+
+#if DEBUG
+        var editorMenuItem = new CustomToolStripMenuItem(
+            CustomToolStripMenuItemWindowType.Main,
+            menuItemCategory,
+            new ToolStripMenuItem("CPDLC Editor"));
+        editorMenuItem.Item.Click += (_, _) =>
+        {
+            _workQueue.Enqueue(async () =>
+            {
+                var selectedCallsign = MMI.SelectedTrack?.GetFDR()?.Callsign;
+                if (selectedCallsign is null)
+                    throw new InvalidOperationException("Select a track with a flight plan before you open the CPDLC Editor");
+
+                var mediator = ServiceProvider.GetRequiredService<IMediator>();
+                await mediator.Send(new OpenEditorWindowRequest(selectedCallsign));
+            });
+        };
+
+        MMI.AddCustomMenuItem(editorMenuItem);
+
+        var fakeAdscReportMenuItem = new CustomToolStripMenuItem(
+            CustomToolStripMenuItemWindowType.Main,
+            menuItemCategory,
+            new ToolStripMenuItem("Fake ADS-C Report"));
+        fakeAdscReportMenuItem.Item.Click += (_, _) => FakeAdscReportPatch.Arm();
+
+        MMI.AddCustomMenuItem(fakeAdscReportMenuItem);
+#endif
 
         if (_configuration?.ShowInstallationMenuItems ?? true)
         {

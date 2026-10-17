@@ -1,6 +1,7 @@
 using CPDLCPlugin.Configuration;
 using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
+using System.Drawing;
 using MediatR;
 
 namespace CPDLCPlugin.Messages;
@@ -21,6 +22,7 @@ public class OpenCurrentMessagesWindowRequestHandler(
     {
         windowManager.FocusOrCreateWindow(
             WindowKeys.CurrentMessages,
+            "Current Messages",
             windowHandle =>
             {
                 var viewModel = new CurrentMessagesViewModel(
@@ -32,7 +34,13 @@ public class OpenCurrentMessagesWindowRequestHandler(
                     windowHandle,
                     jurisdictionChecker);
 
-                return new CurrentMessagesWindow(viewModel);
+                return new CurrentMessagesView(viewModel, windowHandle);
+            },
+            sizeToContent: false,
+            configureForm: form =>
+            {
+                form.Size = new Size(467, 320);
+                form.MinimumSize = new Size(140, 24);
             });
 
         return Task.CompletedTask;

@@ -223,6 +223,107 @@ public class ControllerHub(
             nextDataAuthority ?? "(none)");
     }
 
+    public async Task<AtsuSettingsDto> GetAtsuSettings()
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
+
+        return await mediator.Send(new GetAtsuSettingsRequest(controller.StationId));
+    }
+
+    // A null reporting interval ends the selected contract and requests the default contract again
+    public async Task RequestPeriodicAdscContract(string callsign, TimeSpan? reportingInterval)
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
+
+        if (reportingInterval is null)
+        {
+            await mediator.Send(new RequestDefaultAdscContractCommand(controller.StationId, callsign));
+        }
+        else
+        {
+            await mediator.Send(new RequestSelectedAdscContractCommand(
+                controller.StationId,
+                callsign,
+                reportingInterval.Value));
+        }
+
+        _logger.Information(
+            "Controller {Callsign} requested periodic ADS-C contract with {AircraftCallsign} (Interval: {ReportingInterval})",
+            controller.Callsign,
+            callsign,
+            reportingInterval?.ToString() ?? "Default");
+    }
+
+    public async Task RequestAdscDemandReport(string callsign)
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
+
+        await mediator.Send(new RequestAdscDemandReportCommand(controller.StationId, callsign));
+
+        _logger.Information(
+            "Controller {Callsign} requested ADS-C demand report from {AircraftCallsign}",
+            controller.Callsign,
+            callsign);
+    }
+
+    public async Task CancelAdscContract(string callsign)
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
+
+        await mediator.Send(new CancelAdscContractCommand(controller.StationId, callsign));
+
+        _logger.Information(
+            "Controller {Callsign} cancelled ADS-C contract with {AircraftCallsign}",
+            controller.Callsign,
+            callsign);
+    }
+
+    public async Task<AdscContractDto[]> GetAdscContracts()
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
+
+        var result = await mediator.Send(new GetAdscContractsRequest());
+        return result.Contracts;
+    }
+
+    public async Task<AdscReportDto[]> GetAdscReports()
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
+
+        var result = await mediator.Send(new GetAdscReportsRequest());
+        return result.Reports;
+    }
+
     public async Task<DialogueDto[]> GetAllDialogues()
     {
         var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);

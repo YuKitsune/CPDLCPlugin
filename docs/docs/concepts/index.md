@@ -233,6 +233,75 @@ sequenceDiagram
     Note over YBBB,Pilot: Dialogue closes, connection terminates
 ```
 
+## ADS-C
+
+Automatic Dependent Surveillance - Contract (ADS-C) lets a ground station get position reports from an aircraft by data link.
+Controllers use ADS-C to see aircraft that are outside radar coverage, such as aircraft over the ocean.
+
+The aircraft sends reports automatically. The pilot does not have to do anything.
+Each report has the position, the altitude, and the time of the report.
+
+:::note
+ADS-C and CPDLC are separate systems. An aircraft can have an ADS-C contract with a ground station without a CPDLC connection.
+For convenience, this plugin connects ADS-C to CPDLC. The server requests an ADS-C contract when an aircraft logs on with CPDLC, and cancels the contract when the CPDLC connection ends.
+:::
+
+### Contracts
+
+The ground station requests a **contract** with the aircraft. The contract tells the aircraft when to send reports.
+The plugin uses these types of contract:
+
+- **Periodic contract:** The aircraft sends a report at a fixed interval, for example, each 10 minutes
+- **Demand contract:** The aircraft sends one report immediately
+
+An aircraft has only one periodic contract with each ground station. A new periodic request replaces the previous one.
+
+:::note
+Event contracts are not supported.
+:::
+
+### Default and Selected Contracts
+
+Each ATSU has a **default reporting interval**.
+When an aircraft logs on with CPDLC, the server automatically requests a periodic contract with the default reporting interval. This is the **default contract**.
+
+A controller can select a different reporting interval for an aircraft, for example, a shorter interval near a conflict. This is the **selected contract**.
+A selected contract ends after a fixed time. Then the server requests the default contract again.
+
+```mermaid
+sequenceDiagram
+    participant Pilot
+    participant ATSU
+
+    Pilot->>ATSU: REQUEST LOGON
+    ATSU->>Pilot: LOGON ACCEPTED
+    ATSU->>Pilot: Periodic contract (default interval)
+    Pilot->>ATSU: Report
+    Note over ATSU,Pilot: Default contract accepted
+    ATSU->>Pilot: Periodic contract (selected interval)
+    Pilot->>ATSU: Report
+    Note over ATSU,Pilot: Selected contract accepted
+    Note over ATSU,Pilot: Selected contract ends
+    ATSU->>Pilot: Periodic contract (default interval)
+```
+
+When the CPDLC connection ends, the server cancels the contract.
+
+### Contract State
+
+Each request has one of these states:
+
+| State | Description |
+| :---: | ----------- |
+| Sent | The request was sent to the aircraft. The aircraft has not answered. |
+| Accepted | The aircraft sent a report after the request. |
+| Rejected | The aircraft rejected the request. |
+
+The aircraft does not acknowledge a request. The first report after a request accepts that request.
+
+If the aircraft rejects a selected contract, the server requests the default contract again.
+If the aircraft rejects the default contract, the server does not request it again.
+
 ## CPDLC on VATSIM
 
 VATSIM does not have an official CPDLC solution, though one is in development. In the meantime, CPDLC for flight simulation networks typically uses Hoppie's ACARS network.
@@ -246,6 +315,9 @@ This can lead to incompatibilities between different implementations.
 Stations connected to Hoppie's network poll for messages at regular intervals.
 Messages are not received instantly by the recipient.
 It may take up to one minute for a message to reach the pilot, and another minute for a response to return.
+
+This delay also applies to ADS-C. A report can arrive up to one minute after its report time, and a demand report can take up to two minutes to arrive.
+For this reason, the shortest reporting interval is one minute.
 
 ### Aggregation Server
 

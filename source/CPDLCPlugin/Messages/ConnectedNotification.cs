@@ -11,6 +11,10 @@ public class ConnectedNotificationHandler(
     DialogueStore dialogueStore,
     AircraftConnectionStore aircraftConnectionStore,
     AcarsStationStore acarsStationStore,
+    AdscContractStore adscContractStore,
+    AdscReportStore adscReportStore,
+    AdscTrackDisplay adscTrackDisplay,
+    AtsuSettingsStore atsuSettingsStore,
     ILogger logger)
     : INotificationHandler<ConnectedNotification>
 {
@@ -22,6 +26,15 @@ public class ConnectedNotificationHandler(
             logger.Warning("Not connected to server");
             return;
         }
+
+        // Load ATSU settings
+        logger.Verbose("Loading ATSU settings");
+        var atsuSettings = await plugin.ConnectionManager.GetAtsuSettings(cancellationToken);
+        atsuSettingsStore.Set(atsuSettings);
+        logger.Information(
+            "Loaded ATSU settings for {StationId} (Default ADS-C reporting interval: {DefaultAdscReportingInterval})",
+            atsuSettings.StationId,
+            atsuSettings.DefaultAdscReportingInterval);
 
         // Load dialogues
         logger.Verbose("Loading all dialogues");
@@ -40,6 +53,23 @@ public class ConnectedNotificationHandler(
         var acarsConnectedCallsigns = await plugin.ConnectionManager.GetAcarsStations(cancellationToken);
         await acarsStationStore.Populate(acarsConnectedCallsigns, cancellationToken);
         logger.Information("Loaded {Count} ACARS connected callsign(s)", acarsConnectedCallsigns.Length);
+
+        // Load ADS-C contracts
+        logger.Verbose("Loading all ADS-C contracts");
+        var adscContracts = await plugin.ConnectionManager.GetAdscContracts(cancellationToken);
+        await adscContractStore.Populate(adscContracts, cancellationToken);
+        logger.Information("Loaded {ContractCount} ADS-C contract(s)", adscContracts.Length);
+
+        // Load ADS-C reports
+        logger.Verbose("Loading all ADS-C reports");
+        var adscReports = await plugin.ConnectionManager.GetAdscReports(cancellationToken);
+        await adscReportStore.Populate(adscReports, cancellationToken);
+        foreach (var adscReport in adscReports)
+        {
+            adscTrackDisplay.Show(adscReport);
+        }
+
+        logger.Information("Loaded {ReportCount} ADS-C report(s)", adscReports.Length);
 
         // Relay notification to UI
         WeakReferenceMessenger.Default.Send(notification);

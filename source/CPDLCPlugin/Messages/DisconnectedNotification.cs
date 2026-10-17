@@ -10,6 +10,10 @@ public class DisconnectedNotificationBridge(
     DialogueStore dialogueStore,
     AircraftConnectionStore aircraftConnectionStore,
     AcarsStationStore acarsStationStore,
+    AdscContractStore adscContractStore,
+    AdscReportStore adscReportStore,
+    AdscTrackDisplay adscTrackDisplay,
+    AtsuSettingsStore atsuSettingsStore,
     ILogger logger) : INotificationHandler<DisconnectedNotification>
 {
     public async Task Handle(DisconnectedNotification notification, CancellationToken cancellationToken)
@@ -22,6 +26,18 @@ public class DisconnectedNotificationBridge(
 
         logger.Information("Clearing ACARS station store");
         await acarsStationStore.Clear(cancellationToken);
+
+        logger.Information("Clearing ADS-C contract store");
+        await adscContractStore.Clear(cancellationToken);
+
+        logger.Information("Clearing ADS-C report store");
+        await adscReportStore.Clear(cancellationToken);
+
+        logger.Information("Clearing ADS-C tracks");
+        adscTrackDisplay.Clear();
+
+        logger.Information("Clearing ATSU settings");
+        atsuSettingsStore.Clear();
 
         WeakReferenceMessenger.Default.Send(notification);
     }

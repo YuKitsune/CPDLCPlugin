@@ -128,6 +128,17 @@ Default: `true`
 "ShowInstallationMenuItems": false
 ```
 
+### ADSCTrackExtrapolationThreshold
+
+The minimum time (in seconds) that an ADS-C track shows the reported position with the `ADSC` symbol. After this time, the next flight plan extrapolation moves the track along its route, and the track uses the `ADSCExtrapolated` symbol.
+
+Default: `10`
+
+**Example:**
+```json
+"ADSCTrackExtrapolationThreshold": 10
+```
+
 ## Uplink Messages
 
 The `UplinkMessages` object defines the available CPDLC messages for the controller to send.
@@ -224,6 +235,7 @@ Array of message groups for organizing messages in the editor. Each group has:
     { "AtsuCode": "YMMM", "Sectors": ["GUN", "BLA", "IND"] }
   ],
   "NdaRecalculationIntervalMinutes": 1,
+  "ADSCTrackExtrapolationThreshold": 10,
   "UplinkMessages": {
     "MasterMessages": [
       {

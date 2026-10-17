@@ -1,6 +1,8 @@
 using CPDLCServer.Exceptions;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Messages;
+using CPDLCServer.Model;
+using CPDLCServer.Persistence;
 using MediatR;
 
 namespace CPDLCServer.Clients;
@@ -8,6 +10,8 @@ namespace CPDLCServer.Clients;
 public interface IClientManager
 {
     Task<IAcarsClient> GetAcarsClient(string acarsClientId, CancellationToken cancellationToken);
+    Task<IAcarsClient> GetAcarsClientForStation(string stationId, CancellationToken cancellationToken);
+    Task<AcarsConfiguration> GetConfigurationForStation(string stationId, CancellationToken cancellationToken);
 }
 
 public class ClientManager : BackgroundService, IClientManager
@@ -16,6 +20,7 @@ public class ClientManager : BackgroundService, IClientManager
     readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     readonly Dictionary<string, AcarsClientHandle> _clients = [];
     readonly IClock _clock;
+    readonly IAdscMessageLogRepository _adscMessageLogRepository;
     readonly ILogger _logger;
     readonly IMediator _mediator;
 
@@ -23,6 +28,7 @@ public class ClientManager : BackgroundService, IClientManager
         IConfiguration configuration,
         IMediator mediator,
         IClock clock,
+        IAdscMessageLogRepository adscMessageLogRepository,
         ILogger logger)
     {
         var acarsConfigurationSection = configuration.GetSection("Acars");
@@ -39,6 +45,10 @@ public class ClientManager : BackgroundService, IClientManager
 
             if (config is not null)
             {
+                if (TimeSpan.FromMinutes(config.DefaultAdscReportingInterval) < AdscContract.MinimumReportingInterval)
+                    throw new Exception(
+                        $"DefaultAdscReportingInterval for ACARS client '{config.ClientId}' must be {AdscContract.MinimumReportingInterval.TotalMinutes} minutes or more");
+
                 configurationList.Add(config);
             }
         }
@@ -47,6 +57,7 @@ public class ClientManager : BackgroundService, IClientManager
 
         _mediator = mediator;
         _clock = clock;
+        _adscMessageLogRepository = adscMessageLogRepository;
         _logger = logger.ForContext<ClientManager>();
     }
 
@@ -122,6 +133,33 @@ public class ClientManager : BackgroundService, IClientManager
         return Task.FromResult(acarsClientHandle.Client);
     }
 
+    public Task<IAcarsClient> GetAcarsClientForStation(string stationId, CancellationToken cancellationToken)
+    {
+        var acarsClientHandle = _clients.Values.FirstOrDefault(h => h.Client.StationId == stationId);
+        if (acarsClientHandle is null)
+        {
+            throw new Exception($"No ACARS client found for station '{stationId}'");
+        }
+
+        return Task.FromResult(acarsClientHandle.Client);
+    }
+
+    public Task<AcarsConfiguration> GetConfigurationForStation(string stationId, CancellationToken cancellationToken)
+    {
+        var configuration = _acarsConfigurations.FirstOrDefault(c => c switch
+        {
+            HoppiesConfiguration hoppieConfig => hoppieConfig.StationIdentifier == stationId,
+            _ => throw new NotSupportedException($"ACARS configuration type {c.GetType().Name} is not supported")
+        });
+
+        if (configuration is null)
+        {
+            throw new Exception($"No ACARS configuration found for station '{stationId}'");
+        }
+
+        return Task.FromResult(configuration);
+    }
+
     async Task<AcarsClientHandle> CreateAcarsClient(string acarsClientId, CancellationToken cancellationToken)
     {
         var configuration = _acarsConfigurations.FirstOrDefault(c => c.ClientId == acarsClientId);
@@ -141,12 +179,19 @@ public class ClientManager : BackgroundService, IClientManager
         };
 
         var subscribeTaskCancellationSource = new CancellationTokenSource();
-        var subscribeTask = Subscribe(
-            acarsClientId,
-            stationId,
-            acarsClient,
-            _mediator,
-            subscribeTaskCancellationSource.Token);
+        var subscribeTask = Task.WhenAll(
+            Subscribe(
+                acarsClientId,
+                stationId,
+                acarsClient,
+                _mediator,
+                subscribeTaskCancellationSource.Token),
+            SubscribeAdsc(
+                acarsClientId,
+                stationId,
+                acarsClient,
+                _mediator,
+                subscribeTaskCancellationSource.Token));
 
         var acarsClientHandle = new AcarsClientHandle(acarsClient, subscribeTask, subscribeTaskCancellationSource);
 
@@ -166,6 +211,7 @@ public class ClientManager : BackgroundService, IClientManager
             configuration,
             httpClient,
             _clock,
+            _adscMessageLogRepository,
             _logger.ForContext<HoppieAcarsClient>());
     }
 
@@ -208,6 +254,48 @@ public class ClientManager : BackgroundService, IClientManager
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             subscriptionLogger.Information("Subscription canceled");
+        }
+    }
+
+    async Task SubscribeAdsc(string acarsClientId, string stationId, IAcarsClient acarsClient, IMediator mediator, CancellationToken cancellationToken)
+    {
+        var subscriptionLogger = _logger.ForContext("AcarsClientId", acarsClientId);
+
+        try
+        {
+            await foreach (var adscMessage in acarsClient.AdscMessageReader.ReadAllAsync(cancellationToken))
+            {
+                // TODO: Make this configurable
+                using var publishTimeoutCancellationTokenSource = new CancellationTokenSource();
+                publishTimeoutCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(10));
+
+                try
+                {
+                    await mediator.Publish(
+                        new AdscMessageReceivedNotification(
+                            acarsClientId,
+                            stationId,
+                            adscMessage),
+                        publishTimeoutCancellationTokenSource.Token);
+                }
+                catch (OperationCanceledException) when (publishTimeoutCancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    subscriptionLogger.Warning("Timeout handling ADS-C message {AdscMessage}", adscMessage);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    subscriptionLogger.Information("ADS-C subscription canceled");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    subscriptionLogger.Error(ex, "Failed to relay {MessageType}", adscMessage.GetType());
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            subscriptionLogger.Information("ADS-C subscription canceled");
         }
     }
 

@@ -46,6 +46,10 @@ Acars__0__FlightSimulationNetwork=VATSIM
 Acars__0__StationIdentifier=YBBB
 Acars__0__Url=http://www.hoppie.nl/acars/system/connect.html
 Acars__0__AuthenticationCode=your-hoppie-logon-code
+# Reporting interval in minutes of the ADS-C contract requested on CPDLC logon (default: 10)
+Acars__0__DefaultAdscReportingInterval=10
+# Minutes from the request of a selected ADS-C contract to its end. Then the default contract is requested again (default: 60)
+Acars__0__SelectedAdscContractDuration=60
 
 # Handoff Configuration
 # How many minutes before the expected transfer time to send the NEXT DATA AUTHORITY message (default: 10)
@@ -78,6 +82,19 @@ Acars__1__AuthenticationCode=your-ymmm-hoppie-code
 `Hoppie` is currently the only supported ACARS network type.
 :::
 
+### ADS-C
+
+When an aircraft logs on with CPDLC, the server requests the default ADS-C contract with the aircraft. When the CPDLC connection ends, the server cancels the contract.
+
+Each ATSU has its own default reporting interval, set with `Acars__<index>__DefaultAdscReportingInterval`. Controllers can read this value.
+
+A controller can select a different reporting interval for an aircraft. The selected contract ends `Acars__<index>__SelectedAdscContractDuration` minutes after the server sends the request. Then the server requests the default contract again. A controller can also go back to the default contract at any time.
+
+The aircraft does not acknowledge a request. The first report after a request accepts it. If the aircraft rejects a selected contract, the server requests the default contract again. If the aircraft rejects the default contract, the server does not send it again.
+
+The server keeps the latest report for each aircraft. When a controller connects, the plugin loads these reports, so that the controller sees the ADS-C tracks immediately.
+
+The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, and a log of all the ADS-C messages that the server sent and received.
 ## Running
 
 ### Docker

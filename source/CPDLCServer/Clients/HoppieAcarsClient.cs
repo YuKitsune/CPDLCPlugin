@@ -1,11 +1,12 @@
+using System.Globalization;
 using System.Threading.Channels;
 using CPDLCServer.Exceptions;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Model;
+using CPDLCServer.Persistence;
 
 namespace CPDLCServer.Clients;
 
-// TODO: ADS-C
 // TODO: Accept encoded messages via the API (i.e. UMxxx), translate from within the client.
 
 public class HoppieAcarsClient : IAcarsClient
@@ -18,9 +19,11 @@ public class HoppieAcarsClient : IAcarsClient
     readonly HoppiesConfiguration _configuration;
     readonly HttpClient _httpClient;
     readonly IClock _clock;
+    readonly IAdscMessageLogRepository _adscMessageLogRepository;
     readonly ILogger _logger;
 
     readonly Channel<ReceivedDownlink> _messageChannel = Channel.CreateUnbounded<ReceivedDownlink>();
+    readonly Channel<ReceivedAdscMessage> _adscMessageChannel = Channel.CreateUnbounded<ReceivedAdscMessage>();
     readonly Random _random = Random.Shared;
 
     CancellationTokenSource? _pollCancellationTokenSource;
@@ -30,14 +33,16 @@ public class HoppieAcarsClient : IAcarsClient
     bool _disposed;
 
     public ChannelReader<ReceivedDownlink> MessageReader => _messageChannel.Reader;
+    public ChannelReader<ReceivedAdscMessage> AdscMessageReader => _adscMessageChannel.Reader;
     public string StationId => _configuration.StationIdentifier;
 
-    public HoppieAcarsClient(HoppiesConfiguration configuration, HttpClient httpClient, IClock clock, ILogger logger)
+    public HoppieAcarsClient(HoppiesConfiguration configuration, HttpClient httpClient, IClock clock, IAdscMessageLogRepository adscMessageLogRepository, ILogger logger)
     {
         _configuration = configuration;
         _httpClient = httpClient;
         _httpClient.Timeout = TimeSpan.FromSeconds(15);
         _clock = clock;
+        _adscMessageLogRepository = adscMessageLogRepository;
         _logger = logger.ForContext("ClientId", _configuration.ClientId);
     }
 
@@ -59,10 +64,59 @@ public class HoppieAcarsClient : IAcarsClient
         if (_disposed)
             throw new ObjectDisposedException(nameof(HoppieAcarsClient));
 
-        var messageType = "cpdlc";
-        var to = message.Recipient;
         var packet = SerializeCpdlcMessage(message);
+        await SendPacket(message.Recipient, "cpdlc", packet, cancellationToken);
+    }
 
+    public async Task RequestPeriodicAdscContract(string callsign, TimeSpan reportingInterval, CancellationToken cancellationToken)
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(HoppieAcarsClient));
+
+        var reportingIntervalSeconds = (int)reportingInterval.TotalSeconds;
+        if (reportingIntervalSeconds <= 0)
+            throw new ArgumentOutOfRangeException(nameof(reportingInterval), reportingInterval, "Reporting interval must be one second or more");
+
+        await SendAdscPacket(callsign, $"REQUEST PERIODIC {reportingIntervalSeconds}", cancellationToken);
+    }
+
+    // Hoppie has no separate demand contract. A periodic request with an interval of zero asks for one report.
+    public async Task RequestAdscDemandReport(string callsign, CancellationToken cancellationToken)
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(HoppieAcarsClient));
+
+        await SendAdscPacket(callsign, "REQUEST PERIODIC 0", cancellationToken);
+    }
+
+    public async Task CancelAdscContract(string callsign, CancellationToken cancellationToken)
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(HoppieAcarsClient));
+
+        await SendAdscPacket(callsign, "REQUEST CANCEL", cancellationToken);
+    }
+
+    async Task SendAdscPacket(string callsign, string packet, CancellationToken cancellationToken)
+    {
+        await SendPacket(callsign, "ads-c", packet, cancellationToken);
+        await LogAdscPacket(callsign, AdscMessageDirection.Uplink, packet, cancellationToken);
+    }
+
+    async Task LogAdscPacket(string callsign, AdscMessageDirection direction, string packet, CancellationToken cancellationToken)
+    {
+        var entry = new AdscMessageLogEntry(
+            _clock.UtcNow(),
+            _configuration.ClientId,
+            _configuration.StationIdentifier,
+            callsign,
+            direction,
+            packet);
+        await _adscMessageLogRepository.Add(entry, cancellationToken);
+    }
+
+    async Task SendPacket(string to, string messageType, string packet, CancellationToken cancellationToken)
+    {
         var parameters = new Dictionary<string, string>
         {
             ["logon"] = _configuration.AuthenticationCode,
@@ -79,7 +133,7 @@ public class HoppieAcarsClient : IAcarsClient
 
         try
         {
-            _logger.Verbose("Sending uplink to {Recipient} with packet {Packet}", message.Recipient, packet);
+            _logger.Verbose("Sending {MessageType} to {Recipient} with packet {Packet}", messageType, to, packet);
             var response = await _httpClient.PostAsync(_configuration.Url, content, cancellationToken);
             response.EnsureSuccessStatusCode();
 
@@ -209,7 +263,7 @@ public class HoppieAcarsClient : IAcarsClient
 
                     if (!string.IsNullOrWhiteSpace(responseText) && responseText != "ok")
                     {
-                        ParseAndPublishDownlinkMessages(responseText);
+                        await ParseAndPublishDownlinkMessages(responseText, cancellationToken);
                     }
                 }
                 catch (HttpRequestException ex)
@@ -240,7 +294,7 @@ public class HoppieAcarsClient : IAcarsClient
         }
     }
 
-    void ParseAndPublishDownlinkMessages(string responseText)
+    async Task ParseAndPublishDownlinkMessages(string responseText, CancellationToken cancellationToken)
     {
         try
         {
@@ -267,20 +321,29 @@ public class HoppieAcarsClient : IAcarsClient
                 _logger.Verbose("Extracted: {Message}", messageText);
                 var (from, type, packet) = ParseMessage(messageText);
 
-                var message = type.ToLowerInvariant() switch
+                switch (type.ToLowerInvariant())
                 {
-                    "cpdlc" => ParseCpdlcDownlink(from, packet),
-                    _ => null
-                };
+                    case "cpdlc":
+                        var downlink = ParseCpdlcDownlink(from, packet);
+                        _logger.Information("Received {MessageType} from {From}", type, from);
+                        _messageChannel.Writer.TryWrite(downlink);
+                        break;
 
-                if (message is not null)
-                {
-                    _logger.Information("Received {MessageType} from {From}", type, from);
-                    _messageChannel.Writer.TryWrite(message);
-                }
-                else
-                {
-                    _logger.Information("Unsupported message type: {Type}", type);
+                    case "ads-c":
+                        // Log the packet before it is parsed, so that packets that cannot be parsed are also in the log
+                        await LogAdscPacket(from, AdscMessageDirection.Downlink, packet, cancellationToken);
+
+                        var adscMessage = ParseAdscDownlink(from, packet);
+                        if (adscMessage is null)
+                            break;
+
+                        _logger.Information("Received {MessageType} from {From}", type, from);
+                        _adscMessageChannel.Writer.TryWrite(adscMessage);
+                        break;
+
+                    default:
+                        _logger.Information("Unsupported message type: {Type}", type);
+                        break;
                 }
             }
         }
@@ -374,6 +437,98 @@ public class HoppieAcarsClient : IAcarsClient
             AlertType.None,
             content,
             _clock.UtcNow());
+    }
+
+    // Packet formats:
+    //   REPORT <callsign> <ddHHmm> <latitude> <longitude> <altitude> [<optional groups>]
+    //   REJECT
+    ReceivedAdscMessage? ParseAdscDownlink(string from, string packet)
+    {
+        var parts = packet.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            throw new MessageParseException("Invalid ADS-C packet: Packet is empty");
+
+        switch (parts[0])
+        {
+            case "REJECT":
+                return new ReceivedAdscRejection(from, _clock.UtcNow());
+
+            case "REPORT":
+                if (parts.Length < 6)
+                    throw new MessageParseException($"Invalid ADS-C report: Expected 6 or more components, got {parts.Length}: \"{packet}\"");
+
+                if (!TryParseCoordinate(parts[3], 'N', 'S', 90, out var latitude) ||
+                    !TryParseCoordinate(parts[4], 'E', 'W', 180, out var longitude))
+                {
+                    _logger.Warning("Ignoring ADS-C report from {From}: Cannot read the position: \"{Packet}\"", from, packet);
+                    return null;
+                }
+
+                // Aircraft do not agree on the format of the optional groups, so ignore them
+                var report = new AdscReport(
+                    ParseAdscTimestamp(parts[2]),
+                    latitude,
+                    longitude,
+                    ParseAdscAltitude(parts[5]));
+
+                return new ReceivedAdscReport(from, report, _clock.UtcNow());
+
+            default:
+                throw new MessageParseException($"Unsupported ADS-C packet: \"{packet}\"");
+        }
+    }
+
+    // Aircraft send coordinates in different formats.
+    // For example, a latitude can be "-33.9461", "S33.9461", or "33.9461S".
+    static bool TryParseCoordinate(string text, char positiveHemisphere, char negativeHemisphere, double maximum, out double coordinate)
+    {
+        coordinate = 0;
+
+        var number = text.ToUpperInvariant();
+        var sign = 1;
+        if (number.Length > 1 && (number[0] == positiveHemisphere || number[0] == negativeHemisphere))
+        {
+            sign = number[0] == negativeHemisphere ? -1 : 1;
+            number = number[1..];
+        }
+        else if (number.Length > 1 && (number[^1] == positiveHemisphere || number[^1] == negativeHemisphere))
+        {
+            sign = number[^1] == negativeHemisphere ? -1 : 1;
+            number = number[..^1];
+        }
+
+        if (!double.TryParse(number, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value))
+            return false;
+
+        coordinate = sign * value;
+        return Math.Abs(coordinate) <= maximum;
+    }
+
+    // Some aircraft send the altitude in feet, and some send it in hundreds of feet.
+    // Below 10,000, the altitude is in hundreds of feet.
+    static int ParseAdscAltitude(string text)
+    {
+        var altitude = int.Parse(text, CultureInfo.InvariantCulture);
+        return altitude < 10_000 ? altitude * 100 : altitude;
+    }
+
+    // The report time has the day of the month, the hour, and the minute (ddHHmm) in UTC.
+    // Use the current month, or the previous month if the day is in the future.
+    DateTimeOffset ParseAdscTimestamp(string text)
+    {
+        if (text.Length != 6)
+            throw new MessageParseException($"Invalid ADS-C report time: \"{text}\"");
+
+        var day = int.Parse(text[..2], CultureInfo.InvariantCulture);
+        var hour = int.Parse(text[2..4], CultureInfo.InvariantCulture);
+        var minute = int.Parse(text[4..], CultureInfo.InvariantCulture);
+
+        var now = _clock.UtcNow();
+        var month = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
+        if (day > now.Day)
+            month = month.AddMonths(-1);
+
+        return month.AddDays(day - 1).AddHours(hour).AddMinutes(minute);
     }
 
     TimeSpan GetPollInterval()
