@@ -19,6 +19,7 @@ The system consists of two components:
 Multiple controllers can share a single ATSU connection, with messages automatically routed to the appropriate controller.
 
 **[vatSys Plugin](/vatsys-plugin/installation)** provides the controller interface within vatSys for sending and receiving CPDLC messages with aircraft.
+It also shows ADS-C position reports on the ASD, and lets controllers change the ADS-C contract with an aircraft.
 
 ![Architecture Diagram](../static/diagram.png)
 

@@ -5,7 +5,7 @@ sidebar_position: 2
 # Plugin Guide
 
 This guide covers the CPDLC Plugin for vatSys.
-It explains how to connect to the server, interpret track labels, and manage CPDLC messages with pilots.
+It explains how to connect to the server, interpret track labels, manage CPDLC messages with pilots, and use ADS-C.
 
 ## Connecting to the CPDLC Server
 
@@ -176,6 +176,72 @@ Enter a callsign in the ACID input to display that aircraft's message history. O
 
 Messages are displayed the same way as in the Current Messages Window. Messages prefixed with `M` were manually acknowledged by the controller.
 
+## ADS-C
+
+The plugin shows ADS-C position reports on the ASD, and lets you change the ADS-C contract with an aircraft.
+Refer to [ADS-C](/concepts#ads-c) for an explanation of contracts.
+
+You do not have to do anything to start ADS-C. When an aircraft logs on with CPDLC, the server automatically requests the default contract.
+
+### ADS-C Tracks
+
+![Screenshot of an ADS-C track on the ASD, next to the same track after extrapolation. Show the ADSC symbol and the ADSCExtrapolated symbol.](../../static/adsc_tracks.png)
+
+When a report arrives, the flight plan track of the aircraft moves to the reported position, and shows the `ADSC` symbol.
+The reported altitude becomes the pilot reported level (PRL) of the flight plan.
+
+After a short time, the track moves along the flight plan route from the reported position, and shows the `ADSCExtrapolated` symbol.
+The plugin uses the route estimates of the flight plan to calculate the speed of the track.
+You can change this time with the [`ADSCTrackExtrapolationThreshold`](configuration#adsctrackextrapolationthreshold) setting.
+
+The vatSys profile sets how the symbols look, so the exact symbols may vary.
+By default, the ADSC symbol is a filled triangle, and the ADSCExtrapolated is a hollow triangle.
+
+A radar track always has priority. When the flight plan is coupled to a radar track, the plugin does not move the track.
+
+### ADS Contract Window
+
+![Screenshot of the ADS Contract window with an aircraft loaded.](../../static/adsc_window.png)
+
+The ADS Contract Window shows the ADS-C contract that your ATSU has with an aircraft. You can use it to select a different reporting interval, or to request a demand report.
+
+To open the window, select a track, then open the CPDLC menu and select ADS Contract. The window shows the contract for the selected track.
+
+To show a different aircraft, click the ACID button, type the callsign, then press Enter.
+
+The window shows:
+
+- **Current Period:** The reporting interval of the latest periodic contract, in minutes
+- **Last Report:** The time of the latest report from the aircraft
+- **Default Period:** The default reporting interval of your ATSU, in minutes
+- **Selected Period:** The reporting interval that a controller selected, in minutes. `DEF` shows that the default period is selected.
+- **Selected Period End:** The time when the selected contract ends. Then the server requests the default contract again.
+
+A symbol next to each contract shows the state of the request:
+
+- `→`: The request was sent. The aircraft has not answered.
+- `✓`: The aircraft accepted the request.
+- `×`: The aircraft rejected the request.
+
+#### Selecting a Reporting Interval
+
+1. Click the Selected Period button. A list of periods opens.
+2. Click a period in the list, or type a period (in minutes) in the box at the bottom of the list, then press Enter.
+
+The server sends the request to the aircraft immediately.
+The selected contract ends after a time that the server sets (60 minutes by default).
+
+To go back to the default contract before the selected contract ends, click `DEF` in the list.
+
+#### Requesting a Demand Report
+
+Click Demand Contract to request one report from the aircraft immediately.
+A demand report does not change the periodic contract.
+
+:::tip
+Because of the delays on Hoppie's network, a demand report can take up to two minutes to arrive.
+:::
+
 ## Voice Capability Indicators
 
 ![Screenshot of voice capability label items](../../static/text_label_items.png)
@@ -220,7 +286,7 @@ This ensures pilots can acknowledge frequency change instructions before losing 
 
 The plugin does not fully simulate all aspects of real-world CPDLC.
 
-**ADS-C:** ADS-C position reporting is not simulated due to limitations within the vatSys plugin API.
+**ADS-C:** Only periodic and demand contracts are supported. Event contracts are not supported.
 
 **Equipment codes:** Aircraft equipment codes are ignored. The `.` symbol indicates the aircraft is connected to an ACARS network, regardless of their filed equipment.
 

@@ -92,6 +92,9 @@ A controller can select a different reporting interval for an aircraft. The sele
 
 The aircraft does not acknowledge a request. The first report after a request accepts it. If the aircraft rejects a selected contract, the server requests the default contract again. If the aircraft rejects the default contract, the server does not send it again.
 
+The server keeps the latest report for each aircraft. When a controller connects, the plugin loads these reports, so that the controller sees the ADS-C tracks immediately.
+
+The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, and a log of all the ADS-C messages that the server sent and received.
 ## Running
 
 ### Docker
