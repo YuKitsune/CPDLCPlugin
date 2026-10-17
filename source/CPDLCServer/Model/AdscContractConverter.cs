@@ -26,7 +26,18 @@ public static class AdscContractConverter
             report.Latitude,
             report.Longitude,
             report.Altitude,
-            received);
+            received,
+            ToDto(report.Source));
+    }
+
+    static Contracts.AdscReportSource ToDto(AdscReportSource source)
+    {
+        return source switch
+        {
+            AdscReportSource.Hoppie => Contracts.AdscReportSource.Hoppie,
+            AdscReportSource.VATSIM => Contracts.AdscReportSource.VATSIM,
+            _ => throw new ArgumentException($"Unknown ADS-C report source: {source}")
+        };
     }
 
     static Contracts.AdscContractState? ToDto(AdscContractState? state)

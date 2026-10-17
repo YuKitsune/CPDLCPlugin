@@ -44,13 +44,62 @@ public class InMemoryAdscReportRepositoryTests
         Assert.Equal([newer], await repository.All(CancellationToken.None));
     }
 
-    static AircraftAdscReport CreateReport(string callsign, string stationId, int minutes)
+    [Fact]
+    public async Task Add_WhenHoppieReportIsOlderThanVatsimReport_ReplacesVatsimReport()
+    {
+        // Arrange
+        var repository = new InMemoryAdscReportRepository();
+        var vatsimReport = CreateReport("UAL123", "YBBB", 5, AdscReportSource.VATSIM);
+        var hoppieReport = CreateReport("UAL123", "YBBB", 0);
+
+        // Act
+        await repository.Add(vatsimReport, CancellationToken.None);
+        await repository.Add(hoppieReport, CancellationToken.None);
+
+        // Assert
+        Assert.Equal([hoppieReport], await repository.All(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Add_WhenVatsimReportIsOlderThanHoppieReport_KeepsHoppieReport()
+    {
+        // Arrange
+        var repository = new InMemoryAdscReportRepository();
+        var hoppieReport = CreateReport("UAL123", "YBBB", 5);
+        var vatsimReport = CreateReport("UAL123", "YBBB", 0, AdscReportSource.VATSIM);
+
+        // Act
+        await repository.Add(hoppieReport, CancellationToken.None);
+        await repository.Add(vatsimReport, CancellationToken.None);
+
+        // Assert
+        Assert.Equal([hoppieReport], await repository.All(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Find_ReturnsLatestReportForAircraft()
+    {
+        // Arrange
+        var repository = new InMemoryAdscReportRepository();
+        var report = CreateReport("UAL123", "YBBB", 0);
+        await repository.Add(report, CancellationToken.None);
+
+        // Act & Assert
+        Assert.Equal(report, await repository.Find("UAL123", CancellationToken.None));
+        Assert.Null(await repository.Find("QFA1", CancellationToken.None));
+    }
+
+    static AircraftAdscReport CreateReport(
+        string callsign,
+        string stationId,
+        int minutes,
+        AdscReportSource source = AdscReportSource.Hoppie)
     {
         var timestamp = Start.AddMinutes(minutes);
         return new AircraftAdscReport(
             callsign,
             stationId,
-            new AdscReport(timestamp, -33.9461, 151.1772, 37000),
+            new AdscReport(timestamp, -33.9461, 151.1772, 37000, source),
             timestamp.AddSeconds(30));
     }
 }

@@ -63,8 +63,15 @@ public record AdscContractDto(
     DateTimeOffset? SelectedContractEnds,
     AdscContractState? DemandContractState);
 
+public enum AdscReportSource
+{
+    Hoppie,
+    VATSIM
+}
+
 // Timestamp is the time of the position, as reported by the aircraft.
 // Received is the time the server received the report.
+// Source is the system that supplied the report.
 public record AdscReportDto(
     string Callsign,
     string StationId,
@@ -72,7 +79,8 @@ public record AdscReportDto(
     double Latitude,
     double Longitude,
     int Altitude,
-    DateTimeOffset Received);
+    DateTimeOffset Received,
+    AdscReportSource Source);
 
 // Dialogue DTOs for SignalR API
 

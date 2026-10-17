@@ -54,6 +54,16 @@ Acars__0__SelectedAdscContractDuration=60
 # Handoff Configuration
 # How many minutes before the expected transfer time to send the NEXT DATA AUTHORITY message (default: 10)
 Handoff__NotificationLeadTime=10
+
+# ADS-C from VATSIM status data
+# Make ADS-C reports from the VATSIM status data for aircraft that do not support ADS-C over Hoppie (default: false)
+VatsimStatus__Enabled=false
+# The URL of the VATSIM status data (default: https://data.vatsim.net/v3/vatsim-data.json)
+VatsimStatus__Url=https://data.vatsim.net/v3/vatsim-data.json
+# The time in seconds between downloads of the VATSIM status data (default: 120)
+VatsimStatus__PollingIntervalSeconds=120
+# Also make reports for aircraft that do not have D1 or G1 in Item 10b of the flight plan (default: false)
+VatsimStatus__AllowNonEquippedAircraft=false
 ```
 
 ### Multiple ACARS Connections
@@ -95,6 +105,13 @@ The aircraft does not acknowledge a request. The first report after a request ac
 The server keeps the latest report for each aircraft. When a controller connects, the plugin loads these reports, so that the controller sees the ADS-C tracks immediately.
 
 The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, and a log of all the ADS-C messages that the server sent and received.
+
+### ADS-C from VATSIM Status Data
+
+Not all aircraft support ADS-C over Hoppie's network. When `VatsimStatus__Enabled` is `true`, the server fakes ADS-C reports using data from the [VATSIM status API](https://data.vatsim.net/v3/vatsim-data.json).
+
+This is only done for aircraft that have `D1` or `G1` in Item 10b of the flight plan, unless `VatsimStatus__AllowNonEquippedAircraft` is `true`. A report from Hoppie always has priority. If the Hoppie reports stop for more than two reporting intervals, the server uses the VATSIM status data again.
+
 ## Running
 
 ### Docker

@@ -47,6 +47,7 @@
                             <th>Selected</th>
                             <th>Selected Ends</th>
                             <th>Demand</th>
+                            <th>Report Source</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -61,6 +62,7 @@
                                 <td><span class="badge @GetStateBadgeClass(contract.SelectedContractState)">@(contract.SelectedContractState?.ToString() ?? "-")</span></td>
                                 <td>@(contract.SelectedContractEnds?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</td>
                                 <td><span class="badge @GetStateBadgeClass(contract.DemandContractState)">@(contract.DemandContractState?.ToString() ?? "-")</span></td>
+                                <td>@(Model.ReportSources.TryGetValue(contract.Callsign, out var source) ? source.ToString() : "-")</td>
                             </tr>
                         }
                     </tbody>

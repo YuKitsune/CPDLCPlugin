@@ -173,7 +173,8 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             position.Latitude,
             position.Longitude,
             fdr.PRL,
-            now);
+            now,
+            CPDLCServer.Contracts.AdscReportSource.Hoppie);
 
         Log.Information("Sending fake ADS-C report for {Callsign} at {Latitude} {Longitude} {Altitude}",
             report.Callsign,
