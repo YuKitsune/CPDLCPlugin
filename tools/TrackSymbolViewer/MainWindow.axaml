@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TrackSymbolViewer.MainWindow"
+        Title="Track Symbol Viewer"
+        Width="1200"
+        Height="800">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="12" Margin="8">
+            <Button Content="Open..." Click="OnOpenClick" />
+            <TextBlock Text="Zoom" VerticalAlignment="Center" />
+            <Slider Name="ZoomSlider"
+                    Width="200"
+                    Minimum="2"
+                    Maximum="16"
+                    Value="8"
+                    TickFrequency="1"
+                    IsSnapToTickEnabled="True" />
+            <TextBlock Name="ZoomText" VerticalAlignment="Center" />
+            <TextBlock Name="FilePathText" VerticalAlignment="Center" Opacity="0.7" />
+        </StackPanel>
+
+        <TextBlock Name="StatusText" DockPanel.Dock="Bottom" Margin="8" TextWrapping="Wrap" />
+
+        <ScrollViewer>
+            <WrapPanel Name="SymbolsPanel" Margin="4" />
+        </ScrollViewer>
+    </DockPanel>
+</Window>
