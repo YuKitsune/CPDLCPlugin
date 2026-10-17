@@ -12,6 +12,7 @@ public interface IClientManager
     Task<IAcarsClient> GetAcarsClient(string acarsClientId, CancellationToken cancellationToken);
     Task<IAcarsClient> GetAcarsClientForStation(string stationId, CancellationToken cancellationToken);
     Task<AcarsConfiguration> GetConfigurationForStation(string stationId, CancellationToken cancellationToken);
+    Task<string?> FindAcarsClientId(string stationId, CancellationToken cancellationToken);
 }
 
 public class ClientManager : BackgroundService, IClientManager
@@ -158,6 +159,16 @@ public class ClientManager : BackgroundService, IClientManager
         }
 
         return Task.FromResult(configuration);
+    }
+
+    public Task<string?> FindAcarsClientId(string stationId, CancellationToken cancellationToken)
+    {
+        var acarsClientId = _clients
+            .Where(c => string.Equals(c.Value.Client.StationId, stationId, StringComparison.OrdinalIgnoreCase))
+            .Select(c => c.Key)
+            .FirstOrDefault();
+
+        return Task.FromResult(acarsClientId);
     }
 
     async Task<AcarsClientHandle> CreateAcarsClient(string acarsClientId, CancellationToken cancellationToken)

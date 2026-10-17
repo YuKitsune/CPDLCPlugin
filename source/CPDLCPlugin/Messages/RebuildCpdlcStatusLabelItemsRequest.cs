@@ -84,7 +84,21 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
                     if (isOnAcarsNetwork && connection is null)
                     {
                         text = ".";
-                        // TODO: Left click will initiate a manual connection
+                        onMouseClick = args =>
+                        {
+                            try
+                            {
+                                if (args.Button != CustomLabelItemMouseButton.Left)
+                                    return;
+
+                                mediator.Send(new OpenConnectionRequestWindowRequest(callsign));
+                                args.Handled = true;
+                            }
+                            catch (Exception ex)
+                            {
+                                errorReporter.ReportError(ex, "Error opening CPDLC connection request window");
+                            }
+                        };
                     }
                     else if (connection is not null && connection.DataAuthorityState == DataAuthorityState.NextDataAuthority)
                     {

@@ -180,6 +180,16 @@ public class SignalRConnectionManager(
             cancellationToken: cancellationToken);
     }
 
+    public async Task RequestConnection(string callsign, string stationId, CancellationToken cancellationToken)
+    {
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync(
+            "RequestConnection",
+            callsign,
+            stationId,
+            cancellationToken);
+    }
+
     public async Task<AircraftConnectionDto[]> GetConnectedAircraft(CancellationToken cancellationToken)
     {
         var connection = GetConnectedOrThrow();

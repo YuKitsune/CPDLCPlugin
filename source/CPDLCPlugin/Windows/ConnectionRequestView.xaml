@@ -1,0 +1,75 @@
+<UserControl x:Class="CPDLCPlugin.Windows.ConnectionRequestView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:cpdlcPlugin="clr-namespace:CPDLCPlugin"
+        xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
+        Background="{x:Static cpdlcPlugin:Theme.BackgroundColor}"
+        d:DataContext="{d:DesignInstance Type=viewModels:ConnectionRequestViewModel}"
+        mc:Ignorable="d"
+        Width="400">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/CPDLCPlugin;component/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="Button" BasedOn="{StaticResource ButtonBaseStyle}">
+                <Setter Property="Height" Value="32"/>
+                <Setter Property="MinWidth" Value="80"/>
+            </Style>
+
+            <Style TargetType="TextBlock" BasedOn="{StaticResource GenericTextStyle}" />
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Margin="0,0,0,8" TextWrapping="Wrap">
+            <Run Text="Send connection request to "/>
+            <Run Text="{Binding Callsign, Mode=OneWay}"/>
+        </TextBlock>
+
+        <!-- ATSU -->
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="ATSU" Margin="0,0,8,0"/>
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding AvailableStationIdentifiers}"
+                      SelectedItem="{Binding SelectedStationIdentifier}"/>
+        </Grid>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button
+                Grid.Column="0"
+                Content="Send"
+                Command="{Binding ConfirmCommand}"
+                HorizontalAlignment="Stretch"
+                Margin="0,0,4,0"/>
+
+            <Button
+                Grid.Column="1"
+                Content="Cancel"
+                Command="{Binding CancelCommand}"
+                HorizontalAlignment="Stretch"
+                Margin="4,0,0,0"/>
+        </Grid>
+    </Grid>
+</UserControl>
