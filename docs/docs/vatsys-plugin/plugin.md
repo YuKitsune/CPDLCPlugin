@@ -240,7 +240,7 @@ A symbol next to each contract shows the state of the request:
 #### Selecting a Reporting Interval
 
 1. Click the Selected Period button. A list of periods opens.
-2. Click a period in the list, or type a period (in minutes) in the box at the bottom of the list, then press Enter. The minimum period is 2 minutes.
+2. Click a period in the list, or type a period (in minutes) in the box at the bottom of the list, then press Enter.
 
 The server sends the request to the aircraft immediately.
 The selected contract ends after a time that the server sets (60 minutes by default).

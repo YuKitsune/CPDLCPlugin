@@ -117,7 +117,7 @@ public class RequestSelectedAdscContractCommandHandlerTests
         var handler = new RequestSelectedAdscContractCommandHandler(
             clientManager, contractRepository, Substitute.For<IMediator>(), new TestClock(), Logger.None);
 
-        var command = new RequestSelectedAdscContractCommand("YBBB", "UAL123", AdscContract.MinimumReportingInterval - TimeSpan.FromSeconds(1));
+        var command = new RequestSelectedAdscContractCommand("YBBB", "UAL123", TimeSpan.FromSeconds(59));
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => handler.Handle(command, CancellationToken.None));

@@ -106,8 +106,6 @@ The server keeps the latest report for each aircraft. When a controller connects
 
 The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, the source of the latest report for each aircraft, and a log of all the ADS-C messages that the server sent and received.
 
-The minimum reporting interval is 2 minutes.
-
 ### ADS-C from VATSIM Status Data
 
 Not all aircraft support ADS-C over Hoppie's network. When `VatsimStatus__Enabled` is `true`, the server makes ADS-C reports from the [VATSIM status data](https://data.vatsim.net/v3/vatsim-data.json) for these aircraft.

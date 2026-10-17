@@ -170,9 +170,9 @@ public partial class ADSContractViewModel : ObservableObject,
     [RelayCommand]
     async Task SelectCustomPeriod(string text)
     {
-        if (!int.TryParse(text, out var minutes) || minutes < 2)
+        if (!int.TryParse(text, out var minutes) || minutes < 1)
         {
-            _errorReporter.ReportError(new ArgumentException($"Period must be 2 to 99 minutes: {text}"));
+            _errorReporter.ReportError(new ArgumentException($"Period must be 1 to 99 minutes: {text}"));
             return;
         }
 
