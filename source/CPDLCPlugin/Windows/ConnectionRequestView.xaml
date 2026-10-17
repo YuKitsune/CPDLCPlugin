@@ -8,7 +8,7 @@
         Background="{x:Static cpdlcPlugin:Theme.BackgroundColor}"
         d:DataContext="{d:DesignInstance Type=viewModels:ConnectionRequestViewModel}"
         mc:Ignorable="d"
-        Width="300">
+        Width="400">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -28,24 +28,24 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Margin="0,0,0,8" TextWrapping="Wrap">
-            <Run Text="Send CONNECTION REQUESTED to"/>
+            <Run Text="Send connection request to "/>
             <Run Text="{Binding Callsign, Mode=OneWay}"/>
         </TextBlock>
 
         <!-- ATSU -->
-        <Grid Grid.Row="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Row="0" Text="ATSU" Margin="0,0,0,4"/>
-            <ComboBox Grid.Row="1"
+            <TextBlock Grid.Column="0" Text="ATSU" Margin="0,0,8,0"/>
+            <ComboBox Grid.Column="1"
                       ItemsSource="{Binding AvailableStationIdentifiers}"
                       SelectedItem="{Binding SelectedStationIdentifier}"/>
         </Grid>

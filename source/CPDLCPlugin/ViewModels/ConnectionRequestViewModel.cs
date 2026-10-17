@@ -15,6 +15,14 @@ public partial class ConnectionRequestViewModel : ObservableObject
     [ObservableProperty] string[] availableStationIdentifiers;
     [ObservableProperty] string selectedStationIdentifier;
 
+    // Example data for the XAML designer. Do not use at runtime.
+    public ConnectionRequestViewModel()
+    {
+        Callsign = "QFA123AB";
+        AvailableStationIdentifiers = ["YBBB", "YMMM"];
+        SelectedStationIdentifier = "YBBB";
+    }
+
     public ConnectionRequestViewModel(
         IMediator mediator,
         IErrorReporter errorReporter,
