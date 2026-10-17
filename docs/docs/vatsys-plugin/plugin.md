@@ -192,7 +192,7 @@ Not all aircraft support ADS-C over Hoppie's network. If the server administrato
 - When the aircraft sends reports through Hoppie, the server uses the Hoppie reports. If the Hoppie reports stop for more than two reporting intervals, the server uses the VATSIM data again.
 - If the aircraft rejects the contract, the server stops the VATSIM reports.
 
-The server downloads the VATSIM data every 2 minutes. Thus, a demand report from VATSIM data can take up to 2 minutes to arrive.
+The server downloads the VATSIM data at an interval that the server administrator sets (2 minutes by default). Thus, a demand report from VATSIM data can take up to this interval to arrive.
 
 A report from VATSIM data shows on the ASD the same as a report from the aircraft. In the [ADS Contract Window](#ads-contract-window), the `★` symbol shows that the latest report came from VATSIM data.
 

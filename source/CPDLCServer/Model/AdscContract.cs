@@ -11,7 +11,7 @@ namespace CPDLCServer.Model;
 /// </summary>
 public class AdscContract(string callsign, string stationId)
 {
-    // The server downloads the VATSIM status data every 2 minutes. A shorter interval gives no more data.
+    // The shortest reporting interval that a controller can request
     public static readonly TimeSpan MinimumReportingInterval = TimeSpan.FromMinutes(2);
 
     public string Callsign { get; } = callsign;

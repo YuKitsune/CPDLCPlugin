@@ -13,9 +13,6 @@ namespace CPDLCServer.Services;
 /// </summary>
 public class VatsimStatusService : IHostedService, IDisposable
 {
-    // The minimum ADS-C reporting interval is the same as the download interval
-    readonly TimeSpan _downloadInterval = AdscContract.MinimumReportingInterval;
-
     readonly VatsimStatusConfiguration _configuration;
     readonly IVatsimPilotRepository _vatsimPilotRepository;
     readonly IMediator _mediator;
@@ -82,7 +79,7 @@ public class VatsimStatusService : IHostedService, IDisposable
                     await DownloadPilots(timeoutCts.Token);
                     await _mediator.Send(new ProduceVatsimAdscReportsRequest(), timeoutCts.Token);
 
-                    await Task.Delay(_downloadInterval, stoppingToken);
+                    await Task.Delay(_configuration.PollingInterval, stoppingToken);
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
@@ -91,7 +88,7 @@ public class VatsimStatusService : IHostedService, IDisposable
                 catch (Exception ex)
                 {
                     _logger.Error(ex, "Error downloading VATSIM status data");
-                    await Task.Delay(_downloadInterval, stoppingToken);
+                    await Task.Delay(_configuration.PollingInterval, stoppingToken);
                 }
             }
         }
