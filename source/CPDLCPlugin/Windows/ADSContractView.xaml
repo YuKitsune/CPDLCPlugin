@@ -83,13 +83,13 @@
 
             <!-- Current Period -->
             <TextBlock Style="{StaticResource HeaderLabelStyle}" Text="Current Period"/>
-            <Border Style="{StaticResource ValueBorderStyle}">
+            <Border Style="{StaticResource ValueBorderStyle}" Width="32">
                 <TextBlock Style="{StaticResource ValueTextStyle}" Text="{Binding CurrentPeriodMinutes}"/>
             </Border>
 
             <!-- Last Report -->
             <TextBlock Style="{StaticResource HeaderLabelStyle}" Text="Last Report"/>
-            <Border Style="{StaticResource ValueBorderStyle}">
+            <Border Style="{StaticResource ValueBorderStyle}" Width="56">
                 <TextBlock Style="{StaticResource ValueTextStyle}"
                            Text="{Binding LastReport, Converter={StaticResource TimeConverter}}"/>
             </Border>
