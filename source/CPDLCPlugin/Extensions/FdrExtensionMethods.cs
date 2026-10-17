@@ -22,9 +22,11 @@ public static class FdrExtensionMethods
                 continue;
 
             // Walk the sector hierarchy from most-specific to least-specific.
+            // A sector can be in its own sub-sectors, so stop at a sector that was visited before.
             var sectorIds = new List<string>();
+            var visited = new HashSet<SectorsVolumes.Sector>();
             var current = sector;
-            while (current is not null)
+            while (current is not null && visited.Add(current))
             {
                 sectorIds.Add(current.Name);
                 var captured = current;
