@@ -8,19 +8,19 @@ using CPDLCServer.Contracts;
 
 namespace CPDLCPlugin.Windows;
 
-public partial class CurrentMessagesWindow : Window
+public partial class CurrentMessagesView : UserControl
 {
     CurrentMessageViewModel? _selectedMessage;
     FrameworkElement? _extendedMessageAnchor;
     readonly CurrentMessagesViewModel _viewModel;
 
-    public CurrentMessagesWindow(CurrentMessagesViewModel viewModel)
+    public CurrentMessagesView(CurrentMessagesViewModel viewModel, IWindowHandle windowHandle)
     {
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
 
-        Closed += (_, _) => _viewModel.Dispose();
+        windowHandle.Closed += (_, _) => _viewModel.Dispose();
 
         // Wire up button click events
         StandbyButton.Click += (_, _) => ExecuteCommandAndClosePopup(vm => vm.SendStandbyCommand);

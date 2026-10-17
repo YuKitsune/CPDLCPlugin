@@ -28,13 +28,12 @@ public class OpenADSContractWindowRequestHandler(
             throw new Exception("Cannot open the ADS Contract window: not connected to the CPDLC server");
         }
 
-        ADSContractViewModel? viewModel = null;
-        windowManager.FocusOrCreateForm(
+        windowManager.FocusOrCreateWindow(
             WindowKeys.ADSContract,
             "ADS CONTRACT WINDOW",
             windowHandle =>
             {
-                viewModel = new ADSContractViewModel(
+                var viewModel = new ADSContractViewModel(
                     plugin,
                     adscContractStore,
                     adscReportStore,
@@ -44,9 +43,13 @@ public class OpenADSContractWindowRequestHandler(
                     errorReporter,
                     request.Callsign);
 
-                return new ADSContractView(viewModel);
+                return new ADSContractView(viewModel, windowHandle);
             },
-            onClosed: () => viewModel?.Dispose());
+            configureForm: form =>
+            {
+                form.HasMinimizeButton = false;
+                form.MinimizeBox = false;
+            });
 
         return Task.CompletedTask;
     }

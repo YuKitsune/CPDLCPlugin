@@ -5,37 +5,20 @@ using CPDLCPlugin.ViewModels;
 
 namespace CPDLCPlugin.Windows;
 
-public partial class HistoryWindow : Window
+public partial class HistoryView : UserControl
 {
     FrameworkElement? _extendedMessageAnchor;
     readonly HistoryViewModel _viewModel;
-    double _lockedWidth;
 
-    public HistoryWindow(HistoryViewModel viewModel)
+    public HistoryView(HistoryViewModel viewModel, IWindowHandle windowHandle)
     {
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
-        _lockedWidth = Width;
 
-        Closed += (_, _) => _viewModel.Dispose();
-        LocationChanged += (_, _) => CollapseExtendedMessage();
-        SizeChanged += Window_SizeChanged;
-    }
-
-    void Window_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        // Lock width, only allow height resizing
-        if (Math.Abs(e.NewSize.Width - _lockedWidth) > 0.1)
-        {
-            Width = _lockedWidth;
-        }
-
-        // Close extended message on resize
-        if (e.HeightChanged || e.WidthChanged)
-        {
-            CollapseExtendedMessage();
-        }
+        windowHandle.Closed += (_, _) => _viewModel.Dispose();
+        windowHandle.Moved += (_, _) => CollapseExtendedMessage();
+        SizeChanged += (_, _) => CollapseExtendedMessage();
     }
 
     void CallsignButton_Click(object sender, RoutedEventArgs e)

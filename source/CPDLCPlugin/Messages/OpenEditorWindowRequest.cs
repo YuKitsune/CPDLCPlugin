@@ -27,6 +27,7 @@ public class OpenEditorWindowRequestHandler(
 
         windowManager.FocusOrCreateWindow(
             WindowKeys.Editor,
+            request.Callsign,
             windowHandle =>
             {
                 var viewModel = new EditorViewModel(
@@ -40,7 +41,7 @@ public class OpenEditorWindowRequestHandler(
                     windowHandle,
                     logger);
 
-                var control = new EditorWindow(viewModel);
+                var control = new EditorView(viewModel, windowHandle);
                 return control;
             });
 

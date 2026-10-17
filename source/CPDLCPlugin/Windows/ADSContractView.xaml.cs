@@ -9,11 +9,13 @@ public partial class ADSContractView : UserControl
 {
     readonly ADSContractViewModel _viewModel;
 
-    public ADSContractView(ADSContractViewModel viewModel)
+    public ADSContractView(ADSContractViewModel viewModel, IWindowHandle windowHandle)
     {
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
+
+        windowHandle.Closed += (_, _) => _viewModel.Dispose();
     }
 
     void CallsignButton_Click(object sender, RoutedEventArgs e)

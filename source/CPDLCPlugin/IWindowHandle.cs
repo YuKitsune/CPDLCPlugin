@@ -1,39 +1,31 @@
-﻿using System.Windows;
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace CPDLCPlugin;
 
 public interface IWindowHandle
 {
+    event EventHandler? Closed;
+    event EventHandler? Moved;
+
     void Close();
 }
 
-public class WpfWindowHandle : IWindowHandle
+public class FormWindowHandle : IWindowHandle
 {
-    Window? Window { get; set; }
+    readonly Form _form;
 
-    public void SetWindow(Window window)
+    public FormWindowHandle(Form form)
     {
-        Window = window;
+        _form = form;
+        _form.FormClosed += (_, _) => Closed?.Invoke(this, EventArgs.Empty);
+        _form.Move += (_, _) => Moved?.Invoke(this, EventArgs.Empty);
     }
+
+    public event EventHandler? Closed;
+    public event EventHandler? Moved;
 
     public void Close()
     {
-        Window?.Close();
-    }
-}
-
-public class FormWindowHandle(Form? form = null) : IWindowHandle
-{
-    Form? Form { get; set; } = form;
-
-    public void SetForm(Form form)
-    {
-        Form = form;
-    }
-
-    public void Close()
-    {
-        Form?.Close();
+        _form.Close();
     }
 }

@@ -19,6 +19,7 @@ public class OpenSetupWindowRequestHandler(
     {
         windowManager.FocusOrCreateWindow(
             WindowKeys.Setup,
+            "CPDLC Setup",
             windowHandle =>
             {
                 // Create the view model with current configuration and connection state
@@ -32,7 +33,7 @@ public class OpenSetupWindowRequestHandler(
                     isConnected ? plugin.ConnectionManager!.StationIdentifier : pluginConfiguration.Stations.First(),
                     isConnected);
 
-                var control = new SetupWindow(viewModel);
+                var control = new SetupView(viewModel);
                 return control;
             });
 

@@ -1,20 +1,19 @@
 ﻿using System.Windows;
 using System.Windows.Forms;
-using System.Windows.Forms.Integration;
 
 namespace CPDLCPlugin.Windows;
 
 public class WindowManager(IGuiInvoker guiInvoker)
 {
-    readonly IDictionary<string, Window> _windows = new Dictionary<string, Window>();
     readonly IDictionary<string, VatSysForm> _forms = new Dictionary<string, VatSysForm>();
     readonly object _gate = new();
 
-    public void FocusOrCreateForm(
+    public void FocusOrCreateWindow(
         string key,
         string title,
-        Func<IWindowHandle, UIElement> createView,
-        Action? onClosed = null)
+        Func<IWindowHandle, FrameworkElement> createView,
+        bool sizeToContent = true,
+        Action<VatSysForm>? configureForm = null)
     {
         guiInvoker.InvokeOnGUI(mainForm =>
         {
@@ -29,57 +28,17 @@ public class WindowManager(IGuiInvoker guiInvoker)
                         return;
                     }
 
-                    var form = new VatSysForm(title, createView, shrinkToContent: true)
+                    var form = new VatSysForm(title, createView, sizeToContent)
                     {
                         StartPosition = FormStartPosition.CenterParent
                     };
 
-                    form.Closed += (_, _) =>
-                    {
-                        TryRemoveFormInternal(key);
-                        onClosed?.Invoke();
-                    };
+                    configureForm?.Invoke(form);
+
+                    form.Closed += (_, _) => TryRemoveWindowInternal(key);
                     form.Show(mainForm);
 
                     _forms[key] = form;
-                }
-            }
-            catch (Exception ex)
-            {
-                Plugin.AddError(ex, "Failed to open window");
-            }
-        });
-    }
-
-    public void FocusOrCreateWindow(
-        string key,
-        Func<IWindowHandle, Window> createWindow)
-    {
-        guiInvoker.InvokeOnGUI(mainForm =>
-        {
-            try
-            {
-                lock (_gate)
-                {
-                    if (_windows.TryGetValue(key, out var existingWindowHandle))
-                    {
-                        existingWindowHandle.Focus();
-                        return;
-                    }
-
-                    var windowHandle = new WpfWindowHandle();
-                    var window = createWindow(windowHandle);
-                    windowHandle.SetWindow(window);
-
-                    ElementHost.EnableModelessKeyboardInterop(window);
-
-                    var helper = new System.Windows.Interop.WindowInteropHelper(window);
-                    helper.Owner = mainForm.Handle;
-
-                    window.Closed += (_, _) => TryRemoveWindowInternal(key);
-                    window.Show();
-
-                    _windows[key] = window;
                 }
             }
             catch (Exception ex)
@@ -95,36 +54,22 @@ public class WindowManager(IGuiInvoker guiInvoker)
         {
             lock (_gate)
             {
-                if (_forms.TryGetValue(key, out var form))
-                {
-                    form.Close();
-                    return;
-                }
-
-                if (!_windows.TryGetValue(key, out var window))
+                if (!_forms.TryGetValue(key, out var form))
                     return;
 
                 try
                 {
-                    window.Close();
+                    form.Close();
                 }
-                catch (InvalidOperationException)
+                catch (ObjectDisposedException)
                 {
-                    // Window may have already been closed or disposed
+                    // Form may have already been closed or disposed
                 }
             }
         });
     }
 
     void TryRemoveWindowInternal(string key)
-    {
-        lock (_gate)
-        {
-            _windows.Remove(key);
-        }
-    }
-
-    void TryRemoveFormInternal(string key)
     {
         lock (_gate)
         {

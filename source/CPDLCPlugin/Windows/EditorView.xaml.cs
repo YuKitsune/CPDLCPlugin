@@ -7,22 +7,26 @@ using CPDLCPlugin.ViewModels;
 
 namespace CPDLCPlugin.Windows;
 
-public partial class EditorWindow : Window, IRecipient<DisconnectedNotification>
+public partial class EditorView : UserControl, IRecipient<DisconnectedNotification>
 {
-    public EditorWindow(EditorViewModel viewModel)
+    readonly IWindowHandle _windowHandle;
+
+    public EditorView(EditorViewModel viewModel, IWindowHandle windowHandle)
     {
         InitializeComponent();
         DataContext = viewModel;
+        _windowHandle = windowHandle;
 
         WeakReferenceMessenger.Default.Register(this);
+        _windowHandle.Closed += (_, _) => OnClosed();
     }
 
     public void Receive(DisconnectedNotification message)
     {
-        Close();
+        _windowHandle.Close();
     }
 
-    protected override void OnClosed(EventArgs e)
+    void OnClosed()
     {
         WeakReferenceMessenger.Default.Unregister<DisconnectedNotification>(this);
 
@@ -30,8 +34,6 @@ public partial class EditorWindow : Window, IRecipient<DisconnectedNotification>
         {
             viewModel.Dispose();
         }
-
-        base.OnClosed(e);
     }
 
     void MessageClassElement_Click(object sender, MouseButtonEventArgs e)
