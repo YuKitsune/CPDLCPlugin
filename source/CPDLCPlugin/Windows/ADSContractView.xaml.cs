@@ -1,20 +1,19 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using CPDLCPlugin.ViewModels;
 
 namespace CPDLCPlugin.Windows;
 
-public partial class ADSContractWindow : Window
+public partial class ADSContractView : UserControl
 {
     readonly ADSContractViewModel _viewModel;
 
-    public ADSContractWindow(ADSContractViewModel viewModel)
+    public ADSContractView(ADSContractViewModel viewModel)
     {
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
-
-        Closed += (_, _) => _viewModel.Dispose();
     }
 
     void CallsignButton_Click(object sender, RoutedEventArgs e)
