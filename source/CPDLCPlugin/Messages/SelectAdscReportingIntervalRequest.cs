@@ -19,7 +19,10 @@ public class SelectAdscReportingIntervalRequestHandler(
             request.Callsign);
         if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
         {
-            logger.Warning("Not connected to server");
+            logger.Warning(
+                "Cannot select ADS-C reporting interval {ReportingInterval} for {Callsign}: not connected to server",
+                request.ReportingInterval?.ToString() ?? "Default",
+                request.Callsign);
             return;
         }
 

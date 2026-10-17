@@ -311,6 +311,19 @@ public class ControllerHub(
         return result.Contracts;
     }
 
+    public async Task<AdscReportDto[]> GetAdscReports()
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
+        }
+
+        var result = await mediator.Send(new GetAdscReportsRequest());
+        return result.Reports;
+    }
+
     public async Task<DialogueDto[]> GetAllDialogues()
     {
         var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);

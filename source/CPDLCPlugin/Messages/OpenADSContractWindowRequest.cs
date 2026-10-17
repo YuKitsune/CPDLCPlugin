@@ -30,7 +30,7 @@ public class OpenADSContractWindowRequestHandler(
 
         windowManager.FocusOrCreateWindow(
             WindowKeys.ADSContract,
-            "ADS CONTRACT WINDOW",
+            "ADS Contract",
             windowHandle =>
             {
                 var viewModel = new ADSContractViewModel(

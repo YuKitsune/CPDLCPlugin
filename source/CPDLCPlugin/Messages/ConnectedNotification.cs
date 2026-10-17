@@ -12,6 +12,8 @@ public class ConnectedNotificationHandler(
     AircraftConnectionStore aircraftConnectionStore,
     AcarsStationStore acarsStationStore,
     AdscContractStore adscContractStore,
+    AdscReportStore adscReportStore,
+    AdscTrackDisplay adscTrackDisplay,
     AtsuSettingsStore atsuSettingsStore,
     ILogger logger)
     : INotificationHandler<ConnectedNotification>
@@ -57,6 +59,17 @@ public class ConnectedNotificationHandler(
         var adscContracts = await plugin.ConnectionManager.GetAdscContracts(cancellationToken);
         await adscContractStore.Populate(adscContracts, cancellationToken);
         logger.Information("Loaded {ContractCount} ADS-C contract(s)", adscContracts.Length);
+
+        // Load ADS-C reports
+        logger.Verbose("Loading all ADS-C reports");
+        var adscReports = await plugin.ConnectionManager.GetAdscReports(cancellationToken);
+        await adscReportStore.Populate(adscReports, cancellationToken);
+        foreach (var adscReport in adscReports)
+        {
+            adscTrackDisplay.Show(adscReport);
+        }
+
+        logger.Information("Loaded {ReportCount} ADS-C report(s)", adscReports.Length);
 
         // Relay notification to UI
         WeakReferenceMessenger.Default.Send(notification);

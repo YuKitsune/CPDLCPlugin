@@ -13,7 +13,7 @@ public class AdscContractStateToSymbolConverter : IValueConverter
         {
             AdscContractState.Sent => "→",
             AdscContractState.Accepted => "✓",
-            AdscContractState.Rejected => "✖",
+            AdscContractState.Rejected => "×",
             _ => string.Empty
         };
     }

@@ -35,6 +35,7 @@ builder.Services.AddSingleton<IAcarsStationRepository, InMemoryAcarsStationRepos
 builder.Services.AddSingleton<IDialogueRepository, InMemoryDialogueRepository>();
 builder.Services.AddSingleton<IAdscContractRepository, InMemoryAdscContractRepository>();
 builder.Services.AddSingleton<IAdscMessageLogRepository, InMemoryAdscMessageLogRepository>();
+builder.Services.AddSingleton<IAdscReportRepository, InMemoryAdscReportRepository>();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddSignalR()
     .AddJsonProtocol();
