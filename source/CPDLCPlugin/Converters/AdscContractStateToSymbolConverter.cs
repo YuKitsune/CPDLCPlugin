@@ -4,18 +4,14 @@ using CPDLCServer.Contracts;
 
 namespace CPDLCPlugin.Converters;
 
-[ValueConversion(typeof(AdscTransmissionState), typeof(string))]
+[ValueConversion(typeof(AdscContractState), typeof(string))]
 public class AdscContractStateToSymbolConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is not AdscTransmissionState transmissionState)
-            return string.Empty;
-
-        return transmissionState.State switch
+        return value switch
         {
             AdscContractState.Sent => "→",
-            AdscContractState.Accepted when transmissionState.IsUsingVatsimData => "★",
             AdscContractState.Accepted => "✓",
             AdscContractState.Rejected => "×",
             _ => string.Empty

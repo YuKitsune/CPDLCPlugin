@@ -110,19 +110,7 @@ The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their stat
 
 Not all aircraft support ADS-C over Hoppie's network. When `VatsimStatus__Enabled` is `true`, the server makes ADS-C reports from the [VATSIM status data](https://data.vatsim.net/v3/vatsim-data.json) for these aircraft.
 
-The server downloads the VATSIM status data at the interval set by `VatsimStatus__PollingIntervalSeconds` (120 seconds by default). Then it makes a report for each aircraft that has a contract, when all of these conditions are true:
-
-- The contract is not rejected.
-- The contract needs a report: a demand request was sent, or a periodic report is due.
-- There is no report from Hoppie, or the latest report from Hoppie is more than two reporting intervals late.
-- The aircraft is in the VATSIM status data.
-- The aircraft has `D1` or `G1` in Item 10b of the flight plan, or `VatsimStatus__AllowNonEquippedAircraft` is `true`. An aircraft without a flight plan is not equipped.
-
-A report from the VATSIM status data accepts the contract, the same as a report from the aircraft. The time of the report is the time that VATSIM last updated the position of the aircraft.
-
-The server continues to send all the requests to the aircraft through Hoppie. A report from Hoppie always replaces a report from the VATSIM status data, and stops the VATSIM reports. If the Hoppie reports stop for more than two reporting intervals, the VATSIM reports start again. A demand request without a periodic contract has no reporting interval. Thus, after a report from Hoppie, the server does not use the VATSIM status data for a demand-only contract.
-
-Each report has a source: `Hoppie` or `VATSIM`.
+The server uses the VATSIM status data only for aircraft that have `D1` or `G1` in Item 10b of the flight plan, unless `VatsimStatus__AllowNonEquippedAircraft` is `true`. A report from Hoppie always has priority. If the Hoppie reports stop for more than two reporting intervals, the server uses the VATSIM status data again.
 
 ## Running
 

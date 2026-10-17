@@ -183,19 +183,6 @@ Refer to [ADS-C](/concepts#ads-c) for an explanation of contracts.
 
 You do not have to do anything to start ADS-C. When an aircraft logs on with CPDLC, the server automatically requests the default contract.
 
-### ADS-C Reports from VATSIM
-
-Not all aircraft support ADS-C over Hoppie's network. If the server administrator enables this function, the server makes ADS-C reports for these aircraft from the VATSIM network data.
-
-- The server makes a report only when the contract needs one, at the reporting interval of the contract, or after a demand request.
-- The server makes reports only for aircraft that are ADS-C equipped (`D1` or `G1` in Item 10b of the flight plan). The server administrator can also allow aircraft that are not equipped.
-- When the aircraft sends reports through Hoppie, the server uses the Hoppie reports. If the Hoppie reports stop for more than two reporting intervals, the server uses the VATSIM data again.
-- If the aircraft rejects the contract, the server stops the VATSIM reports.
-
-The server downloads the VATSIM data at an interval that the server administrator sets (120 seconds by default). Thus, a demand report from VATSIM data can take up to this interval to arrive.
-
-A report from VATSIM data shows on the ASD the same as a report from the aircraft. In the [ADS Contract Window](#ads-contract-window), the `★` symbol shows that the latest report came from VATSIM data.
-
 ### ADS-C Tracks
 
 ![Screenshot of an ADS-C track on the ASD, next to the same track after extrapolation. Show the ADSC symbol and the ADSCExtrapolated symbol.](../../static/adsc_tracks.png)
@@ -209,6 +196,8 @@ You can change this time with the [`ADSCTrackExtrapolationThreshold`](configurat
 
 The vatSys profile sets how the symbols look, so the exact symbols may vary.
 By default, the ADSC symbol is a filled triangle, and the ADSCExtrapolated is a hollow triangle.
+
+A squashed diamond symbol shows a low-quality ADS-C report. The server makes this report from VATSIM data when there is no report from ACARS.
 
 A radar track always has priority. When the flight plan is coupled to a radar track, the plugin does not move the track.
 
@@ -234,7 +223,6 @@ A symbol next to each contract shows the state of the request:
 
 - `→`: The request was sent. The aircraft has not answered.
 - `✓`: The aircraft accepted the request.
-- `★`: The aircraft has not sent reports through ACARS, and its position is being derived from VATSIM Status data. Refer to [ADS-C Reports from VATSIM](#ads-c-reports-from-vatsim).
 - `×`: The aircraft rejected the request.
 
 #### Selecting a Reporting Interval

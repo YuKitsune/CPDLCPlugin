@@ -68,13 +68,13 @@ public partial class ADSContractViewModel : ObservableObject,
         LastReport = DateTimeOffset.UtcNow.AddMinutes(-2);
 
         DefaultPeriod = 10;
-        DefaultPeriodTransmissionState = new AdscTransmissionState(AdscContractState.Accepted, IsUsingVatsimData: true);
+        DefaultPeriodTransmissionState = AdscContractState.Accepted;
 
         SelectedPeriod = 5;
-        SelectedPeriodTransmissionState = new AdscTransmissionState(AdscContractState.Sent, IsUsingVatsimData: false);
+        SelectedPeriodTransmissionState = AdscContractState.Sent;
         SelectedPeriodEndTime = DateTimeOffset.UtcNow.AddMinutes(60);
 
-        DemandContractTransmissionState = new AdscTransmissionState(AdscContractState.Rejected, IsUsingVatsimData: false);
+        DemandContractTransmissionState = AdscContractState.Rejected;
     }
 
     [ObservableProperty]
@@ -87,7 +87,7 @@ public partial class ADSContractViewModel : ObservableObject,
     [ObservableProperty] DateTimeOffset? _lastReport;
 
     [ObservableProperty] int? _defaultPeriod;
-    [ObservableProperty] AdscTransmissionState? _defaultPeriodTransmissionState;
+    [ObservableProperty] AdscContractState? _defaultPeriodTransmissionState;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SelectedPeriodButtonText))]
@@ -98,10 +98,10 @@ public partial class ADSContractViewModel : ObservableObject,
     // The periods in minutes that a controller can select from the list. A controller can also type a different period.
     public int[] PeriodOptions { get; } = [3, 5, 10, 15, 20, 24, 30, 60];
 
-    [ObservableProperty] AdscTransmissionState? _selectedPeriodTransmissionState;
+    [ObservableProperty] AdscContractState? _selectedPeriodTransmissionState;
     [ObservableProperty] DateTimeOffset? _selectedPeriodEndTime;
 
-    [ObservableProperty] AdscTransmissionState? _demandContractTransmissionState;
+    [ObservableProperty] AdscContractState? _demandContractTransmissionState;
 
     async Task LoadContractAsync()
     {
@@ -111,7 +111,8 @@ public partial class ADSContractViewModel : ObservableObject,
 
             if (string.IsNullOrWhiteSpace(Callsign))
             {
-                ShowContract(null, null);
+                ShowContract(null);
+                LastReport = null;
                 return;
             }
 
@@ -119,8 +120,10 @@ public partial class ADSContractViewModel : ObservableObject,
             var stationId = _plugin.ConnectionManager?.StationIdentifier;
             var contract = (await _adscContractStore.All(CancellationToken.None))
                 .FirstOrDefault(c => c.Callsign == Callsign && c.StationId == stationId);
+            ShowContract(contract);
+
             var report = await _adscReportStore.Find(Callsign, CancellationToken.None);
-            ShowContract(contract, report);
+            LastReport = report?.Timestamp;
         }
         catch (Exception ex)
         {
@@ -128,25 +131,17 @@ public partial class ADSContractViewModel : ObservableObject,
         }
     }
 
-    void ShowContract(AdscContractDto? contract, AdscReportDto? report)
+    void ShowContract(AdscContractDto? contract)
     {
         CurrentPeriodMinutes = (int?)contract?.ReportingInterval?.TotalMinutes;
-        LastReport = report?.Timestamp;
 
-        var isUsingVatsimData = report?.Source == AdscReportSource.VATSIM;
-
-        DefaultPeriodTransmissionState = ToTransmissionState(contract?.DefaultContractState, isUsingVatsimData);
+        DefaultPeriodTransmissionState = contract?.DefaultContractState;
 
         SelectedPeriod = (int?)contract?.SelectedReportingInterval?.TotalMinutes;
-        SelectedPeriodTransmissionState = ToTransmissionState(contract?.SelectedContractState, isUsingVatsimData);
+        SelectedPeriodTransmissionState = contract?.SelectedContractState;
         SelectedPeriodEndTime = contract?.SelectedContractEnds;
 
-        DemandContractTransmissionState = ToTransmissionState(contract?.DemandContractState, isUsingVatsimData);
-    }
-
-    static AdscTransmissionState? ToTransmissionState(AdscContractState? state, bool isUsingVatsimData)
-    {
-        return state is null ? null : new AdscTransmissionState(state.Value, isUsingVatsimData);
+        DemandContractTransmissionState = contract?.DemandContractState;
     }
 
     // A null period requests the default contract
