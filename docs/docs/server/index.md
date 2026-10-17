@@ -56,7 +56,7 @@ Acars__0__SelectedAdscContractDuration=60
 Handoff__NotificationLeadTime=10
 
 # ADS-C from VATSIM status data
-# Make ADS-C reports from the VATSIM status data when Hoppie does not supply them (default: false)
+# Make ADS-C reports from the VATSIM status data for aircraft that do not support ADS-C over Hoppie (default: false)
 VatsimStatus__Enabled=false
 # The URL of the VATSIM status data (default: https://data.vatsim.net/v3/vatsim-data.json)
 VatsimStatus__Url=https://data.vatsim.net/v3/vatsim-data.json
@@ -108,7 +108,7 @@ The minimum reporting interval is 2 minutes.
 
 ### ADS-C from VATSIM Status Data
 
-Hoppie does not supply ADS-C reports from all aircraft. When `VatsimStatus__Enabled` is `true`, the server makes ADS-C reports from the [VATSIM status data](https://data.vatsim.net/v3/vatsim-data.json) for these aircraft.
+Not all aircraft support ADS-C over Hoppie's network. When `VatsimStatus__Enabled` is `true`, the server makes ADS-C reports from the [VATSIM status data](https://data.vatsim.net/v3/vatsim-data.json) for these aircraft.
 
 The server downloads the VATSIM status data every 2 minutes. Then it makes a report for each aircraft that has a contract, when all of these conditions are true:
 

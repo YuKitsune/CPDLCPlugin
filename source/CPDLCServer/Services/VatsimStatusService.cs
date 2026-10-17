@@ -9,7 +9,7 @@ namespace CPDLCServer.Services;
 
 /// <summary>
 /// Downloads the VATSIM status data, then makes the ADS-C reports that are due.
-/// Hoppie does not forward ADS-C reports from all aircraft, so the server uses the VATSIM data in place of the missing reports.
+/// Not all aircraft support ADS-C over Hoppie's network, so the server uses the VATSIM data for these aircraft.
 /// </summary>
 public class VatsimStatusService : IHostedService, IDisposable
 {

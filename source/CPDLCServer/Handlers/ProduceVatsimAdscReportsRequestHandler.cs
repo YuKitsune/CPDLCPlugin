@@ -8,7 +8,7 @@ using MediatR;
 namespace CPDLCServer.Handlers;
 
 /// <summary>
-/// Makes ADS-C reports from the VATSIM status data, for aircraft that do not send ADS-C reports through Hoppie.
+/// Makes ADS-C reports from the VATSIM status data, for aircraft that do not support ADS-C over Hoppie's network.
 /// <list type="bullet">
 /// <item>A report from Hoppie stops the VATSIM reports. The VATSIM reports start again when the Hoppie reports are more than two reporting intervals late.</item>
 /// <item>A rejected contract stops the VATSIM reports.</item>

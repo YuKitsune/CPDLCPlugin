@@ -185,7 +185,7 @@ You do not have to do anything to start ADS-C. When an aircraft logs on with CPD
 
 ### ADS-C Reports from VATSIM
 
-Many aircraft cannot send ADS-C reports through Hoppie. If the server administrator enables this function, the server makes ADS-C reports for these aircraft from the VATSIM network data.
+Not all aircraft support ADS-C over Hoppie's network. If the server administrator enables this function, the server makes ADS-C reports for these aircraft from the VATSIM network data.
 
 - The server makes a report only when the contract needs one, at the reporting interval of the contract, or after a demand request.
 - The server makes reports only for aircraft that are ADS-C equipped (`D1` or `G1` in Item 10b of the flight plan). The server administrator can also allow aircraft that are not equipped.
