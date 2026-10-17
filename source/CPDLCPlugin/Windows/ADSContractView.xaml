@@ -191,10 +191,9 @@
             </Grid>
         </Grid>
 
-        <!-- Source of the latest report -->
-        <TextBlock Grid.Row="3" Margin="16,0,16,16">
-            <Run Text="Source: "/>
-            <Run Text="{Binding LastReportSource, Mode=OneWay}"/>
-        </TextBlock>
+        <!-- Source of the latest report. Empty when there is no report. -->
+        <TextBlock Grid.Row="3"
+                   Margin="16,0,16,16"
+                   Text="{Binding LastReportSource, StringFormat='Source: {0}'}"/>
     </Grid>
 </UserControl>
