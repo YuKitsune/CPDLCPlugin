@@ -234,7 +234,7 @@ A symbol next to each contract shows the state of the request:
 
 - `→`: The request was sent. The aircraft has not answered.
 - `✓`: The aircraft accepted the request.
-- `★`: The request is in use, and the latest report came from VATSIM data. Refer to [ADS-C Reports from VATSIM](#ads-c-reports-from-vatsim).
+- `★`: The aircraft has not sent reports through ACARS, and its position is being derived from VATSIM Status data. Refer to [ADS-C Reports from VATSIM](#ads-c-reports-from-vatsim).
 - `×`: The aircraft rejected the request.
 
 #### Selecting a Reporting Interval
