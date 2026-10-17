@@ -104,13 +104,13 @@ The aircraft does not acknowledge a request. The first report after a request ac
 
 The server keeps the latest report for each aircraft. When a controller connects, the plugin loads these reports, so that the controller sees the ADS-C tracks immediately.
 
-The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, the source of the latest report for each aircraft, and a log of all the ADS-C messages that the server sent and received.
+The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, and a log of all the ADS-C messages that the server sent and received.
 
 ### ADS-C from VATSIM Status Data
 
-Not all aircraft support ADS-C over Hoppie's network. When `VatsimStatus__Enabled` is `true`, the server makes ADS-C reports from the [VATSIM status data](https://data.vatsim.net/v3/vatsim-data.json) for these aircraft.
+Not all aircraft support ADS-C over Hoppie's network. When `VatsimStatus__Enabled` is `true`, the server fakes ADS-C reports using data from the [VATSIM status API](https://data.vatsim.net/v3/vatsim-data.json).
 
-The server uses the VATSIM status data only for aircraft that have `D1` or `G1` in Item 10b of the flight plan, unless `VatsimStatus__AllowNonEquippedAircraft` is `true`. A report from Hoppie always has priority. If the Hoppie reports stop for more than two reporting intervals, the server uses the VATSIM status data again.
+This is only done for aircraft that have `D1` or `G1` in Item 10b of the flight plan, unless `VatsimStatus__AllowNonEquippedAircraft` is `true`. A report from Hoppie always has priority. If the Hoppie reports stop for more than two reporting intervals, the server uses the VATSIM status data again.
 
 ## Running
 

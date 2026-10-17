@@ -192,12 +192,11 @@ The reported altitude becomes the pilot reported level (PRL) of the flight plan.
 
 After a short time, the track moves along the flight plan route from the reported position, and shows the `ADSCExtrapolated` symbol.
 The plugin uses the route estimates of the flight plan to calculate the speed of the track.
-You can change this time with the [`ADSCTrackExtrapolationThreshold`](configuration#adsctrackextrapolationthreshold) setting.
 
 The vatSys profile sets how the symbols look, so the exact symbols may vary.
-By default, the ADSC symbol is a filled triangle, and the ADSCExtrapolated is a hollow triangle.
+By default, the `ADSC` symbol is a filled triangle, and the `ADSCExtrapolated` is a hollow triangle.
 
-A squashed diamond symbol shows a low-quality ADS-C report. The server makes this report from VATSIM data when there is no report from ACARS.
+A squashed diamond symbol shows a  server-generated report using VATSIM data when there is no report from ACARS.
 
 A radar track always has priority. When the flight plan is coupled to a radar track, the plugin does not move the track.
 
