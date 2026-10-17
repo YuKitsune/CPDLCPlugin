@@ -11,7 +11,6 @@ namespace CPDLCPlugin;
 /// <item>When a report arrives, the track moves to the reported position and uses the ADSC symbol.</item>
 /// <item>Each time vatSys extrapolates the flight plan positions, the track moves along the route from the reported position and uses the ADSCExtrapolated symbol.</item>
 /// </list>
-/// The symbol does not rotate.
 /// A coupled radar track always has priority over an ADS-C report.
 /// </summary>
 public static class AdscTrackPatches
