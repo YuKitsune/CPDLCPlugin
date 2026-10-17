@@ -53,9 +53,13 @@ public class AircraftConnection(
 
     public void SetNextDataAuthority(string nextDataAuthority, DateTimeOffset expectedTransferTime)
     {
+        // Send the NDA message again only if the NDA changes.
+        // A change to the transfer time alone must not cause a new message.
+        if (NextDataAuthority != nextDataAuthority)
+            DidSentNextDataAuthorityMessage = false;
+
         NextDataAuthority = nextDataAuthority;
         ExpectedTransferTime = expectedTransferTime;
-        DidSentNextDataAuthorityMessage = false;
     }
 
     public void SentNextDataAuthorityMessage()

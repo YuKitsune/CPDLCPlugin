@@ -1,43 +1,43 @@
 using CPDLCPlugin.Configuration;
+using CPDLCPlugin.Server;
 using CPDLCServer.Contracts;
 using MediatR;
 using Newtonsoft.Json;
 using Serilog;
-using vatsys;
 
 namespace CPDLCPlugin.Messages;
 
-public record UpdateNextDataAuthorityForFdrRequest(FDP2.FDR Fdr) : IRequest;
+public record UpdateNextDataAuthorityRequest(string Callsign, IReadOnlyList<SectorEntry> SectorEntries) : IRequest;
 
-public class UpdateNextDataAuthorityForFdrRequestHandler(
-    Plugin plugin,
+public class UpdateNextDataAuthorityRequestHandler(
+    IServerConnection serverConnection,
     AircraftConnectionStore aircraftConnectionStore,
     AcarsStationStore acarsStationStore,
     PluginConfiguration configuration,
+    IErrorReporter errorReporter,
     ILogger logger)
-    : IRequestHandler<UpdateNextDataAuthorityForFdrRequest>
+    : IRequestHandler<UpdateNextDataAuthorityRequest>
 {
-    public async Task Handle(UpdateNextDataAuthorityForFdrRequest request, CancellationToken cancellationToken)
+    public async Task Handle(UpdateNextDataAuthorityRequest request, CancellationToken cancellationToken)
     {
-        var fdr = request.Fdr;
-
-        if (plugin.ConnectionManager is null || !plugin.ConnectionManager.IsConnected)
+        if (!serverConnection.IsConnected)
             return;
 
         var aircraftConnections = await aircraftConnectionStore.All(cancellationToken);
         var ourAircraft = aircraftConnections.FirstOrDefault(
-            c => c.Callsign == fdr.Callsign &&
-                 c.StationId == plugin.ConnectionManager.StationIdentifier &&
+            c => c.Callsign == request.Callsign &&
+                 c.StationId == serverConnection.StationIdentifier &&
                  c.DataAuthorityState == DataAuthorityState.CurrentDataAuthority);
 
         if (ourAircraft is null)
             return;
 
-        logger.Verbose("Calculating next data authority for {Callsign}", fdr.Callsign);
+        logger.Verbose("Calculating next data authority for {Callsign}", request.Callsign);
 
         var newInfo = await CalculateNextDataAuthority(
-            fdr,
-            plugin.ConnectionManager.StationIdentifier,
+            request.Callsign,
+            request.SectorEntries,
+            serverConnection.StationIdentifier,
             cancellationToken);
 
         var oldInfo = ourAircraft.NextDataAuthorityInfo;
@@ -54,11 +54,11 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
             {
                 logger.Information(
                     "Next data authority calculation failed for {Callsign}: {ErrorMessage}",
-                    fdr.Callsign,
+                    request.Callsign,
                     errorInfo.ErrorMessage);
 
-                Plugin.AddError(
-                    new Exception($"Cannot calculate next data authority for {fdr.Callsign}: {errorInfo.ErrorMessage}"));
+                errorReporter.ReportError(
+                    new Exception($"Cannot calculate next data authority for {request.Callsign}: {errorInfo.ErrorMessage}"));
             }
 
             ourAircraft.SetNextDataAuthorityInfo(newInfo);
@@ -69,10 +69,10 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
             logger.Information(
                 "Transmitting NDA clear to server for {Callsign} (error state)",
-                fdr.Callsign);
+                request.Callsign);
 
-            await plugin.ConnectionManager.UpdateNextDataAuthority(
-                fdr.Callsign,
+            await serverConnection.UpdateNextDataAuthority(
+                request.Callsign,
                 null,
                 null,
                 serverCallCts.Token);
@@ -91,10 +91,10 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
             logger.Information(
                 "No ATSU boundary found for {Callsign}, clearing NDA on server",
-                fdr.Callsign);
+                request.Callsign);
 
-            await plugin.ConnectionManager.UpdateNextDataAuthority(
-                fdr.Callsign,
+            await serverConnection.UpdateNextDataAuthority(
+                request.Callsign,
                 null,
                 null,
                 serverCallCts.Token);
@@ -115,14 +115,14 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
             logger.Information(
                 "Next data authority for {Callsign}: {NextDataAuthority} at {ExitTime}",
-                fdr.Callsign,
+                request.Callsign,
                 validInfo.NextDataAuthority,
                 validInfo.ExitTime);
 
             ourAircraft.SetNextDataAuthorityInfo(newInfo);
 
-            await plugin.ConnectionManager.UpdateNextDataAuthority(
-                fdr.Callsign,
+            await serverConnection.UpdateNextDataAuthority(
+                request.Callsign,
                 validInfo.NextDataAuthority,
                 validInfo.ExitTime,
                 serverCallCts.Token);
@@ -130,17 +130,18 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
     }
 
     async Task<INextDataAuthorityInfo> CalculateNextDataAuthority(
-        FDP2.FDR fdr,
+        string callsign,
+        IReadOnlyList<SectorEntry> sectorEntries,
         string currentStationId,
         CancellationToken cancellationToken)
     {
-        var sectorEntryInfos = GetSectorEntryInfos(fdr);
+        logger.Verbose("{Callsign} sector entry info: {SectorEntryInfo}", callsign, JsonConvert.SerializeObject(sectorEntries));
 
-        logger.Verbose("{Callsign} sector entry info: {SectorEntryInfo}", fdr.Callsign, JsonConvert.SerializeObject(sectorEntryInfos));
-
-        foreach (var sectorEntry in sectorEntryInfos)
+        // Build ATSU code candidates for each sector entry along the route.
+        var sectorEntryCandidates = new List<(SectorEntry SectorEntry, IReadOnlyList<string> Candidates)>();
+        foreach (var sectorEntry in sectorEntries)
         {
-            logger.Verbose("{Callsign} enters [{SectorIds}] at {EntryTime}", fdr.Callsign, string.Join(", ", sectorEntry.SectorIds), sectorEntry.SectorEntryTime);
+            logger.Verbose("{Callsign} enters [{SectorIds}] at {EntryTime}", callsign, string.Join(", ", sectorEntry.SectorIds), sectorEntry.EntryTime);
 
             // Build ATSU code candidates from the sector hierarchy (most-specific first),
             // deduplicating to avoid redundant online checks.
@@ -158,7 +159,7 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                     var errorMessage = $"Sector {sectorId} is claimed by multiple ATSU codes in config: {string.Join(", ", matches)}";
                     logger.Warning(
                         "Cannot calculate next data authority for {Callsign}: {ErrorMessage}",
-                        fdr.Callsign,
+                        callsign,
                         errorMessage);
                     return new ErrorNextDataAuthorityInfo(errorMessage);
                 }
@@ -169,14 +170,20 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
 
             if (candidates.Count == 0)
             {
-                logger.Verbose("No ATSU codes found in hierarchy for {Callsign}, skipping", fdr.Callsign);
+                logger.Verbose("No ATSU codes found in hierarchy for {Callsign}, skipping", callsign);
                 continue;
             }
 
-            // If the most-specific candidate is our own station, this is our airspace.
-            if (candidates[0].Equals(currentStationId, StringComparison.OrdinalIgnoreCase))
-                continue;
+            sectorEntryCandidates.Add((sectorEntry, candidates.AsReadOnly()));
+        }
 
+        // If the route enters our own airspace later, the aircraft was likely handed off early.
+        // Do not use the sectors before our last entry, so that the NDA does not send the aircraft back.
+        var lastOwnEntryIndex = sectorEntryCandidates.FindLastIndex(
+            e => e.Candidates[0].Equals(currentStationId, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var (sectorEntry, candidates) in sectorEntryCandidates.Skip(lastOwnEntryIndex + 1))
+        {
             // Find the first candidate (most-specific first) that is currently online.
             foreach (var atsuCode in candidates)
             {
@@ -187,69 +194,21 @@ public class UpdateNextDataAuthorityForFdrRequestHandler(
                 {
                     logger.Verbose(
                         "ATSU boundary found for {Callsign}: {AtsuCode} at {ExitTime}",
-                        fdr.Callsign,
+                        callsign,
                         atsuCode,
-                        sectorEntry.SectorEntryTime);
+                        sectorEntry.EntryTime);
 
-                    return new ValidNextDataAuthorityInfo(atsuCode, sectorEntry.SectorEntryTime);
+                    return new ValidNextDataAuthorityInfo(atsuCode, sectorEntry.EntryTime);
                 }
             }
 
             logger.Verbose(
                 "ATSU boundary found for {Callsign} but no candidates online [{Candidates}], continuing",
-                fdr.Callsign,
+                callsign,
                 string.Join(", ", candidates));
         }
 
-        logger.Verbose("No ATSU boundary found for {Callsign}", fdr.Callsign);
+        logger.Verbose("No ATSU boundary found for {Callsign}", callsign);
         return NoneNextDataAuthorityInfo.Instance;
-    }
-
-    record SectorEntryInfo(IReadOnlyList<string> SectorIds, DateTimeOffset SectorEntryTime);
-
-    static IReadOnlyList<SectorEntryInfo> GetSectorEntryInfos(FDP2.FDR fdr)
-    {
-        var results = new List<SectorEntryInfo>();
-
-        foreach (var segment in fdr.ParsedRoute.Skip(fdr.ParsedRoute.OverflownIndex))
-        {
-            if (segment.Type != FDP2.FDR.ExtractedRoute.Segment.SegmentTypes.ZPOINT)
-                continue;
-
-            var volume = (SectorsVolumes.Volume?)segment.Tag;
-            if (volume is null)
-                continue;
-
-            var sector = SectorsVolumes.FindSector(volume);
-            if (sector is null)
-                continue;
-
-            // Walk the sector hierarchy from most-specific to least-specific.
-            var sectorIds = new List<string>();
-            var current = sector;
-            while (current is not null)
-            {
-                sectorIds.Add(current.Name);
-                var captured = current;
-                current = SectorsVolumes.SectorGroupings.Keys
-                    .Where(p => p.SubSectors.Contains(captured))
-                    .OrderBy(p => p.SubSectors.Count)
-                    .FirstOrDefault();
-            }
-
-            var eto = segment.ETO;
-            var etoDateTimeOffset = new DateTimeOffset(
-                eto.Year,
-                eto.Month,
-                eto.Day,
-                eto.Hour,
-                eto.Minute,
-                eto.Second,
-                offset: TimeSpan.Zero);
-
-            results.Add(new SectorEntryInfo(sectorIds.AsReadOnly(), etoDateTimeOffset));
-        }
-
-        return results.AsReadOnly();
     }
 }

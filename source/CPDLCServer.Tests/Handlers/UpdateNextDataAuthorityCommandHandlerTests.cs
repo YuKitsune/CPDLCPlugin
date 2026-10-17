@@ -201,4 +201,39 @@ public class UpdateNextDataAuthorityCommandHandlerTests
         Assert.Equal(newTime, aircraft.ExpectedTransferTime);
         Assert.False(aircraft.DidSentNextDataAuthorityMessage);
     }
+
+    [Fact]
+    public async Task Handle_WhenOnlyTransferTimeChangesAfterMessageSent_KeepsFlag()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        aircraft.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(30));
+        aircraft.SentNextDataAuthorityMessage();
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
+
+        var handler = new UpdateNextDataAuthorityCommandHandler(
+            aircraftRepository,
+            Logger.None);
+
+        var newTime = clock.UtcNow().AddMinutes(45);
+        var command = new UpdateNextDataAuthorityCommand(
+            "YBBB",
+            "UAL123",
+            "YMMM",
+            newTime);
+
+        // Act
+        await handler.Handle(command, CancellationToken.None);
+
+        // Assert - flag should stay set so the message is not sent again
+        Assert.True(aircraft.HasNextDataAuthority);
+        Assert.Equal("YMMM", aircraft.NextDataAuthority);
+        Assert.Equal(newTime, aircraft.ExpectedTransferTime);
+        Assert.True(aircraft.DidSentNextDataAuthorityMessage);
+    }
 }

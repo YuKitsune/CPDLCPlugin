@@ -227,12 +227,14 @@ class Build : FalloutBuild
     //     });
 
     Target TestPlugin => _ => _
+        .DependsOn(DownloadVatSys)
         .Executes(() =>
         {
             Log.Information("Running plugin tests");
             DotNetTasks.DotNetTest(s => s
                 .SetProjectFile(PluginTestsProjectPath)
-                .SetConfiguration(Configuration));
+                .SetConfiguration(Configuration)
+                .SetProperty("VatSysPath", VatSysExePath.Parent.Parent));
         });
 
     Target TestServer => _ => _
