@@ -17,7 +17,7 @@ public class RequestAdscDemandReportCommandHandlerTests
         // Arrange
         var clientManager = new TestClientManager();
         var handler = new RequestAdscDemandReportCommandHandler(
-            clientManager, new TestAdscContractRepository(), Substitute.For<IMediator>(), Logger.None);
+            clientManager, new TestAdscContractRepository(), Substitute.For<IMediator>(), new TestClock(), Logger.None);
 
         // Act
         await handler.Handle(new RequestAdscDemandReportCommand("YBBB", "UAL123"), CancellationToken.None);
@@ -35,7 +35,7 @@ public class RequestAdscDemandReportCommandHandlerTests
         var contractRepository = new TestAdscContractRepository();
         var mediator = Substitute.For<IMediator>();
         var handler = new RequestAdscDemandReportCommandHandler(
-            new TestClientManager(), contractRepository, mediator, Logger.None);
+            new TestClientManager(), contractRepository, mediator, new TestClock(), Logger.None);
 
         // Act
         await handler.Handle(new RequestAdscDemandReportCommand("YBBB", "UAL123"), CancellationToken.None);
@@ -65,7 +65,7 @@ public class RequestAdscDemandReportCommandHandlerTests
 
         var mediator = Substitute.For<IMediator>();
         var handler = new RequestAdscDemandReportCommandHandler(
-            new TestClientManager(), contractRepository, mediator, Logger.None);
+            new TestClientManager(), contractRepository, mediator, new TestClock(), Logger.None);
 
         // Act
         await handler.Handle(new RequestAdscDemandReportCommand("YBBB", "UAL123"), CancellationToken.None);

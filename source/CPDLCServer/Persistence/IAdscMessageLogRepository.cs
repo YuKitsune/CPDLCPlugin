@@ -8,4 +8,6 @@ public interface IAdscMessageLogRepository
 
     // Newest entries first
     Task<AdscMessageLogEntry[]> All(CancellationToken cancellationToken);
+
+    Task RemoveOlderThan(DateTimeOffset cutoff, CancellationToken cancellationToken);
 }

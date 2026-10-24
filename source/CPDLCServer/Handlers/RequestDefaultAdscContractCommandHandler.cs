@@ -1,4 +1,5 @@
 using CPDLCServer.Clients;
+using CPDLCServer.Infrastructure;
 using CPDLCServer.Messages;
 using CPDLCServer.Model;
 using CPDLCServer.Persistence;
@@ -10,6 +11,7 @@ public class RequestDefaultAdscContractCommandHandler(
     IClientManager clientManager,
     IAdscContractRepository adscContractRepository,
     IMediator mediator,
+    IClock clock,
     ILogger logger)
     : IRequestHandler<RequestDefaultAdscContractCommand>
 {
@@ -36,6 +38,7 @@ public class RequestDefaultAdscContractCommandHandler(
         }
 
         contract.RequestDefaultContract(reportingInterval);
+        contract.LogActivity(clock.UtcNow());
 
         await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
     }

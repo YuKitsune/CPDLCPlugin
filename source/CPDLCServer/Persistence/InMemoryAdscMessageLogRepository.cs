@@ -29,4 +29,14 @@ public class InMemoryAdscMessageLogRepository : IAdscMessageLogRepository
             return _entries.Reverse().ToArray();
         }
     }
+
+    public async Task RemoveOlderThan(DateTimeOffset cutoff, CancellationToken cancellationToken)
+    {
+        using (await _semaphore.LockAsync(cancellationToken))
+        {
+            // The entries are added in time order, so the oldest entries are at the front
+            while (_entries.Count > 0 && _entries.Peek().Time < cutoff)
+                _entries.Dequeue();
+        }
+    }
 }

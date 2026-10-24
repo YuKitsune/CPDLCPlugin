@@ -2,4 +2,4 @@ using MediatR;
 
 namespace CPDLCServer.Messages;
 
-public record EndExpiredAdscContractsRequest : IRequest;
+public record EndExpiredAdscContractsRequest(TimeSpan ContractTimeout) : IRequest;

@@ -10,4 +10,6 @@ public interface IAdscReportRepository
     Task Add(AircraftAdscReport report, CancellationToken cancellationToken);
     Task<AircraftAdscReport?> Find(string callsign, CancellationToken cancellationToken);
     Task<AircraftAdscReport[]> All(CancellationToken cancellationToken);
+
+    Task RemoveOlderThan(DateTimeOffset cutoff, CancellationToken cancellationToken);
 }

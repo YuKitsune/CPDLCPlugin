@@ -32,7 +32,7 @@ public class MessageMonitorServiceTests
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time beyond pilot late timeout (2 minutes)
         clock.SetUtcNow(startTime.AddMinutes(3));
@@ -68,7 +68,7 @@ public class MessageMonitorServiceTests
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time but not beyond timeout (1 minute < 2 minute timeout)
         clock.SetUtcNow(startTime.AddMinutes(1));
@@ -103,7 +103,7 @@ public class MessageMonitorServiceTests
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time beyond timeout
         clock.SetUtcNow(startTime.AddMinutes(3));
@@ -137,7 +137,7 @@ public class MessageMonitorServiceTests
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time beyond controller late timeout (2 minutes)
         clock.SetUtcNow(startTime.AddMinutes(3));
@@ -177,7 +177,7 @@ public class MessageMonitorServiceTests
 
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time beyond timeout
         clock.SetUtcNow(startTime.AddMinutes(3));
@@ -212,7 +212,7 @@ public class MessageMonitorServiceTests
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time beyond timeout
         clock.SetUtcNow(startTime.AddMinutes(3));
@@ -247,7 +247,7 @@ public class MessageMonitorServiceTests
             startTime); // NoResponse uplinks are self-closing and auto-acknowledged
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time beyond archive delay (10 seconds)
         clock.SetUtcNow(startTime.AddSeconds(15));
@@ -283,7 +283,7 @@ public class MessageMonitorServiceTests
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time but not enough (5 seconds < 10 second delay)
         clock.SetUtcNow(startTime.AddSeconds(5));
@@ -318,7 +318,7 @@ public class MessageMonitorServiceTests
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time beyond archive delay
         clock.SetUtcNow(startTime.AddSeconds(15));
@@ -353,7 +353,7 @@ public class MessageMonitorServiceTests
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time beyond archive delay
         clock.SetUtcNow(startTime.AddSeconds(15));
@@ -386,7 +386,7 @@ public class MessageMonitorServiceTests
         await repository.Add(dialogue1, CancellationToken.None);
         await repository.Add(dialogue2, CancellationToken.None);
 
-        var service = new MessageMonitorService(repository, clock, publisher, Logger.None);
+        var service = new MessageMonitorService(repository, new TestAdscMessageLogRepository(), new TestAdscReportRepository(), clock, publisher, Logger.None);
 
         // Act - advance time beyond timeout
         clock.SetUtcNow(startTime.AddMinutes(3));
@@ -396,5 +396,87 @@ public class MessageMonitorServiceTests
         Assert.True(uplink1.IsPilotLate);
         Assert.True(uplink2.IsPilotLate);
         Assert.Equal(2, publisher.PublishedNotifications.Count);
+    }
+
+    [Fact]
+    public async Task PurgeOldAdscMessages_RemovesMessagesOlderThan24Hours()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var adscMessageLogRepository = new TestAdscMessageLogRepository();
+
+        var startTime = DateTimeOffset.UtcNow;
+        clock.SetUtcNow(startTime);
+
+        var oldEntry = new AdscMessageLogEntry(
+            startTime,
+            "Hoppies/YBBB",
+            "YBBB",
+            "UAL123",
+            AdscMessageDirection.Uplink,
+            "REQUEST PERIODIC 1");
+        var newEntry = new AdscMessageLogEntry(
+            startTime.AddHours(2),
+            "Hoppies/YBBB",
+            "YBBB",
+            "UAL123",
+            AdscMessageDirection.Uplink,
+            "REQUEST PERIODIC 2");
+        await adscMessageLogRepository.Add(oldEntry, CancellationToken.None);
+        await adscMessageLogRepository.Add(newEntry, CancellationToken.None);
+
+        var service = new MessageMonitorService(
+            new TestDialogueRepository(),
+            adscMessageLogRepository,
+            new TestAdscReportRepository(),
+            clock,
+            new TestPublisher(),
+            Logger.None);
+
+        // Act - advance time beyond the purge timeout (24 hours) for the old entry only
+        clock.SetUtcNow(startTime.AddHours(25));
+        await service.PurgeOldAdscMessages(CancellationToken.None);
+
+        // Assert
+        Assert.Equal([newEntry], await adscMessageLogRepository.All(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PurgeOldAdscReports_RemovesReportsOlderThan24Hours()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var adscReportRepository = new TestAdscReportRepository();
+
+        var startTime = DateTimeOffset.UtcNow;
+        clock.SetUtcNow(startTime);
+
+        var oldReport = new AircraftAdscReport(
+            "UAL123",
+            "YBBB",
+            new AdscReport(startTime, -33.9461, 151.1772, 37000, AdscReportSource.Hoppie),
+            startTime);
+        var newReport = new AircraftAdscReport(
+            "QFA1",
+            "YBBB",
+            new AdscReport(startTime.AddHours(2), -33.9461, 151.1772, 37000, AdscReportSource.Hoppie),
+            startTime.AddHours(2));
+        await adscReportRepository.Add(oldReport, CancellationToken.None);
+        await adscReportRepository.Add(newReport, CancellationToken.None);
+
+        var service = new MessageMonitorService(
+            new TestDialogueRepository(),
+            new TestAdscMessageLogRepository(),
+            adscReportRepository,
+            clock,
+            new TestPublisher(),
+            Logger.None);
+
+        // Act - advance time beyond the purge timeout (24 hours) for the old report only
+        clock.SetUtcNow(startTime.AddHours(25));
+        await service.PurgeOldAdscReports(CancellationToken.None);
+
+        // Assert
+        Assert.Equal([newReport], await adscReportRepository.All(CancellationToken.None));
     }
 }

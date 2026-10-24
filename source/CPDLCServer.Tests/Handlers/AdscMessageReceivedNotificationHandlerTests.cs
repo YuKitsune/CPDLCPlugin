@@ -212,6 +212,44 @@ public class AdscMessageReceivedNotificationHandlerTests
         Assert.Empty(mediator.ReceivedCalls());
     }
 
+    [Fact]
+    public async Task Handle_Report_LogsActivity()
+    {
+        // Arrange
+        var contractRepository = new TestAdscContractRepository();
+        var contract = await AddContract(contractRepository, "YBBB");
+        contract.RequestDefaultContract(DefaultInterval);
+
+        var handler = new AdscMessageReceivedNotificationHandler(
+            contractRepository, Substitute.For<IMediator>(), Logger.None);
+        var notification = CreateReport("YBBB");
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(notification.Message.Received, contract.LastActivity);
+    }
+
+    [Fact]
+    public async Task Handle_Rejection_LogsActivity()
+    {
+        // Arrange
+        var contractRepository = new TestAdscContractRepository();
+        var contract = await AddContract(contractRepository, "YBBB");
+        contract.RequestDefaultContract(DefaultInterval);
+
+        var handler = new AdscMessageReceivedNotificationHandler(
+            contractRepository, Substitute.For<IMediator>(), Logger.None);
+        var notification = CreateRejection("YBBB");
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(notification.Message.Received, contract.LastActivity);
+    }
+
     static async Task<AdscContract> AddContract(TestAdscContractRepository contractRepository, string stationId)
     {
         var contract = new AdscContract("UAL123", stationId);

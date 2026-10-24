@@ -21,4 +21,9 @@ public class TestAdscReportRepository : IAdscReportRepository
     {
         return _inner.All(cancellationToken);
     }
+
+    public Task RemoveOlderThan(DateTimeOffset cutoff, CancellationToken cancellationToken)
+    {
+        return _inner.RemoveOlderThan(cutoff, cancellationToken);
+    }
 }

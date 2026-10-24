@@ -43,4 +43,13 @@ public class InMemoryAdscReportRepository : IAdscReportRepository
             return _reports.Values.ToArray();
         }
     }
+
+    public async Task RemoveOlderThan(DateTimeOffset cutoff, CancellationToken cancellationToken)
+    {
+        using (await _semaphore.LockAsync(cancellationToken))
+        {
+            foreach (var report in _reports.Values.Where(r => r.Received < cutoff).ToArray())
+                _reports.Remove(report.Callsign);
+        }
+    }
 }
