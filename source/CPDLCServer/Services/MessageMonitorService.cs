@@ -7,7 +7,12 @@ using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 
 namespace CPDLCServer.Services;
 
-public class MessageMonitorService(IDialogueRepository repository, IClock clock, IPublisher publisher, ILogger logger)
+public class MessageMonitorService(
+    IDialogueRepository repository,
+    IAdscMessageLogRepository adscMessageLogRepository,
+    IClock clock,
+    IPublisher publisher,
+    ILogger logger)
     : BackgroundService
 {
     readonly TimeSpan _timeoutCheckInterval = TimeSpan.FromSeconds(5);
@@ -15,6 +20,7 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
     readonly TimeSpan _pilotLateTimeout = TimeSpan.FromMinutes(2);
     readonly TimeSpan _controllerLateTimeout = TimeSpan.FromMinutes(2);
     private readonly TimeSpan _archiveDelay = TimeSpan.FromSeconds(10);
+    readonly TimeSpan _purgeTimeout = TimeSpan.FromHours(24);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -29,6 +35,7 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
 
                     logger.Verbose("Running message monitor iteration");
                     await PurgeOldDialogues(stoppingToken);
+                    await PurgeOldAdscMessages(stoppingToken);
                     await CheckForTimeouts(stoppingToken);
                     await ArchiveCompletedDialogues(stoppingToken);
                 }
@@ -61,17 +68,22 @@ public class MessageMonitorService(IDialogueRepository repository, IClock clock,
         var now = clock.UtcNow();
         var dialogues = await repository.All(cancellationToken);
 
-        var purgeTimeout = TimeSpan.FromHours(24);
         foreach (var dialogue in dialogues)
         {
             var timeSinceOpened = now - dialogue.Opened;
-            if (timeSinceOpened < purgeTimeout)
+            if (timeSinceOpened < _purgeTimeout)
                 continue;
 
             // I don't care if it's closed or not. It's been long enough.
             await repository.Remove(dialogue, cancellationToken);
             logger.Information("Purging dialogue"); // TODO: Dialogue identifier
         }
+    }
+
+    internal async Task PurgeOldAdscMessages(CancellationToken cancellationToken)
+    {
+        var cutoff = clock.UtcNow() - _purgeTimeout;
+        await adscMessageLogRepository.RemoveOlderThan(cutoff, cancellationToken);
     }
 
     internal async Task CheckForTimeouts(CancellationToken cancellationToken)

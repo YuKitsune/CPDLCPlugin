@@ -43,6 +43,25 @@ public class InMemoryAdscMessageLogRepositoryTests
         Assert.Equal(CreateEntry(1), entries.Last());
     }
 
+    [Fact]
+    public async Task RemoveOlderThan_RemovesOnlyOlderEntries()
+    {
+        // Arrange
+        var repository = new InMemoryAdscMessageLogRepository();
+        var oldest = CreateEntry(0);
+        var atCutoff = CreateEntry(1);
+        var newest = CreateEntry(2);
+        await repository.Add(oldest, CancellationToken.None);
+        await repository.Add(atCutoff, CancellationToken.None);
+        await repository.Add(newest, CancellationToken.None);
+
+        // Act
+        await repository.RemoveOlderThan(atCutoff.Time, CancellationToken.None);
+
+        // Assert
+        Assert.Equal([newest, atCutoff], await repository.All(CancellationToken.None));
+    }
+
     static AdscMessageLogEntry CreateEntry(int index)
     {
         return new AdscMessageLogEntry(
