@@ -10,6 +10,7 @@ namespace CPDLCServer.Services;
 public class MessageMonitorService(
     IDialogueRepository repository,
     IAdscMessageLogRepository adscMessageLogRepository,
+    IAdscReportRepository adscReportRepository,
     IClock clock,
     IPublisher publisher,
     ILogger logger)
@@ -36,6 +37,7 @@ public class MessageMonitorService(
                     logger.Verbose("Running message monitor iteration");
                     await PurgeOldDialogues(stoppingToken);
                     await PurgeOldAdscMessages(stoppingToken);
+                    await PurgeOldAdscReports(stoppingToken);
                     await CheckForTimeouts(stoppingToken);
                     await ArchiveCompletedDialogues(stoppingToken);
                 }
@@ -84,6 +86,12 @@ public class MessageMonitorService(
     {
         var cutoff = clock.UtcNow() - _purgeTimeout;
         await adscMessageLogRepository.RemoveOlderThan(cutoff, cancellationToken);
+    }
+
+    internal async Task PurgeOldAdscReports(CancellationToken cancellationToken)
+    {
+        var cutoff = clock.UtcNow() - _purgeTimeout;
+        await adscReportRepository.RemoveOlderThan(cutoff, cancellationToken);
     }
 
     internal async Task CheckForTimeouts(CancellationToken cancellationToken)

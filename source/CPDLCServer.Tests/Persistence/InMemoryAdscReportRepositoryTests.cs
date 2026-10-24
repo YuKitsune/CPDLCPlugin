@@ -89,6 +89,28 @@ public class InMemoryAdscReportRepositoryTests
         Assert.Null(await repository.Find("QFA1", CancellationToken.None));
     }
 
+    [Fact]
+    public async Task RemoveOlderThan_RemovesOnlyOlderReports()
+    {
+        // Arrange
+        var repository = new InMemoryAdscReportRepository();
+        var older = CreateReport("UAL123", "YBBB", 0);
+        var atCutoff = CreateReport("QFA1", "YBBB", 5);
+        var newer = CreateReport("VOZ1", "YBBB", 10);
+        await repository.Add(older, CancellationToken.None);
+        await repository.Add(atCutoff, CancellationToken.None);
+        await repository.Add(newer, CancellationToken.None);
+
+        // Act
+        await repository.RemoveOlderThan(atCutoff.Received, CancellationToken.None);
+
+        // Assert
+        var reports = await repository.All(CancellationToken.None);
+        Assert.Equal(2, reports.Length);
+        Assert.Contains(atCutoff, reports);
+        Assert.Contains(newer, reports);
+    }
+
     static AircraftAdscReport CreateReport(
         string callsign,
         string stationId,
