@@ -30,6 +30,9 @@ public class AdscContract(string callsign, string stationId)
 
     public AdscContractState? DemandContractState { get; private set; }
 
+    // The latest time that a request was sent, or that a message was received from the aircraft
+    public DateTimeOffset LastActivity { get; private set; }
+
     public bool HasPeriodicContract =>
         DefaultContractState is AdscContractState.Sent or AdscContractState.Accepted ||
         SelectedContractState is AdscContractState.Sent or AdscContractState.Accepted;
@@ -38,6 +41,11 @@ public class AdscContract(string callsign, string stationId)
     public bool IsActive =>
         HasPeriodicContract ||
         DemandContractState is AdscContractState.Sent or AdscContractState.Accepted;
+
+    public void LogActivity(DateTimeOffset now)
+    {
+        LastActivity = now;
+    }
 
     /// <summary>
     /// The default contract replaces a selected contract that is in use.

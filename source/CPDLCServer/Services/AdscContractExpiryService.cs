@@ -6,6 +6,7 @@ namespace CPDLCServer.Services;
 public class AdscContractExpiryService : IHostedService, IDisposable
 {
     readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
+    readonly TimeSpan _contractTimeout;
 
     readonly IMediator _mediator;
     readonly ILogger _logger;
@@ -13,10 +14,12 @@ public class AdscContractExpiryService : IHostedService, IDisposable
     CancellationTokenSource? _cancellationTokenSource;
     Task? _task;
 
-    public AdscContractExpiryService(IMediator mediator, ILogger logger)
+    public AdscContractExpiryService(IConfiguration configuration, IMediator mediator, ILogger logger)
     {
         _mediator = mediator;
         _logger = logger.ForContext<AdscContractExpiryService>();
+
+        _contractTimeout = configuration.GetValue("AdscContractTimeout", TimeSpan.FromMinutes(120));
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -57,7 +60,7 @@ public class AdscContractExpiryService : IHostedService, IDisposable
                     using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                     timeoutCts.CancelAfter(TimeSpan.FromMinutes(1));
 
-                    await _mediator.Send(new EndExpiredAdscContractsRequest(), timeoutCts.Token);
+                    await _mediator.Send(new EndExpiredAdscContractsRequest(_contractTimeout), timeoutCts.Token);
 
                     await Task.Delay(_checkInterval, stoppingToken);
                 }

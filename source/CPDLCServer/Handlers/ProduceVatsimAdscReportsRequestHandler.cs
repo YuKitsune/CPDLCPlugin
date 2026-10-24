@@ -75,6 +75,8 @@ public class ProduceVatsimAdscReportsRequestHandler(
             contract.Callsign,
             contract.StationId);
 
+        contract.LogActivity(now);
+
         if (contract.ReportReceived())
         {
             logger.Information(

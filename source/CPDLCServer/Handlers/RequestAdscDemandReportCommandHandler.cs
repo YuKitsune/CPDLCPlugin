@@ -1,4 +1,5 @@
 using CPDLCServer.Clients;
+using CPDLCServer.Infrastructure;
 using CPDLCServer.Messages;
 using CPDLCServer.Model;
 using CPDLCServer.Persistence;
@@ -10,6 +11,7 @@ public class RequestAdscDemandReportCommandHandler(
     IClientManager clientManager,
     IAdscContractRepository adscContractRepository,
     IMediator mediator,
+    IClock clock,
     ILogger logger)
     : IRequestHandler<RequestAdscDemandReportCommand>
 {
@@ -34,6 +36,7 @@ public class RequestAdscDemandReportCommandHandler(
         }
 
         contract.RequestDemandReport();
+        contract.LogActivity(clock.UtcNow());
 
         await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
     }

@@ -17,7 +17,7 @@ public class RequestDefaultAdscContractCommandHandlerTests
         // Arrange
         var clientManager = new TestClientManager();
         var handler = new RequestDefaultAdscContractCommandHandler(
-            clientManager, new TestAdscContractRepository(), Substitute.For<IMediator>(), Logger.None);
+            clientManager, new TestAdscContractRepository(), Substitute.For<IMediator>(), new TestClock(), Logger.None);
 
         // Act
         await handler.Handle(new RequestDefaultAdscContractCommand("YMMM", "UAL123"), CancellationToken.None);
@@ -36,7 +36,7 @@ public class RequestDefaultAdscContractCommandHandlerTests
         var contractRepository = new TestAdscContractRepository();
         var mediator = Substitute.For<IMediator>();
         var handler = new RequestDefaultAdscContractCommandHandler(
-            new TestClientManager(), contractRepository, mediator, Logger.None);
+            new TestClientManager(), contractRepository, mediator, new TestClock(), Logger.None);
 
         // Act
         await handler.Handle(new RequestDefaultAdscContractCommand("YBBB", "UAL123"), CancellationToken.None);
@@ -53,6 +53,24 @@ public class RequestDefaultAdscContractCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_LogsActivity()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var contractRepository = new TestAdscContractRepository();
+        var handler = new RequestDefaultAdscContractCommandHandler(
+            new TestClientManager(), contractRepository, Substitute.For<IMediator>(), clock, Logger.None);
+
+        // Act
+        await handler.Handle(new RequestDefaultAdscContractCommand("YBBB", "UAL123"), CancellationToken.None);
+
+        // Assert
+        var contract = await contractRepository.Find(new AdscContractKey("UAL123", "YBBB"), CancellationToken.None);
+        Assert.NotNull(contract);
+        Assert.Equal(clock.UtcNow(), contract.LastActivity);
+    }
+
+    [Fact]
     public async Task Handle_WhenSelectedContractIsInUse_EndsSelectedContract()
     {
         // Arrange
@@ -63,7 +81,7 @@ public class RequestDefaultAdscContractCommandHandlerTests
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), existingContract, CancellationToken.None);
 
         var handler = new RequestDefaultAdscContractCommandHandler(
-            new TestClientManager(), contractRepository, Substitute.For<IMediator>(), Logger.None);
+            new TestClientManager(), contractRepository, Substitute.For<IMediator>(), new TestClock(), Logger.None);
 
         // Act
         await handler.Handle(new RequestDefaultAdscContractCommand("YBBB", "UAL123"), CancellationToken.None);

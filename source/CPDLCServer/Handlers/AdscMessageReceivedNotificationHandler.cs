@@ -26,6 +26,8 @@ public class AdscMessageReceivedNotificationHandler(
             return;
         }
 
+        contract.LogActivity(message.Received);
+
         switch (message)
         {
             case ReceivedAdscReport reportMessage:

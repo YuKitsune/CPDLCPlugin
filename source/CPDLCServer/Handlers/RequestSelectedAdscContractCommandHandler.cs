@@ -45,6 +45,7 @@ public class RequestSelectedAdscContractCommandHandler(
         }
 
         contract.RequestSelectedContract(request.ReportingInterval, ends);
+        contract.LogActivity(clock.UtcNow());
 
         await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
     }
