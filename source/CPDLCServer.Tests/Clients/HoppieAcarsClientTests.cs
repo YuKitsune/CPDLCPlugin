@@ -389,6 +389,37 @@ public class HoppieAcarsClientTests : IDisposable
     }
 
     [Fact]
+    public async Task Poll_Data1PositionReport_ParsesCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(
+            HttpStatusCode.OK,
+            "ok {UAL123 cpdlc {/DATA1/*/*/*/*/FL380/*/0.84/\n\nOVER MEPAB AT 0501Z, FL380,\nESTIMATING ISTEM AT 0533Z,\nNEXT MISLY.\n\nETA AT 0736Z,\n39.60 X 1000 KG FUEL REMAINING.}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var client = CreateClient(httpHandler);
+
+        // Act
+        await client.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await client.MessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        Assert.Equal("UAL123", message.Sender);
+        Assert.Equal(-1, message.MessageId);
+        Assert.Null(message.MessageReference);
+        Assert.Equal(CpdlcDownlinkResponseType.NoResponse, message.ResponseType);
+        Assert.Equal(
+            "OVER MEPAB AT 0501Z, FL380, ESTIMATING ISTEM AT 0533Z, NEXT MISLY. ETA AT 0736Z, 39.60 X 1000 KG FUEL REMAINING.",
+            message.Content);
+
+        await client.DisposeAsync();
+        _clients.Remove(client);
+    }
+
+    [Fact]
     public async Task ListConnections_ReturnsCallsigns()
     {
         // Arrange
