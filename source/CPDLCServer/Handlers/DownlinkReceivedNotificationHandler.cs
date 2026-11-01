@@ -51,11 +51,28 @@ public class DownlinkReceivedNotificationHandler(
             return;
         }
 
-        // Intercept logoff messages
+        // Scenario 3: Logoff notice
+        // Show the logoff to the controller, then terminate the connection.
+        // Return early so that the terminated connection is not promoted to CurrentDataAuthority.
         if (ControlMessages.IsLogoffNotice(downlink))
         {
+            var logoffDialogue = new Dialogue(downlink.Sender);
+            logoffDialogue.AddDownlink(
+                downlink.MessageId,
+                downlink.MessageReference,
+                downlink.Sender,
+                downlink.ResponseType,
+                downlink.AlertType,
+                downlink.Content,
+                downlink.Received);
+
+            await dialogueRepository.Add(logoffDialogue, cancellationToken);
+            logger.Information("Dialogue {DialogueId} created for logoff from {Callsign}", logoffDialogue.Id, downlink.Sender);
+
+            await mediator.Publish(new DialogueChangedNotification(logoffDialogue), cancellationToken);
+
             await mediator.Send(new TerminateConnectionRequest(downlink.Sender, notification.AcarsClientId), cancellationToken);
-            // Allow these to flow through to the controller
+            return;
         }
 
         // Promote aircraft to CurrentDataAuthority on first downlink, unless
@@ -88,7 +105,7 @@ public class DownlinkReceivedNotificationHandler(
 
         aircraftConnection.LogLastSeen(clock.UtcNow());
 
-        // Scenario 3: Aircraft replies to an uplink
+        // Scenario 4: Aircraft replies to an uplink
         if (downlink.MessageReference.HasValue)
         {
             var dialogue = await dialogueRepository.FindOpenDialogueByUplink(
@@ -120,7 +137,7 @@ public class DownlinkReceivedNotificationHandler(
 
             await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
         }
-        else // Scenario 4: Aircraft initiates a new dialogue
+        else // Scenario 5: Aircraft initiates a new dialogue
         {
             var dialogue = new Dialogue(downlink.Sender);
             dialogue.AddDownlink(
