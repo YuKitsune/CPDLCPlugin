@@ -1,10 +1,16 @@
+using CPDLCServer.Infrastructure;
 using CPDLCServer.Messages;
 using CPDLCServer.Persistence;
 using MediatR;
 
 namespace CPDLCServer.Handlers;
 
-public class TerminateConnectionHandler(IAircraftRepository aircraftRepository, IMediator mediator, ILogger logger)
+public class TerminateConnectionHandler(
+    IAircraftRepository aircraftRepository,
+    IDialogueRepository dialogueRepository,
+    IClock clock,
+    IMediator mediator,
+    ILogger logger)
     : IRequestHandler<TerminateConnectionRequest>
 {
     public async Task Handle(TerminateConnectionRequest request, CancellationToken cancellationToken)
@@ -21,6 +27,23 @@ public class TerminateConnectionHandler(IAircraftRepository aircraftRepository, 
         var didRemove = await aircraftRepository.Remove(aircraftKey, cancellationToken);
         if (!didRemove)
             return;
+
+        // No response can arrive after the connection ends, so close the open dialogues
+        var allDialogues = await dialogueRepository.All(cancellationToken);
+        var openDialogues = allDialogues
+            .Where(d => d.AircraftCallsign == request.Callsign && !d.IsClosed && !d.IsArchived)
+            .ToArray();
+
+        foreach (var dialogue in openDialogues)
+        {
+            dialogue.Abort(clock.UtcNow());
+            await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
+
+            logger.Information(
+                "Closed dialogue {DialogueId} for terminated connection with {Callsign}",
+                dialogue.Id,
+                request.Callsign);
+        }
 
         await mediator.Publish(
             new AircraftConnectionTerminated(

@@ -585,6 +585,101 @@ public class DownlinkReceivedNotificationHandlerTests
     }
 
     [Fact]
+    public async Task Handle_LogoffMessage_FromNextDataAuthority_DoesNotPromoteOrNotifyControllers()
+    {
+        // A logoff can be the first downlink after a logon. The terminated connection must not be
+        // promoted, because the AircraftConnectionUpdated event would add the connection again in the plugin.
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.NextDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
+
+        var controllerRepository = new TestControllerRepository();
+        var controller = new ControllerInfo(
+            Guid.NewGuid(),
+            "ConnectionId-1",
+            "YBBB",
+            "BN-TSN_FSS",
+            "1234567");
+        await controllerRepository.Add(controller, CancellationToken.None);
+
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+        var clientProxy = Substitute.For<IClientProxy>();
+        hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
+
+        var handler = BuildHandler(aircraftRepository, mediator, clock, controllerRepository, dialogueRepository, hubContext);
+
+        var downlink = new ReceivedDownlink(
+            1, null, "UAL123",
+            CpdlcDownlinkResponseType.NoResponse, AlertType.None,
+            "LOGOFF",
+            clock.UtcNow());
+
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert - aircraft is not promoted
+        Assert.Equal(DataAuthorityState.NextDataAuthority, aircraft.DataAuthorityState);
+
+        // Assert - no AircraftConnectionUpdated event was sent to controllers
+        await clientProxy.DidNotReceive().SendCoreAsync(
+            Arg.Any<string>(),
+            Arg.Any<object?[]>(),
+            Arg.Any<CancellationToken>());
+
+        // Assert - connection termination was requested
+        await mediator.Received(1).Send(
+            Arg.Is<TerminateConnectionRequest>(r => r.Callsign == "UAL123" && r.AcarsClientId == "hoppies-ybbb"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_LogoffMessage_PublishesDialogueBeforeTerminatingConnection()
+    {
+        // The logoff dialogue must exist before the connection terminates,
+        // so that the termination can close it if it is still open.
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsClientId), aircraft, CancellationToken.None);
+
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var mediator = Substitute.For<IMediator>();
+        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
+
+        var handler = BuildHandler(aircraftRepository, mediator, clock, controllerRepository, dialogueRepository, hubContext);
+
+        var downlink = new ReceivedDownlink(
+            1, null, "UAL123",
+            CpdlcDownlinkResponseType.NoResponse, AlertType.None,
+            "LOGOFF",
+            clock.UtcNow());
+
+        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
+
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
+
+        // Assert
+        Received.InOrder(() =>
+        {
+            mediator.Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
+            mediator.Send(Arg.Any<TerminateConnectionRequest>(), Arg.Any<CancellationToken>());
+        });
+    }
+
+    [Fact]
     public async Task Handle_LogonRequest_DispatchesLogonCommand()
     {
         // Branch 1: a logon request is forwarded to LogonCommandHandler verbatim and the
