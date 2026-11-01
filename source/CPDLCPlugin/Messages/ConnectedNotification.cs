@@ -15,6 +15,8 @@ public class ConnectedNotificationHandler(
     AdscReportStore adscReportStore,
     AdscTrackDisplay adscTrackDisplay,
     AtsuSettingsStore atsuSettingsStore,
+    IJurisdictionChecker jurisdictionChecker,
+    IMediator mediator,
     ILogger logger)
     : INotificationHandler<ConnectedNotification>
 {
@@ -73,5 +75,12 @@ public class ConnectedNotificationHandler(
 
         // Relay notification to UI
         WeakReferenceMessenger.Default.Send(notification);
+
+        // If there are dialogues relevant to the controller, open the current messages window
+        var hasDialoguesToDisplay = dialogues.Any(d => !d.IsArchived && jurisdictionChecker.ShouldDisplayDialogue(d));
+        if (hasDialoguesToDisplay)
+        {
+            await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: true), cancellationToken);
+        }
     }
 }

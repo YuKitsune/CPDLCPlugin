@@ -14,6 +14,7 @@ public partial class CurrentMessagesViewModel :
     ObservableObject,
     IRecipient<DialogueChangedNotification>,
     IRecipient<FdrOwnerChanged>,
+    IRecipient<ConnectedNotification>,
     IRecipient<OpenCurrentMessagesWindowRequest>,
     IDisposable
 {
@@ -59,6 +60,7 @@ public partial class CurrentMessagesViewModel :
 
         WeakReferenceMessenger.Default.Unregister<DialogueChangedNotification>(this);
         WeakReferenceMessenger.Default.Unregister<FdrOwnerChanged>(this);
+        WeakReferenceMessenger.Default.Unregister<ConnectedNotification>(this);
         WeakReferenceMessenger.Default.Unregister<OpenCurrentMessagesWindowRequest>(this);
         _disposed = true;
     }
@@ -596,6 +598,21 @@ public partial class CurrentMessagesViewModel :
 
     // The jurisdiction of a flight can change, so reload the dialogues that we must show
     public void Receive(FdrOwnerChanged message)
+    {
+        if (_disposed)
+            return;
+
+        _guiInvoker.InvokeOnGUI(async _ =>
+        {
+            if (_disposed)
+                return;
+
+            await LoadDialoguesAsync(closeIfEmpty: true);
+        });
+    }
+
+    // The dialogues are loaded when we connect, so reload the dialogues that we must show
+    public void Receive(ConnectedNotification message)
     {
         if (_disposed)
             return;
