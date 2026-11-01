@@ -47,7 +47,10 @@ public partial class CurrentMessagesViewModel :
         _jurisdictionChecker = jurisdictionChecker;
         _closeWhenEmpty = closeWhenEmpty;
 
-        WeakReferenceMessenger.Default.Register(this);
+        WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
+        WeakReferenceMessenger.Default.Register<FdrOwnerChanged>(this);
+        WeakReferenceMessenger.Default.Register<ConnectedNotification>(this);
+        WeakReferenceMessenger.Default.Register<OpenCurrentMessagesWindowRequest>(this);
 
         // Initial load. The window stays open when there are no messages, so that it can open empty.
         _ = LoadDialoguesAsync(closeIfEmpty: false);
