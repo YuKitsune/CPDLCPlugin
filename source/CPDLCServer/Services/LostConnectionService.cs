@@ -19,7 +19,21 @@ public class LostConnectionService : IHostedService, IDisposable
         _mediator = mediator;
         _logger = logger.ForContext<LostConnectionService>();
 
-        _connectionTimeout = configuration.GetValue("AircraftConnectionTimeout", TimeSpan.FromMinutes(15));
+        // The connectivity check updates the last seen time of each aircraft at this interval.
+        var refreshIntervalMinutes = configuration.GetValue("ConnectivityCheckIntervalMinutes", 15);
+        var refreshInterval = TimeSpan.FromMinutes(refreshIntervalMinutes);
+
+        // The default timeout lets the connection continue if one refresh fails.
+        _connectionTimeout = configuration.GetValue("AircraftConnectionTimeout", refreshInterval * 3);
+
+        // If one refresh fails, the time between two updates is two refresh intervals.
+        if (_connectionTimeout <= refreshInterval * 2)
+        {
+            _logger.Warning(
+                "AircraftConnectionTimeout ({ConnectionTimeout}) is not more than two times the connectivity check interval ({RefreshInterval}). One failed refresh will cause connections to time out.",
+                _connectionTimeout,
+                refreshInterval);
+        }
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
