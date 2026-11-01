@@ -378,7 +378,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             _workQueue.Enqueue(async () =>
             {
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new OpenCurrentMessagesWindowRequest());
+                await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: false));
             });
         };
 
@@ -578,9 +578,15 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
                 var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
 
+                var previousRecord = jurisdictionChecker.GetOwnershipRecord(updated.Callsign);
                 jurisdictionChecker.RecordFdrOwner(updated.Callsign, updated.ControllerTracking?.Callsign);
 
                 var record = jurisdictionChecker.GetOwnershipRecord(updated.Callsign);
+
+                // Tell the Current Messages Window that the dialogues it must show can be different
+                if (previousRecord?.CurrentOwner != record?.CurrentOwner)
+                    WeakReferenceMessenger.Default.Send(new FdrOwnerChanged(updated.Callsign));
+
                 if (record?.PreviousOwner != Network.Callsign)
                     return;
 
@@ -600,21 +606,22 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             // Re-build the CPDLC status label items
             _workQueue.Enqueue(() => RebuildCpdlcStatusLabelItems());
 
-            // If this flight has any open dialogues that we have jurisdiction over, open the current messages window
+            // If this flight has any dialogues that we have jurisdiction over, open the current messages window
             // Ensures flights handed off to us open the window so we can see their requests
+            // A closed dialogue stays in the window until it is archived (e.g. a downlink that needs no response)
             _workQueue.Enqueue(async () =>
             {
                 var store = ServiceProvider.GetRequiredService<DialogueStore>();
                 var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
 
-                var hasOpenDialogues = (await store.All(CancellationToken.None))
+                var hasDialoguesToDisplay = (await store.All(CancellationToken.None))
                     .Where(d => d.AircraftCallsign == updated.Callsign)
-                    .Any(d => !d.IsClosed && !d.IsArchived && jurisdictionChecker.ShouldDisplayDialogue(d));
+                    .Any(d => !d.IsArchived && jurisdictionChecker.ShouldDisplayDialogue(d));
 
-                if (hasOpenDialogues)
+                if (hasDialoguesToDisplay)
                 {
                     var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                    await mediator.Send(new OpenCurrentMessagesWindowRequest());
+                    await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: true));
                 }
             });
         }
@@ -716,7 +723,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
                 }
 
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new OpenCurrentMessagesWindowRequest());
+                await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: true));
             });
         }
         catch (Exception ex)

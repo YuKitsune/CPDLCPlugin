@@ -10,7 +10,13 @@ using MediatR;
 namespace CPDLCPlugin.ViewModels;
 
 
-public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<DialogueChangedNotification>, IDisposable
+public partial class CurrentMessagesViewModel :
+    ObservableObject,
+    IRecipient<DialogueChangedNotification>,
+    IRecipient<FdrOwnerChanged>,
+    IRecipient<ConnectedNotification>,
+    IRecipient<OpenCurrentMessagesWindowRequest>,
+    IDisposable
 {
     readonly PluginConfiguration _configuration;
     readonly DialogueStore _dialogueStore;
@@ -19,6 +25,7 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
     readonly IErrorReporter _errorReporter;
     readonly IWindowHandle _windowHandle;
     readonly IJurisdictionChecker _jurisdictionChecker;
+    bool _closeWhenEmpty;
     bool _disposed;
 
     public CurrentMessagesViewModel(
@@ -28,7 +35,8 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         IGuiInvoker guiInvoker,
         IErrorReporter errorReporter,
         IWindowHandle windowHandle,
-        IJurisdictionChecker jurisdictionChecker)
+        IJurisdictionChecker jurisdictionChecker,
+        bool closeWhenEmpty)
     {
         _configuration = configuration;
         _dialogueStore = dialogueStore;
@@ -37,8 +45,12 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
         _errorReporter = errorReporter;
         _windowHandle = windowHandle;
         _jurisdictionChecker = jurisdictionChecker;
+        _closeWhenEmpty = closeWhenEmpty;
 
-        WeakReferenceMessenger.Default.Register(this);
+        WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
+        WeakReferenceMessenger.Default.Register<FdrOwnerChanged>(this);
+        WeakReferenceMessenger.Default.Register<ConnectedNotification>(this);
+        WeakReferenceMessenger.Default.Register<OpenCurrentMessagesWindowRequest>(this);
 
         // Initial load. The window stays open when there are no messages, so that it can open empty.
         _ = LoadDialoguesAsync(closeIfEmpty: false);
@@ -50,6 +62,9 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
             return;
 
         WeakReferenceMessenger.Default.Unregister<DialogueChangedNotification>(this);
+        WeakReferenceMessenger.Default.Unregister<FdrOwnerChanged>(this);
+        WeakReferenceMessenger.Default.Unregister<ConnectedNotification>(this);
+        WeakReferenceMessenger.Default.Unregister<OpenCurrentMessagesWindowRequest>(this);
         _disposed = true;
     }
 
@@ -557,8 +572,9 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
                 Dialogues.Add(dialogueViewModel);
             }
 
-            // Close the window if there are no messages left
-            if (closeIfEmpty && Dialogues.Count == 0)
+            // Close the window if there are no messages left.
+            // Only a window that opened automatically closes automatically.
+            if (closeIfEmpty && _closeWhenEmpty && Dialogues.Count == 0)
             {
                 _windowHandle.Close();
             }
@@ -581,6 +597,45 @@ public partial class CurrentMessagesViewModel : ObservableObject, IRecipient<Dia
 
             await LoadDialoguesAsync(closeIfEmpty: true);
         });
+    }
+
+    // The jurisdiction of a flight can change, so reload the dialogues that we must show
+    public void Receive(FdrOwnerChanged message)
+    {
+        if (_disposed)
+            return;
+
+        _guiInvoker.InvokeOnGUI(async _ =>
+        {
+            if (_disposed)
+                return;
+
+            await LoadDialoguesAsync(closeIfEmpty: true);
+        });
+    }
+
+    // The dialogues are loaded when we connect, so reload the dialogues that we must show
+    public void Receive(ConnectedNotification message)
+    {
+        if (_disposed)
+            return;
+
+        _guiInvoker.InvokeOnGUI(async _ =>
+        {
+            if (_disposed)
+                return;
+
+            await LoadDialoguesAsync(closeIfEmpty: true);
+        });
+    }
+
+    // The window must not close automatically after the controller opens it manually
+    public void Receive(OpenCurrentMessagesWindowRequest message)
+    {
+        if (_disposed || message.OpenedAutomatically)
+            return;
+
+        _guiInvoker.InvokeOnGUI(_ => _closeWhenEmpty = false);
     }
 
     [RelayCommand]

@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using CPDLCPlugin.Configuration;
 using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
@@ -6,7 +7,8 @@ using MediatR;
 
 namespace CPDLCPlugin.Messages;
 
-public record OpenCurrentMessagesWindowRequest : IRequest;
+// When OpenedAutomatically is true, the window closes automatically when it has no messages.
+public record OpenCurrentMessagesWindowRequest(bool OpenedAutomatically) : IRequest;
 
 public class OpenCurrentMessagesWindowRequestHandler(
     WindowManager windowManager,
@@ -20,6 +22,9 @@ public class OpenCurrentMessagesWindowRequestHandler(
 {
     public Task Handle(OpenCurrentMessagesWindowRequest request, CancellationToken cancellationToken)
     {
+        // If the window is already open, tell it how it was opened
+        WeakReferenceMessenger.Default.Send(request);
+
         windowManager.FocusOrCreateWindow(
             WindowKeys.CurrentMessages,
             "Current Messages",
@@ -32,7 +37,8 @@ public class OpenCurrentMessagesWindowRequestHandler(
                     guiInvoker,
                     errorReporter,
                     windowHandle,
-                    jurisdictionChecker);
+                    jurisdictionChecker,
+                    closeWhenEmpty: request.OpenedAutomatically);
 
                 return new CurrentMessagesView(viewModel, windowHandle);
             },
