@@ -414,6 +414,9 @@ public class HoppieAcarsClient : IAcarsClient
 
     ReceivedDownlink ParseCpdlcDownlink(string from, string packet)
     {
+        if (packet.StartsWith("/DATA1/", StringComparison.OrdinalIgnoreCase))
+            return ParseData1Downlink(from, packet);
+
         var parts = packet.Split('/', 6);
         if (parts.Length != 6)
             throw new MessageParseException($"Invalid CPDLC packet: Expected 6 components, got {parts.Length}: \"{packet}\"");
@@ -434,6 +437,30 @@ public class HoppieAcarsClient : IAcarsClient
             replyToId,
             from,
             responseType,
+            AlertType.None,
+            content,
+            _clock.UtcNow());
+    }
+
+    // Some aircraft (for example, PMDG) send position reports in this format:
+    //   /DATA1/*/*/*/*/FL380/*/0.84/
+    //
+    //   OVER MEPAB AT 0501Z, FL380,
+    //   ESTIMATING ISTEM AT 0533Z,
+    //   ...
+    // The first line is a header. The lines after the header contain the text of the report.
+    ReceivedDownlink ParseData1Downlink(string from, string packet)
+    {
+        var lines = packet.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var content = lines.Length > 1
+            ? string.Join(" ", lines[1..])
+            : packet;
+
+        return new ReceivedDownlink(
+            -1,
+            null,
+            from,
+            CpdlcDownlinkResponseType.NoResponse,
             AlertType.None,
             content,
             _clock.UtcNow());
