@@ -10,6 +10,7 @@ public class RefreshAcarsCallsignsRequestHandler(
     IClientManager clientManager,
     IAircraftRepository aircraftRepository,
     IAcarsStationRepository acarsConnectedCallsignsRepository,
+    IAdscContractRepository adscContractRepository,
     IMediator mediator,
     IClock clock,
     ILogger logger) : IRequestHandler<RefreshAcarsCallsignsRequest>
@@ -40,6 +41,18 @@ public class RefreshAcarsCallsignsRequestHandler(
         {
             connection.LogLastSeen(now);
             logger.Debug("Updated last seen for {Callsign}", connection.Callsign);
+        }
+
+        // An aircraft that is connected to the ACARS network keeps its ADS-C contracts with this station
+        var contracts = await adscContractRepository.All(cancellationToken);
+        var matchingContracts = contracts
+            .Where(c => c.StationId == client.StationId)
+            .Where(c => activeConnections.Contains(c.Callsign));
+
+        foreach (var contract in matchingContracts)
+        {
+            contract.LogActivity(now);
+            logger.Debug("Updated ADS-C contract activity for {Callsign}", contract.Callsign);
         }
     }
 }

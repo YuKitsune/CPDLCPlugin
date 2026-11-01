@@ -35,6 +35,7 @@ public class ProduceVatsimAdscReportsRequestHandler(
             // A failure for one aircraft must not stop the other aircraft
             try
             {
+                await LogActivityIfConnectedToVatsim(contract, now, cancellationToken);
                 await ProduceReport(contract, now, cancellationToken);
             }
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
@@ -46,6 +47,14 @@ public class ProduceVatsimAdscReportsRequestHandler(
                     contract.StationId);
             }
         }
+    }
+
+    // An aircraft that is connected to VATSIM keeps its ADS-C contracts, even if it is not connected to the ACARS network
+    async Task LogActivityIfConnectedToVatsim(AdscContract contract, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var pilot = await vatsimPilotRepository.Find(contract.Callsign, cancellationToken);
+        if (pilot is not null)
+            contract.LogActivity(now);
     }
 
     async Task ProduceReport(AdscContract contract, DateTimeOffset now, CancellationToken cancellationToken)
@@ -74,8 +83,6 @@ public class ProduceVatsimAdscReportsRequestHandler(
             "Made ADS-C report from VATSIM data for {Callsign} to {StationId}",
             contract.Callsign,
             contract.StationId);
-
-        contract.LogActivity(now);
 
         if (contract.ReportReceived())
         {

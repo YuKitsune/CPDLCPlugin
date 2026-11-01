@@ -58,7 +58,7 @@ public class RequestAdscDemandReportCommandHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var existingContract = new AdscContract("UAL123", "YBBB");
+        var existingContract = new AdscContract("UAL123", "YBBB", DateTimeOffset.UtcNow);
         existingContract.RequestDefaultContract(TimeSpan.FromMinutes(10));
         existingContract.ReportReceived();
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), existingContract, CancellationToken.None);

@@ -9,7 +9,7 @@ namespace CPDLCServer.Model;
 /// <item>A demand request asks for one report.</item>
 /// </list>
 /// </summary>
-public class AdscContract(string callsign, string stationId)
+public class AdscContract(string callsign, string stationId, DateTimeOffset created)
 {
     // The ACARS clients poll for messages every 20 to 75 seconds. A shorter interval gives no more data.
     public static readonly TimeSpan MinimumReportingInterval = TimeSpan.FromSeconds(60);
@@ -30,8 +30,9 @@ public class AdscContract(string callsign, string stationId)
 
     public AdscContractState? DemandContractState { get; private set; }
 
-    // The latest time that a request was sent, or that a message was received from the aircraft
-    public DateTimeOffset LastActivity { get; private set; }
+    // The latest time that the aircraft was seen on the ACARS network or in the VATSIM data, or sent an ADS-C message.
+    // A request from a controller does not change it, because a request does not show that the aircraft is still connected.
+    public DateTimeOffset LastActivity { get; private set; } = created;
 
     public bool HasPeriodicContract =>
         DefaultContractState is AdscContractState.Sent or AdscContractState.Accepted ||

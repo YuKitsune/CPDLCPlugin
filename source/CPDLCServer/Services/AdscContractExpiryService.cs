@@ -20,6 +20,17 @@ public class AdscContractExpiryService : IHostedService, IDisposable
         _logger = logger.ForContext<AdscContractExpiryService>();
 
         _contractTimeout = configuration.GetValue("AdscContractTimeout", TimeSpan.FromMinutes(120));
+
+        // The connectivity check updates the activity of each ADS-C contract at this interval.
+        // If one refresh fails, the time between two updates is two refresh intervals.
+        var refreshInterval = TimeSpan.FromMinutes(configuration.GetValue("ConnectivityCheckIntervalMinutes", 15));
+        if (_contractTimeout <= refreshInterval * 2)
+        {
+            _logger.Warning(
+                "AdscContractTimeout ({ContractTimeout}) is not more than two times the connectivity check interval ({RefreshInterval}). One failed refresh will cause ADS-C contracts to be cancelled.",
+                _contractTimeout,
+                refreshInterval);
+        }
     }
 
     public Task StartAsync(CancellationToken cancellationToken)

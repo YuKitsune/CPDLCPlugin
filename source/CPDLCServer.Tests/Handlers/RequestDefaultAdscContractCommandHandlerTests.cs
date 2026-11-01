@@ -53,7 +53,7 @@ public class RequestDefaultAdscContractCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_LogsActivity()
+    public async Task Handle_WhenNoContractExists_SetsLastActivityToCreationTime()
     {
         // Arrange
         var clock = new TestClock();
@@ -71,11 +71,32 @@ public class RequestDefaultAdscContractCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenContractExists_DoesNotChangeLastActivity()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var created = clock.UtcNow();
+        var contractRepository = new TestAdscContractRepository();
+        var existingContract = new AdscContract("UAL123", "YBBB", created);
+        await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), existingContract, CancellationToken.None);
+
+        var handler = new RequestDefaultAdscContractCommandHandler(
+            new TestClientManager(), contractRepository, Substitute.For<IMediator>(), clock, Logger.None);
+
+        // Act - a request does not show that the aircraft is still connected
+        clock.SetUtcNow(created.AddMinutes(30));
+        await handler.Handle(new RequestDefaultAdscContractCommand("YBBB", "UAL123"), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(created, existingContract.LastActivity);
+    }
+
+    [Fact]
     public async Task Handle_WhenSelectedContractIsInUse_EndsSelectedContract()
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var existingContract = new AdscContract("UAL123", "YBBB");
+        var existingContract = new AdscContract("UAL123", "YBBB", DateTimeOffset.UtcNow);
         existingContract.RequestSelectedContract(TimeSpan.FromMinutes(2), DateTimeOffset.UtcNow.AddHours(1));
         existingContract.ReportReceived();
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), existingContract, CancellationToken.None);

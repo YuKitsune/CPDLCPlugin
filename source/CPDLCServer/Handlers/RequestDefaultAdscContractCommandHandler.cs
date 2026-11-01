@@ -33,12 +33,11 @@ public class RequestDefaultAdscContractCommandHandler(
         var contract = await adscContractRepository.Find(contractKey, cancellationToken);
         if (contract is null)
         {
-            contract = new AdscContract(request.Callsign, request.StationId);
+            contract = new AdscContract(request.Callsign, request.StationId, clock.UtcNow());
             await adscContractRepository.Add(contractKey, contract, cancellationToken);
         }
 
         contract.RequestDefaultContract(reportingInterval);
-        contract.LogActivity(clock.UtcNow());
 
         await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
     }

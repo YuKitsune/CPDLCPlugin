@@ -19,9 +19,8 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", clock.UtcNow());
         contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow());
-        contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -43,9 +42,8 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", clock.UtcNow());
         contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow().AddSeconds(1));
-        contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -65,9 +63,8 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", clock.UtcNow());
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
-        contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -89,9 +86,8 @@ public class EndExpiredAdscContractsRequestHandlerTests
         var contractRepository = new TestAdscContractRepository();
         foreach (var callsign in new[] { "UAL123", "QFA1" })
         {
-            var contract = new AdscContract(callsign, "YBBB");
+            var contract = new AdscContract(callsign, "YBBB", clock.UtcNow());
             contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow());
-            contract.LogActivity(clock.UtcNow());
             await contractRepository.Add(new AdscContractKey(callsign, "YBBB"), contract, CancellationToken.None);
         }
 
@@ -118,9 +114,8 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", clock.UtcNow());
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
-        contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var clientManager = new TestClientManager();
@@ -147,9 +142,8 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange - TestClientManager has no ACARS client for YSSY, so the cancel fails
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YSSY");
+        var contract = new AdscContract("UAL123", "YSSY", clock.UtcNow());
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
-        contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YSSY"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -173,9 +167,8 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", clock.UtcNow());
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
-        contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -197,9 +190,8 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", clock.UtcNow());
         contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow().AddMinutes(60));
-        contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();

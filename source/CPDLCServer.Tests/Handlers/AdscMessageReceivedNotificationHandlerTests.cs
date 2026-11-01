@@ -252,7 +252,7 @@ public class AdscMessageReceivedNotificationHandlerTests
 
     static async Task<AdscContract> AddContract(TestAdscContractRepository contractRepository, string stationId)
     {
-        var contract = new AdscContract("UAL123", stationId);
+        var contract = new AdscContract("UAL123", stationId, DateTimeOffset.UtcNow);
         await contractRepository.Add(new AdscContractKey("UAL123", stationId), contract, CancellationToken.None);
         return contract;
     }

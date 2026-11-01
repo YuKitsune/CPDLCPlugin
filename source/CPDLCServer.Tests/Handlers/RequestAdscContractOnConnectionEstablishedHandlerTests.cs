@@ -36,7 +36,7 @@ public class RequestAdscContractOnConnectionEstablishedHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", DateTimeOffset.UtcNow);
         contract.RequestSelectedContract(TimeSpan.FromMinutes(5), DateTimeOffset.UtcNow.AddHours(1));
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
@@ -58,7 +58,7 @@ public class RequestAdscContractOnConnectionEstablishedHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", DateTimeOffset.UtcNow);
         contract.RequestDemandReport();
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
@@ -82,7 +82,7 @@ public class RequestAdscContractOnConnectionEstablishedHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", DateTimeOffset.UtcNow);
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
         contract.Reject();
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);

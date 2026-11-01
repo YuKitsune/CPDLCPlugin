@@ -240,7 +240,7 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("QFA1", "YBBB");
+        var contract = new AdscContract("QFA1", "YBBB", DateTimeOffset.UtcNow);
         await contractRepository.Add(new AdscContractKey("QFA1", "YBBB"), contract, CancellationToken.None);
         contract.RequestDefaultContract(DefaultInterval);
 
@@ -252,6 +252,44 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
 
         // Assert
         await mediator.DidNotReceive().Publish(Arg.Any<AdscReportReceivedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenAircraftIsInVatsimData_LogsActivity()
+    {
+        // Arrange - a rejected contract gets no VATSIM report, but the aircraft is still connected to VATSIM
+        var contractRepository = new TestAdscContractRepository();
+        var contract = new AdscContract("UAL123", "YBBB", Now.AddHours(-1));
+        contract.RequestDefaultContract(DefaultInterval);
+        contract.Reject();
+        await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
+
+        var handler = await CreateHandler(contractRepository, new TestAdscReportRepository(), Substitute.For<IMediator>());
+
+        // Act
+        await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(Now, contract.LastActivity);
+    }
+
+    [Fact]
+    public async Task Handle_WhenAircraftIsNotInVatsimData_DoesNotLogActivity()
+    {
+        // Arrange - CreateHandler adds only UAL123 to the VATSIM data
+        var created = Now.AddHours(-1);
+        var contractRepository = new TestAdscContractRepository();
+        var contract = new AdscContract("QFA1", "YBBB", created);
+        contract.RequestDefaultContract(DefaultInterval);
+        await contractRepository.Add(new AdscContractKey("QFA1", "YBBB"), contract, CancellationToken.None);
+
+        var handler = await CreateHandler(contractRepository, new TestAdscReportRepository(), Substitute.For<IMediator>());
+
+        // Act
+        await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(created, contract.LastActivity);
     }
 
     static async Task<ProduceVatsimAdscReportsRequestHandler> CreateHandler(
@@ -281,7 +319,7 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
 
     static async Task<AdscContract> AddContract(IAdscContractRepository contractRepository)
     {
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", DateTimeOffset.UtcNow);
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
         return contract;
     }

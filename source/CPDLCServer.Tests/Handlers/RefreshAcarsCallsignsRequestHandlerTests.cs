@@ -39,6 +39,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
+            new TestAdscContractRepository(),
             mediator,
             clock,
             Logger.None);
@@ -86,6 +87,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
+            new TestAdscContractRepository(),
             mediator,
             clock,
             Logger.None);
@@ -143,6 +145,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
+            new TestAdscContractRepository(),
             mediator,
             clock,
             Logger.None);
@@ -191,6 +194,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
+            new TestAdscContractRepository(),
             mediator,
             clock,
             Logger.None);
@@ -230,6 +234,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
+            new TestAdscContractRepository(),
             mediator,
             clock,
             Logger.None);
@@ -272,6 +277,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
+            new TestAdscContractRepository(),
             mediator,
             clock,
             Logger.None);
@@ -314,6 +320,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
+            new TestAdscContractRepository(),
             mediator,
             clock,
             Logger.None);
@@ -359,6 +366,7 @@ public class RefreshAcarsCallsignsRequestHandlerTests
             clientManager,
             aircraftRepository,
             acarsConnectedCallsignsRepository,
+            new TestAdscContractRepository(),
             mediator,
             clock,
             Logger.None);
@@ -373,5 +381,49 @@ public class RefreshAcarsCallsignsRequestHandlerTests
             Arg.Is<AcarsStationsChangedNotification>(n =>
                 n.Callsigns.Length == 1 && n.Callsigns.Contains("UAL123")),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_LogsActivityForContractsWithConnectedAircraftAtStation()
+    {
+        // Arrange
+        var clientManager = new TestClientManager();
+        var acarsClient = new TestAcarsClient("YBBB");
+        clientManager.AddClient("hoppies-ybbb", acarsClient);
+
+        var clock = new TestClock();
+        var initialTime = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        clock.SetUtcNow(initialTime);
+
+        var contractRepository = new TestAdscContractRepository();
+        var connectedContract = new AdscContract("UAL123", "YBBB", initialTime);
+        var disconnectedContract = new AdscContract("QFA1", "YBBB", initialTime);
+        var otherStationContract = new AdscContract("UAL123", "YMMM", initialTime);
+        await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), connectedContract, CancellationToken.None);
+        await contractRepository.Add(new AdscContractKey("QFA1", "YBBB"), disconnectedContract, CancellationToken.None);
+        await contractRepository.Add(new AdscContractKey("UAL123", "YMMM"), otherStationContract, CancellationToken.None);
+
+        // Only UAL123 is connected to the ACARS network
+        acarsClient.Connections.Add("UAL123");
+
+        var handler = new RefreshAcarsCallsignsRequestHandler(
+            clientManager,
+            new TestAircraftRepository(),
+            new InMemoryAcarsStationRepository(),
+            contractRepository,
+            Substitute.For<IMediator>(),
+            clock,
+            Logger.None);
+
+        var now = initialTime.AddMinutes(10);
+        clock.SetUtcNow(now);
+
+        // Act
+        await handler.Handle(new RefreshAcarsCallsignsRequest("hoppies-ybbb"), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(now, connectedContract.LastActivity);
+        Assert.Equal(initialTime, disconnectedContract.LastActivity);
+        Assert.Equal(initialTime, otherStationContract.LastActivity);
     }
 }
