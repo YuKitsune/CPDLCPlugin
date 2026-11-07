@@ -24,6 +24,7 @@
     "ExecutableTarget": {
       "type": "string",
       "enum": [
+        "AddMigration",
         "CheckVersion",
         "CompilePlugin",
         "CompileServer",
@@ -130,6 +131,10 @@
           "type": "string",
           "description": "GitHub token for creating releases",
           "default": "Secrets must be entered via 'fallout :secrets [profile]'"
+        },
+        "MigrationName": {
+          "type": "string",
+          "description": "Name of the migration to add"
         },
         "ProfileName": {
           "type": "string"

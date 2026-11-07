@@ -1,4 +1,4 @@
-using CPDLCServer.Services;
+using CPDLCServer.Cpdlc.Uplinks;
 
 namespace CPDLCServer.Tests.Mocks;
 

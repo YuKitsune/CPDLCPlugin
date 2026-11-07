@@ -1,0 +1,92 @@
+@page "/settings/acars"
+@model IndexModel
+@{
+    ViewData["Title"] = "ACARS Connections";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/settings">Settings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">ACARS Connections</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>ACARS Connections</h2>
+    <a asp-page="Edit" class="btn btn-primary">Add ACARS connection</a>
+</div>
+<p class="text-muted">The server connects to the upstream ACARS network with each enabled connection. A change takes effect immediately. A restart is not necessary.</p>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="alert">@Model.StatusMessage</div>
+}
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<div class="card mt-3">
+    <div class="card-body">
+        @if (Model.Connections.Length == 0)
+        {
+            <p class="text-muted mb-0">There are no ACARS connections. Add one to connect to an ACARS network.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Station</th>
+                            <th>Type</th>
+                            <th>Network</th>
+                            <th>URL</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var connection in Model.Connections)
+                        {
+                            <tr>
+                                <td>
+                                    @connection.StationIdentifier
+                                    @if (!string.IsNullOrWhiteSpace(connection.Notes))
+                                    {
+                                        <div class="small text-muted text-truncate" style="max-width: 20rem;" title="@connection.Notes">@connection.Notes</div>
+                                    }
+                                </td>
+                                <td>@connection.Type</td>
+                                <td>@connection.FlightSimulationNetwork</td>
+                                <td class="text-break"><code>@connection.Url</code></td>
+                                <td>
+                                    @if (!connection.Enabled)
+                                    {
+                                        <span class="badge text-bg-secondary">Disabled</span>
+                                    }
+                                    else if (Model.IsRunning(connection))
+                                    {
+                                        <span class="badge text-bg-success">Running</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-danger">Not running</span>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a asp-page="Edit" asp-route-id="@connection.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@connection.Id" class="d-inline"
+                                          onsubmit="return confirm('Delete the ACARS connection for @connection.StationIdentifier? The server disconnects from the ACARS network.');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

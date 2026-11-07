@@ -1,0 +1,38 @@
+@page "/login"
+@model LoginModel
+@{
+    ViewData["Title"] = "Log in";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-5">
+        <h2>Log in</h2>
+        <p class="text-muted">Log in as the administrator to open the Settings and Logs pages.</p>
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+        <form method="post">
+            <input type="hidden" asp-for="ReturnUrl" />
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Input.Username" class="form-label fw-semibold"></label>
+                        <input asp-for="Input.Username" class="form-control" autocomplete="username" autofocus />
+                        <span asp-validation-for="Input.Username" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-0">
+                        <label asp-for="Input.Password" class="form-label fw-semibold"></label>
+                        <input asp-for="Input.Password" class="form-control" autocomplete="current-password" />
+                        <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end my-4">
+                <button type="submit" class="btn btn-primary">Log in</button>
+            </div>
+        </form>
+    </div>
+</div>

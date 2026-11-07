@@ -57,6 +57,9 @@ class Build : FalloutBuild
     [Parameter("Output directory for server build")]
     readonly string ServerOutputDirectory;
 
+    [Parameter("Name of the migration to add")]
+    readonly string MigrationName;
+
     [GitRepository]
     readonly GitRepository GitRepository;
 
@@ -370,6 +373,22 @@ class Build : FalloutBuild
                 .SetInformationalVersion(version));
 
             Log.Information("Server published to {OutputDirectory}", ServerBuildOutputDirectory);
+        });
+
+    Target AddMigration => _ => _
+        .Description("Adds an EF Core migration for each database provider of the server (SQLite and PostgreSQL).")
+        .Requires(() => MigrationName)
+        .Executes(() =>
+        {
+            AddServerMigration("SqliteCpdlcDbContext", "Persistence/Migrations/Sqlite");
+            AddServerMigration("PostgreSqlCpdlcDbContext", "Persistence/Migrations/PostgreSql");
+
+            void AddServerMigration(string context, string outputDirectory)
+            {
+                Log.Information("Adding migration {MigrationName} for {Context}", MigrationName, context);
+                DotNetTasks.DotNet(
+                    $"ef migrations add {MigrationName} --project {ServerProjectPath} --context {context} --output-dir {outputDirectory}");
+            }
         });
 
     Target PackageServer => _ => _
