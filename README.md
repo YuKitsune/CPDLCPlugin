@@ -26,9 +26,7 @@ Deploy your own CPDLC Server instance:
 
 [![Deploy to DigitalOcean](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/YuKitsune/CPDLCPlugin/tree/main)
 
-After deployment, configure the following environment variables:
-- `Acars__0__StationIdentifier`: Your station identifier (e.g., YZZZ)
-- `Acars__0__AuthenticationCode`: Your Hoppie ACARS authentication code
+Before you deploy, set the `MasterKey` environment variable to a key from `openssl rand -base64 32`, and keep a copy of the key in a safe place. After deployment, open the setup URL from the server log to create the administrator. Then add your ACARS connection (station identifier and Hoppie authentication code) in Settings → ACARS on the server dashboard (`/settings/acars`).
 
 ## Installation
 

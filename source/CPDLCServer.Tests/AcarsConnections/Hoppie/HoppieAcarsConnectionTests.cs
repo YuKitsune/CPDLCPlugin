@@ -1,0 +1,827 @@
+using System.Net;
+using CPDLCServer.AcarsConnections;
+using CPDLCServer.AcarsConnections.Hoppie;
+using CPDLCServer.AdscContracts;
+using CPDLCServer.AdscContracts.MessageLog;
+using CPDLCServer.Cpdlc.Dialogues;
+using CPDLCServer.Cpdlc.Downlinks;
+using CPDLCServer.Cpdlc.Uplinks;
+using CPDLCServer.Tests.Mocks;
+using Serilog.Core;
+
+namespace CPDLCServer.Tests.AcarsConnections.Hoppie;
+
+public class HoppieAcarsConnectionTests : IDisposable
+{
+    private readonly HoppiesConfiguration _configuration = new()
+    {
+        Url = new Uri("http://test.hoppie.nl/acars"),
+        AuthenticationCode = "TEST123",
+        FlightSimulationNetwork = "VATSIM",
+        StationIdentifier = "YBBB"
+    };
+
+    private readonly List<HoppieAcarsConnection> _connections = new();
+    private readonly TestAdscMessageLogRepository _adscMessageLogRepository = new();
+
+    public void Dispose()
+    {
+        foreach (var connection in _connections)
+        {
+            try
+            {
+                connection.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(1));
+            }
+            catch (ObjectDisposedException)
+            {
+                // Already disposed, ignore
+            }
+            catch (AggregateException ex) when (ex.InnerExceptions.All(e => e is ObjectDisposedException))
+            {
+                // Already disposed, ignore
+            }
+        }
+    }
+
+    private HoppieAcarsConnection CreateConnection(TestHttpMessageHandler httpHandler, TestClock? clock = null)
+    {
+        var httpClient = new HttpClient(httpHandler) { BaseAddress = _configuration.Url };
+        var connection = new HoppieAcarsConnection(
+            _configuration,
+            httpClient,
+            clock ?? new TestClock(),
+            _adscMessageLogRepository,
+            Logger.None);
+        _connections.Add(connection);
+        return connection;
+    }
+
+    [Fact]
+    public async Task Send_CpdlcMessage_FormatsPayloadCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var clock = new TestClock();
+        var connection = CreateConnection(httpHandler, clock);
+
+        await connection.Connect(CancellationToken.None);
+
+        var message = new UplinkMessage(
+            Guid.NewGuid(),
+            1,
+            null,
+            "UAL123",
+            "BN-TSN_FSS",
+            CpdlcUplinkResponseType.WilcoUnable,
+            AlertType.None,
+            "CLIMB TO @FL350@",
+            clock.UtcNow());
+
+        // Act
+        await connection.Send(message, CancellationToken.None);
+
+        // Assert
+        var sendRequest = httpHandler.Requests.FirstOrDefault(r =>
+        {
+            var formDataString = r.Content?.ReadAsStringAsync().Result ?? "";
+            return formDataString.Contains("type=cpdlc");
+        });
+
+        Assert.NotNull(sendRequest);
+        var formData = await ParseFormDataFromRequest(sendRequest);
+
+        Assert.Equal("cpdlc", formData["type"]);
+        Assert.Equal("/data2/1//WU/CLIMB+TO+@FL350@", formData["packet"]);
+    }
+
+    [Fact]
+    public async Task Send_CpdlcReply_IncludesReplyToId()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var clock = new TestClock();
+        var connection = CreateConnection(httpHandler, clock);
+
+        await connection.Connect(CancellationToken.None);
+
+        var reply = new UplinkMessage(
+            Guid.NewGuid(),
+            2,
+            5,
+            "UAL123",
+            "BN-TSN_FSS",
+            CpdlcUplinkResponseType.NoResponse,
+            AlertType.None,
+            "ROGER",
+            clock.UtcNow());
+
+        // Act
+        await connection.Send(reply, CancellationToken.None);
+
+        // Assert
+        var sendRequest = httpHandler.Requests.FirstOrDefault(r =>
+        {
+            var formDataString = r.Content?.ReadAsStringAsync().Result ?? "";
+            return formDataString.Contains("type=cpdlc");
+        });
+
+        Assert.NotNull(sendRequest);
+        var formData = await ParseFormDataFromRequest(sendRequest);
+        Assert.Equal("/data2/2/5/NE/ROGER", formData["packet"]);
+    }
+
+    [Theory]
+    [InlineData(CpdlcUplinkResponseType.NoResponse, "NE")]
+    [InlineData(CpdlcUplinkResponseType.WilcoUnable, "WU")]
+    [InlineData(CpdlcUplinkResponseType.AffirmativeNegative, "AN")]
+    [InlineData(CpdlcUplinkResponseType.Roger, "R")]
+    public async Task Send_CpdlcMessage_MapsResponseTypesCorrectly(CpdlcUplinkResponseType uplinkResponseType, string expectedCode)
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var clock = new TestClock();
+        var connection = CreateConnection(httpHandler, clock);
+
+        await connection.Connect(CancellationToken.None);
+
+        var message = new UplinkMessage(
+            Guid.NewGuid(),
+            1,
+            null,
+            "UAL123",
+            "BN-TSN_FSS",
+            uplinkResponseType,
+            AlertType.None,
+            "TEST",
+            clock.UtcNow());
+
+        // Act
+        await connection.Send(message, CancellationToken.None);
+
+        // Assert
+        var sendRequest = httpHandler.Requests.FirstOrDefault(r =>
+        {
+            var formDataString = r.Content?.ReadAsStringAsync().Result ?? "";
+            return formDataString.Contains("type=cpdlc");
+        });
+
+        Assert.NotNull(sendRequest);
+        var formData = await ParseFormDataFromRequest(sendRequest);
+        Assert.Equal($"/data2/1//{expectedCode}/TEST", formData["packet"]);
+
+        await connection.DisposeAsync();
+        _connections.Remove(connection);
+    }
+
+    [Fact]
+    public async Task Send_CpdlcMessage_TranslatesContent()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var clock = new TestClock();
+        var connection = CreateConnection(httpHandler);
+
+        await connection.Connect(CancellationToken.None);
+
+        var message = new UplinkMessage(
+            Guid.NewGuid(),
+            1,
+            null,
+            "UAL123",
+            "BN-TSN_FSS",
+            CpdlcUplinkResponseType.NoResponse,
+            AlertType.None,
+            "MONITOR ML CEN 123.450. END SERVICE.",
+            clock.UtcNow());
+
+        // Act
+        await connection.Send(message, CancellationToken.None);
+
+        // Assert
+        var sendRequest = httpHandler.Requests.FirstOrDefault(r =>
+        {
+            var formDataString = r.Content?.ReadAsStringAsync().Result ?? "";
+            return formDataString.Contains("type=cpdlc");
+        });
+
+        Assert.NotNull(sendRequest);
+        var formData = await ParseFormDataFromRequest(sendRequest);
+        Assert.Equal("/data2/1//NE/MONITOR+ML+CEN+123.450.+LOGOFF.", formData["packet"]);
+    }
+
+    [Fact]
+    public async Task Send_CpdlcMessage_UrlEncodesContent()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var clock = new TestClock();
+        var connection = CreateConnection(httpHandler, clock);
+
+        await connection.Connect(CancellationToken.None);
+
+        var message = new UplinkMessage(
+            Guid.NewGuid(),
+            1,
+            null,
+            "UAL123",
+            "BN-TSN_FSS",
+            CpdlcUplinkResponseType.WilcoUnable,
+            AlertType.None,
+            "CLIMB TO @FL350@",
+            clock.UtcNow());
+
+        // Act
+        await connection.Send(message, CancellationToken.None);
+
+        // Assert
+        var sendRequest = httpHandler.Requests.FirstOrDefault(r =>
+        {
+            var formDataString = r.Content?.ReadAsStringAsync().Result ?? "";
+            return formDataString.Contains("type=cpdlc");
+        });
+
+        Assert.NotNull(sendRequest);
+        var formData = await ParseFormDataFromRequest(sendRequest);
+        Assert.Equal("/data2/1//WU/CLIMB+TO+@FL350@", formData["packet"]);
+    }
+
+    [Fact]
+    public async Task Poll_CpdlcMessage_ParsesCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 cpdlc {/data2/5//Y/REQUEST DESCENT}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.MessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        Assert.Equal("UAL123", message.Sender);
+        Assert.Equal(5, message.MessageId);
+        Assert.Equal("REQUEST DESCENT", message.Content);
+        Assert.Equal(CpdlcDownlinkResponseType.ResponseRequired, message.ResponseType);
+    }
+
+    [Fact]
+    public async Task Poll_CpdlcReply_ParsesCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 cpdlc {/data2/7/3/N/WILCO}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.MessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        Assert.Equal("UAL123", message.Sender);
+        Assert.Equal(7, message.MessageId);
+        Assert.Equal(3, message.MessageReference);
+        Assert.Equal("WILCO", message.Content);
+        Assert.Equal(CpdlcDownlinkResponseType.NoResponse, message.ResponseType);
+    }
+
+    [Fact]
+    public async Task Poll_MultipleMessages_ParsesAllCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        var response = "ok {UAL123 cpdlc {/data2/1//Y/REQUEST DESCENT}} {DAL456 cpdlc {/data2/2//Y/REQUEST CLIMB}}";
+        httpHandler.QueueResponse(HttpStatusCode.OK, response);
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message1 = await connection.MessageReader.ReadAsync(cts.Token);
+        var message2 = await connection.MessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        Assert.Equal("UAL123", message1.Sender);
+        Assert.Equal("REQUEST DESCENT", message1.Content);
+
+        Assert.Equal("DAL456", message2.Sender);
+        Assert.Equal("REQUEST CLIMB", message2.Content);
+    }
+
+    [Fact]
+    public async Task Poll_MessageWithSeparator_ParsesCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        var response = "ok {UAL123 cpdlc {/data2/1//Y/REQUEST CLIMB DUE TO A/C PERFORMANCE}}";
+        httpHandler.QueueResponse(HttpStatusCode.OK, response);
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.MessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        Assert.Equal("REQUEST CLIMB DUE TO A/C PERFORMANCE", message.Content);
+    }
+
+    [Theory]
+    [InlineData("N", CpdlcDownlinkResponseType.NoResponse)]
+    [InlineData("Y", CpdlcDownlinkResponseType.ResponseRequired)]
+    public async Task Poll_ResponseTypeCodes_MapCorrectly(string code, CpdlcDownlinkResponseType expectedType)
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 cpdlc {{/data2/1//{code}/TEST}}}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.MessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        Assert.Equal(expectedType, message.ResponseType);
+
+        await connection.DisposeAsync();
+        _connections.Remove(connection);
+    }
+
+    [Fact]
+    public async Task Poll_WithoutMessageReferenceNumbers_MapsCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 cpdlc {{/data2///N/LOGOFF}}}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.MessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        Assert.Equal(-1, message.MessageId);
+
+        await connection.DisposeAsync();
+        _connections.Remove(connection);
+    }
+
+    [Fact]
+    public async Task Poll_Data1PositionReport_ParsesCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(
+            HttpStatusCode.OK,
+            "ok {UAL123 cpdlc {/DATA1/*/*/*/*/FL380/*/0.84/\n\nOVER MEPAB AT 0501Z, FL380,\nESTIMATING ISTEM AT 0533Z,\nNEXT MISLY.\n\nETA AT 0736Z,\n39.60 X 1000 KG FUEL REMAINING.}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.MessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        Assert.Equal("UAL123", message.Sender);
+        Assert.Equal(-1, message.MessageId);
+        Assert.Null(message.MessageReference);
+        Assert.Equal(CpdlcDownlinkResponseType.NoResponse, message.ResponseType);
+        Assert.Equal(
+            "OVER MEPAB AT 0501Z, FL380, ESTIMATING ISTEM AT 0533Z, NEXT MISLY. ETA AT 0736Z, 39.60 X 1000 KG FUEL REMAINING.",
+            message.Content);
+
+        await connection.DisposeAsync();
+        _connections.Remove(connection);
+    }
+
+    [Fact]
+    public async Task ListConnections_ReturnsCallsigns()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok {UAL123 DAL456 AAL789}");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        var callsigns = await connection.ListConnections(CancellationToken.None);
+
+        // Assert
+        Assert.Equal(3, callsigns.Length);
+        Assert.Contains("UAL123", callsigns);
+        Assert.Contains("DAL456", callsigns);
+        Assert.Contains("AAL789", callsigns);
+
+        var listRequest = httpHandler.Requests.FirstOrDefault(r =>
+        {
+            var formDataString = r.Content?.ReadAsStringAsync().Result ?? "";
+            return formDataString.Contains("type=ping");
+        });
+
+        Assert.NotNull(listRequest);
+        var formData = await ParseFormDataFromRequest(listRequest);
+        Assert.Equal("ping", formData["type"]);
+        Assert.Equal("ALL-CALLSIGNS", formData["packet"]);
+        Assert.Equal("SERVER", formData["to"]);
+    }
+
+    [Fact]
+    public async Task ListConnections_EmptyResponse_ReturnsEmptyArray()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        var callsigns = await connection.ListConnections(CancellationToken.None);
+
+        // Assert
+        Assert.Empty(callsigns);
+    }
+
+    [Fact]
+    public async Task RequestPeriodicAdscContract_FormatsPayloadCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.RequestPeriodicAdscContract("UAL123", TimeSpan.FromMinutes(5), CancellationToken.None);
+
+        // Assert
+        var formData = await ParseFormDataFromRequest(httpHandler.Requests.Single());
+        Assert.Equal("ads-c", formData["type"]);
+        Assert.Equal("YBBB", formData["from"]);
+        Assert.Equal("UAL123", formData["to"]);
+        Assert.Equal("REQUEST+PERIODIC+300", formData["packet"]);
+    }
+
+    [Fact]
+    public async Task RequestPeriodicAdscContract_WhenIntervalIsZero_Throws()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        var connection = CreateConnection(httpHandler);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            connection.RequestPeriodicAdscContract("UAL123", TimeSpan.Zero, CancellationToken.None));
+        Assert.Empty(httpHandler.Requests);
+    }
+
+    [Fact]
+    public async Task RequestAdscDemandReport_FormatsPayloadCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.RequestAdscDemandReport("UAL123", CancellationToken.None);
+
+        // Assert
+        var formData = await ParseFormDataFromRequest(httpHandler.Requests.Single());
+        Assert.Equal("ads-c", formData["type"]);
+        Assert.Equal("UAL123", formData["to"]);
+        Assert.Equal("REQUEST+PERIODIC+0", formData["packet"]);
+    }
+
+    [Fact]
+    public async Task CancelAdscContract_FormatsPayloadCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.CancelAdscContract("UAL123", CancellationToken.None);
+
+        // Assert
+        var formData = await ParseFormDataFromRequest(httpHandler.Requests.Single());
+        Assert.Equal("ads-c", formData["type"]);
+        Assert.Equal("UAL123", formData["to"]);
+        Assert.Equal("REQUEST+CANCEL", formData["packet"]);
+    }
+
+    [Fact]
+    public async Task Poll_AdscReport_ParsesBasicGroup()
+    {
+        // Arrange
+        var clock = new TestClock();
+        clock.SetUtcNow(new DateTimeOffset(2026, 10, 13, 12, 0, 0, TimeSpan.Zero));
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 ads-c {REPORT UAL123 131155 -33.946100 151.177200 37000}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler, clock);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var reportMessage = Assert.IsType<ReceivedAdscReport>(message);
+        Assert.Equal("UAL123", reportMessage.Sender);
+        Assert.Equal(new DateTimeOffset(2026, 10, 13, 11, 55, 0, TimeSpan.Zero), reportMessage.Report.Timestamp);
+        Assert.Equal(-33.9461, reportMessage.Report.Latitude);
+        Assert.Equal(151.1772, reportMessage.Report.Longitude);
+        Assert.Equal(37000, reportMessage.Report.Altitude);
+        Assert.Equal(clock.UtcNow(), reportMessage.Received);
+    }
+
+    [Fact]
+    public async Task Poll_AdscReportWithOptionalGroups_ParsesBasicGroup()
+    {
+        // Arrange
+        var clock = new TestClock();
+        clock.SetUtcNow(new DateTimeOffset(2026, 10, 13, 12, 0, 0, TimeSpan.Zero));
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 ads-c {REPORT UAL123 131155 -33.946100 151.177200 37000 045 480 270/35 -56 LVL}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler, clock);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var reportMessage = Assert.IsType<ReceivedAdscReport>(message);
+        Assert.Equal(-33.9461, reportMessage.Report.Latitude);
+        Assert.Equal(151.1772, reportMessage.Report.Longitude);
+        Assert.Equal(37000, reportMessage.Report.Altitude);
+    }
+
+    [Fact]
+    public async Task Poll_AdscReportFromPreviousMonth_ParsesTimestamp()
+    {
+        // Arrange
+        var clock = new TestClock();
+        clock.SetUtcNow(new DateTimeOffset(2026, 11, 1, 0, 2, 0, TimeSpan.Zero));
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 ads-c {REPORT UAL123 312359 -33.946100 151.177200 37000}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler, clock);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var reportMessage = Assert.IsType<ReceivedAdscReport>(message);
+        Assert.Equal(new DateTimeOffset(2026, 10, 31, 23, 59, 0, TimeSpan.Zero), reportMessage.Report.Timestamp);
+    }
+
+    [Theory]
+    [InlineData("-33.946100 151.177200", -33.9461, 151.1772)]
+    [InlineData("S33.946100 E151.177200", -33.9461, 151.1772)]
+    [InlineData("33.946100S 151.177200E", -33.9461, 151.1772)]
+    [InlineData("N51.47750 W0.46139", 51.4775, -0.46139)]
+    [InlineData("n51.47750 w0.46139", 51.4775, -0.46139)]
+    public async Task Poll_AdscReportPositionFormats_ParsesPosition(string position, double expectedLatitude, double expectedLongitude)
+    {
+        // Arrange
+        var clock = new TestClock();
+        clock.SetUtcNow(new DateTimeOffset(2026, 10, 13, 12, 0, 0, TimeSpan.Zero));
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 ads-c {{REPORT UAL123 131155 {position} 37000}}}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler, clock);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var reportMessage = Assert.IsType<ReceivedAdscReport>(message);
+        Assert.Equal(expectedLatitude, reportMessage.Report.Latitude);
+        Assert.Equal(expectedLongitude, reportMessage.Report.Longitude);
+    }
+
+    [Theory]
+    [InlineData("37000", 37000)]
+    [InlineData("10000", 10000)]
+    [InlineData("351", 35100)]
+    [InlineData("9999", 999900)]
+    public async Task Poll_AdscReportAltitude_ParsesAltitudeInFeet(string altitude, int expectedAltitude)
+    {
+        // Arrange
+        var clock = new TestClock();
+        clock.SetUtcNow(new DateTimeOffset(2026, 10, 13, 12, 0, 0, TimeSpan.Zero));
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 ads-c {{REPORT UAL123 131155 -33.946100 151.177200 {altitude}}}}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler, clock);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var reportMessage = Assert.IsType<ReceivedAdscReport>(message);
+        Assert.Equal(expectedAltitude, reportMessage.Report.Altitude);
+    }
+
+    [Theory]
+    [InlineData("ABC 151.177200")]
+    [InlineData("-33.946100 W151E")]
+    [InlineData("91.000000 151.177200")]
+    [InlineData("-33.946100 181.000000")]
+    [InlineData("E33.946100 N151.177200")]
+    public async Task Poll_AdscReportWithInvalidPosition_IgnoresReport(string position)
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 ads-c {{REPORT UAL123 131155 {position} 37000}}}} {{DAL456 ads-c {{REJECT}}}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var rejection = Assert.IsType<ReceivedAdscRejection>(message);
+        Assert.Equal("DAL456", rejection.Sender);
+    }
+
+    [Fact]
+    public async Task Poll_AdscReject_ParsesCorrectly()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 ads-c {REJECT}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var rejection = Assert.IsType<ReceivedAdscRejection>(message);
+        Assert.Equal("UAL123", rejection.Sender);
+    }
+
+    [Fact]
+    public async Task Poll_CpdlcAndAdscMessages_AreWrittenToSeparateReaders()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 cpdlc {/data2/5//Y/REQUEST DESCENT}} {DAL456 ads-c {REJECT}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var downlink = await connection.MessageReader.ReadAsync(cts.Token);
+        var adscMessage = await connection.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        Assert.Equal("UAL123", downlink.Sender);
+        Assert.Equal("DAL456", adscMessage.Sender);
+        Assert.False(connection.MessageReader.TryRead(out _));
+        Assert.False(connection.AdscMessageReader.TryRead(out _));
+    }
+
+    [Fact]
+    public async Task RequestPeriodicAdscContract_LogsUplinkPacket()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var clock = new TestClock();
+        var connection = CreateConnection(httpHandler, clock);
+
+        // Act
+        await connection.RequestPeriodicAdscContract("UAL123", TimeSpan.FromMinutes(5), CancellationToken.None);
+
+        // Assert
+        var entry = Assert.Single(await _adscMessageLogRepository.All(CancellationToken.None));
+        Assert.Equal(clock.UtcNow(), entry.Time);
+        Assert.Equal("Hoppies/YBBB", entry.AcarsConnectionId);
+        Assert.Equal("YBBB", entry.StationId);
+        Assert.Equal("UAL123", entry.Callsign);
+        Assert.Equal(AdscMessageDirection.Uplink, entry.Direction);
+        Assert.Equal("REQUEST PERIODIC 300", entry.Packet);
+    }
+
+    [Fact]
+    public async Task RequestAdscDemandReport_WhenSendFails_DoesNotLogPacket()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.InternalServerError, "error");
+        var connection = CreateConnection(httpHandler);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<HttpRequestException>(() =>
+            connection.RequestAdscDemandReport("UAL123", CancellationToken.None));
+        Assert.Empty(await _adscMessageLogRepository.All(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Poll_AdscMessages_LogsDownlinkPackets()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(
+            HttpStatusCode.OK,
+            "ok {UAL123 cpdlc {/data2/5//Y/REQUEST DESCENT}} {UAL123 ads-c {REPORT UAL123 131155 ABC 151.177200 37000}} {DAL456 ads-c {REJECT}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        // The packet is logged before the message is written to the reader
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await connection.AdscMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var entries = await _adscMessageLogRepository.All(CancellationToken.None);
+        Assert.Equal(2, entries.Length);
+        Assert.All(entries, e => Assert.Equal(AdscMessageDirection.Downlink, e.Direction));
+
+        // The report cannot be parsed, but it is logged
+        Assert.Equal("UAL123", entries[1].Callsign);
+        Assert.Equal("REPORT UAL123 131155 ABC 151.177200 37000", entries[1].Packet);
+
+        Assert.Equal("DAL456", entries[0].Callsign);
+        Assert.Equal("REJECT", entries[0].Packet);
+    }
+
+    private async Task<Dictionary<string, string>> ParseFormDataFromRequest(HttpRequestMessage request)
+    {
+        var formDataString = await request.Content!.ReadAsStringAsync();
+        var result = new Dictionary<string, string>();
+        var pairs = formDataString.Split('&');
+
+        foreach (var pair in pairs)
+        {
+            var keyValue = pair.Split('=', 2);
+            if (keyValue.Length == 2)
+            {
+                result[Uri.UnescapeDataString(keyValue[0])] = Uri.UnescapeDataString(keyValue[1]);
+            }
+        }
+
+        return result;
+    }
+}

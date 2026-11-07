@@ -1,4 +1,7 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+# The data directory: the SQLite database
+RUN mkdir -p /data && chown $APP_UID /data
+VOLUME /data
 USER $APP_UID
 WORKDIR /app
 EXPOSE 8080

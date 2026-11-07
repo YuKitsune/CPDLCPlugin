@@ -1,0 +1,213 @@
+@page "/settings"
+@model IndexModel
+@{
+    ViewData["Title"] = "Global Settings";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/settings">Settings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Global Settings</li>
+    </ol>
+</nav>
+
+<h2>Global Settings</h2>
+<p class="text-muted">The server applies the changes immediately. A restart is not necessary.</p>
+
+@if (Model.Saved)
+{
+    <div class="alert alert-success" role="alert">The settings were saved.</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<form method="post">
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">Connections</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.OneFailedCheckCausesTimeout)
+            {
+                <div class="alert alert-warning" role="alert">
+                    The aircraft connection timeout is not more than two times the connectivity check interval. One failed check will cause connections to time out.
+                </div>
+            }
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Settings.ConnectivityCheckIntervalMinutes" class="form-label fw-semibold">Connectivity check interval</label>
+                    <div class="form-text">The time between checks of the connected callsigns on the ACARS network.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Settings.ConnectivityCheckIntervalMinutes" class="form-control" min="1" />
+                        <span class="input-group-text">minutes</span>
+                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_ConnectivityCheckIntervalMinutes" data-default-value="@Model.Defaults.ConnectivityCheckIntervalMinutes">Reset</button>
+                    </div>
+                    <span asp-validation-for="Settings.ConnectivityCheckIntervalMinutes" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.ConnectivityCheckIntervalMinutes minutes</div>
+            </div>
+
+            <div class="row py-2">
+                <div class="col-md-5">
+                    <label asp-for="Settings.AircraftConnectionTimeoutMinutes" class="form-label fw-semibold">Aircraft connection timeout</label>
+                    <div class="form-text">The time without contact from an aircraft before its connection times out. Use a value of more than two times the connectivity check interval. If not, one failed check will cause connections to time out.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Settings.AircraftConnectionTimeoutMinutes" class="form-control" min="1" />
+                        <span class="input-group-text">minutes</span>
+                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_AircraftConnectionTimeoutMinutes" data-default-value="@Model.Defaults.AircraftConnectionTimeoutMinutes">Reset</button>
+                    </div>
+                    <span asp-validation-for="Settings.AircraftConnectionTimeoutMinutes" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.AircraftConnectionTimeoutMinutes minutes</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">ADS-C</h5>
+        </div>
+        <div class="card-body">
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Settings.AdscContractTimeoutMinutes" class="form-label fw-semibold">ADS-C contract timeout</label>
+                    <div class="form-text">The time without ADS-C activity from an aircraft before the server cancels the ADS-C contract.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Settings.AdscContractTimeoutMinutes" class="form-control" min="1" />
+                        <span class="input-group-text">minutes</span>
+                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_AdscContractTimeoutMinutes" data-default-value="@Model.Defaults.AdscContractTimeoutMinutes">Reset</button>
+                    </div>
+                    <span asp-validation-for="Settings.AdscContractTimeoutMinutes" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.AdscContractTimeoutMinutes minutes</div>
+            </div>
+
+            <div class="row py-2">
+                <div class="col-md-5">
+                    <label asp-for="Settings.AdscReportRetentionHours" class="form-label fw-semibold">ADS-C report retention</label>
+                    <div class="form-text">The time that the server keeps the history of ADS-C reports.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Settings.AdscReportRetentionHours" class="form-control" min="1" />
+                        <span class="input-group-text">hours</span>
+                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_AdscReportRetentionHours" data-default-value="@Model.Defaults.AdscReportRetentionHours">Reset</button>
+                    </div>
+                    <span asp-validation-for="Settings.AdscReportRetentionHours" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.AdscReportRetentionHours hours</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">Handoff</h5>
+        </div>
+        <div class="card-body">
+            <div class="row py-2">
+                <div class="col-md-5">
+                    <label asp-for="Settings.HandoffNotificationLeadTimeMinutes" class="form-label fw-semibold">Handoff notification lead time</label>
+                    <div class="form-text">The time before the expected transfer time to send the NEXT DATA AUTHORITY message.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Settings.HandoffNotificationLeadTimeMinutes" class="form-control" min="0" />
+                        <span class="input-group-text">minutes</span>
+                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_HandoffNotificationLeadTimeMinutes" data-default-value="@Model.Defaults.HandoffNotificationLeadTimeMinutes">Reset</button>
+                    </div>
+                    <span asp-validation-for="Settings.HandoffNotificationLeadTimeMinutes" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.HandoffNotificationLeadTimeMinutes minutes</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5 class="mb-0">ADS-C from VATSIM status data</h5>
+        </div>
+        <div class="card-body">
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Settings.VatsimStatusEnabled" class="form-label fw-semibold">Enabled</label>
+                    <div class="form-text">Make ADS-C reports from the VATSIM status data for aircraft that do not support ADS-C over Hoppie.</div>
+                </div>
+                <div class="col-md-5 d-flex align-items-center">
+                    <div class="form-check form-switch mb-0">
+                        <input asp-for="Settings.VatsimStatusEnabled" class="form-check-input" role="switch" />
+                    </div>
+                </div>
+                <div class="col-md-2 form-text">Default: @(Model.Defaults.VatsimStatusEnabled ? "On" : "Off")</div>
+            </div>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Settings.VatsimStatusUrl" class="form-label fw-semibold">URL</label>
+                    <div class="form-text">The URL of the VATSIM status data.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Settings.VatsimStatusUrl" type="url" class="form-control" />
+                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_VatsimStatusUrl" data-default-value="@Model.Defaults.VatsimStatusUrl">Reset</button>
+                    </div>
+                    <span asp-validation-for="Settings.VatsimStatusUrl" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text text-break">Default: @Model.Defaults.VatsimStatusUrl</div>
+            </div>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Settings.VatsimStatusPollingIntervalSeconds" class="form-label fw-semibold">Polling interval</label>
+                    <div class="form-text">The time between downloads of the VATSIM status data.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Settings.VatsimStatusPollingIntervalSeconds" class="form-control" min="1" />
+                        <span class="input-group-text">seconds</span>
+                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_VatsimStatusPollingIntervalSeconds" data-default-value="@Model.Defaults.VatsimStatusPollingIntervalSeconds">Reset</button>
+                    </div>
+                    <span asp-validation-for="Settings.VatsimStatusPollingIntervalSeconds" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.VatsimStatusPollingIntervalSeconds seconds</div>
+            </div>
+
+            <div class="row py-2">
+                <div class="col-md-5">
+                    <label asp-for="Settings.VatsimStatusAllowNonEquippedAircraft" class="form-label fw-semibold">Allow aircraft without ADS-C equipment</label>
+                    <div class="form-text">Also make reports for aircraft that do not have D1 or G1 in Item 10b of the flight plan.</div>
+                </div>
+                <div class="col-md-5 d-flex align-items-center">
+                    <div class="form-check form-switch mb-0">
+                        <input asp-for="Settings.VatsimStatusAllowNonEquippedAircraft" class="form-check-input" role="switch" />
+                    </div>
+                </div>
+                <div class="col-md-2 form-text">Default: @(Model.Defaults.VatsimStatusAllowNonEquippedAircraft ? "On" : "Off")</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 my-4">
+        <a href="/settings" class="btn btn-outline-secondary">Discard changes</a>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        // A reset button only changes the value in the form. The value is saved with the Save button.
+        document.querySelectorAll('[data-reset-for]').forEach(button => {
+            button.addEventListener('click', () => {
+                const input = document.getElementById(button.dataset.resetFor);
+                input.value = button.dataset.defaultValue;
+            });
+        });
+    </script>
+}

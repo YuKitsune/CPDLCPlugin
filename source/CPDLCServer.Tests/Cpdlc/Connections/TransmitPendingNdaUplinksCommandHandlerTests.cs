@@ -1,0 +1,211 @@
+using CPDLCServer.AcarsConnections.Stations;
+using CPDLCServer.Cpdlc.Connections;
+using CPDLCServer.Cpdlc.Uplinks;
+using CPDLCServer.Settings;
+using CPDLCServer.Tests.Mocks;
+using MediatR;
+using NSubstitute;
+using Serilog.Core;
+
+namespace CPDLCServer.Tests.Cpdlc.Connections;
+
+public class TransmitPendingNdaUplinksCommandHandlerTests
+{
+    static TestServerSettingsProvider DefaultSettings() =>
+        new(new ServerSettings { HandoffNotificationLeadTimeMinutes = 10 });
+
+    static IAcarsStationRepository OnlineCallsigns(params string[] callsigns)
+    {
+        var repo = Substitute.For<IAcarsStationRepository>();
+        repo.All(Arg.Any<CancellationToken>()).Returns(callsigns);
+        return repo;
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoNextDataAuthority_DoesNotSendMessage()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var mediator = Substitute.For<IMediator>();
+
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
+
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
+            aircraftRepository,
+            OnlineCallsigns("YMMM"),
+            mediator,
+            clock,
+            Logger.None,
+            DefaultSettings());
+
+        // Act
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
+
+        // Assert
+        await mediator.DidNotReceive().Send(Arg.Any<BeginDialogueCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenHandoffMessageAlreadySent_DoesNotSendMessage()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var mediator = Substitute.For<IMediator>();
+
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+        aircraft.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(5));
+        aircraft.SentNextDataAuthorityMessage();
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
+
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
+            aircraftRepository,
+            OnlineCallsigns("YMMM"),
+            mediator,
+            clock,
+            Logger.None,
+            DefaultSettings());
+
+        // Act
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
+
+        // Assert
+        await mediator.DidNotReceive().Send(Arg.Any<BeginDialogueCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenOutsideNotificationWindow_DoesNotSendMessage()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var mediator = Substitute.For<IMediator>();
+
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+
+        // Transfer is 20 minutes away, notification window is 10 minutes, too early to send
+        aircraft.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(20));
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
+
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
+            aircraftRepository,
+            OnlineCallsigns("YMMM"),
+            mediator,
+            clock,
+            Logger.None,
+            DefaultSettings());
+
+        // Act
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
+
+        // Assert
+        await mediator.DidNotReceive().Send(Arg.Any<BeginDialogueCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenNdaAtsuIsOffline_DoesNotSendMessage()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var mediator = Substitute.For<IMediator>();
+
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+
+        // Transfer is 5 minutes away, within the notification window
+        aircraft.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(5));
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
+
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
+            aircraftRepository,
+            OnlineCallsigns(), // YMMM not online
+            mediator,
+            clock,
+            Logger.None,
+            DefaultSettings());
+
+        // Act
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
+
+        // Assert
+        await mediator.DidNotReceive().Send(Arg.Any<BeginDialogueCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenWithinNotificationWindow_SendsNextDataAuthorityMessage()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var mediator = Substitute.For<IMediator>();
+
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+
+        // Transfer is 5 minutes away, notification window is 10 minutes, within the window
+        aircraft.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(5));
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
+
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
+            aircraftRepository,
+            OnlineCallsigns("YMMM"),
+            mediator,
+            clock,
+            Logger.None,
+            DefaultSettings());
+
+        // Act
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
+
+        // Assert
+        await mediator.Received(1).Send(
+            Arg.Is<BeginDialogueCommand>(c =>
+                c.Sender == "YBBB" &&
+                c.Recipient == "UAL123" &&
+                c.Content == "NEXT DATA AUTHORITY @YMMM@" &&
+                c.ResponseType == CpdlcUplinkResponseType.NoResponse),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenMessageSent_UpdatesAircraftConnection()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var mediator = Substitute.For<IMediator>();
+
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(clock.UtcNow());
+        aircraft.AcceptLogon(clock.UtcNow());
+
+        // Transfer is 5 minutes away; notification window is 10 minutes → within window
+        aircraft.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(5));
+        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
+
+        var handler = new TransmitPendingNdaUplinksCommandHandler(
+            aircraftRepository,
+            OnlineCallsigns("YMMM"),
+            mediator,
+            clock,
+            Logger.None,
+            DefaultSettings());
+
+        // Act
+        await handler.Handle(new TransmitPendingNdaUplinksCommand(), CancellationToken.None);
+
+        // Assert
+        Assert.True(aircraft.DidSentNextDataAuthorityMessage);
+    }
+}

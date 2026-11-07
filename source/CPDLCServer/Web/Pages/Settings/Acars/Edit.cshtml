@@ -1,0 +1,156 @@
+@page "/settings/acars/edit/{id:guid?}"
+@using CPDLCServer.AcarsConnections.ConnectionSettings
+@model EditModel
+@{
+    ViewData["Title"] = Model.IsNew ? "Add ACARS Connection" : "Edit ACARS Connection";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/settings">Settings</a></li>
+        <li class="breadcrumb-item"><a asp-page="Index">ACARS Connections</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@(Model.IsNew ? "Add" : "Edit")</li>
+    </ol>
+</nav>
+
+<h2>@ViewData["Title"]</h2>
+<p class="text-muted">
+    @if (Model.IsNew)
+    {
+        <text>When you save an enabled connection, the server connects to the ACARS network immediately.</text>
+    }
+    else
+    {
+        <text>When you save, the server disconnects the connection, then connects it again with the new settings.</text>
+    }
+</p>
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<form method="post">
+    <div class="card mt-3">
+        <div class="card-body">
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Connection.Enabled" class="form-label fw-semibold">Enabled</label>
+                    <div class="form-text">The server connects to the ACARS network only with an enabled connection.</div>
+                </div>
+                <div class="col-md-5 d-flex align-items-center">
+                    <div class="form-check form-switch mb-0">
+                        <input asp-for="Connection.Enabled" class="form-check-input" role="switch" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Connection.Type" class="form-label fw-semibold">Type</label>
+                    <div class="form-text">The type of the ACARS network.</div>
+                </div>
+                <div class="col-md-5">
+                    <select asp-for="Connection.Type" asp-items="@(Html.GetEnumSelectList<AcarsNetworkType>())" class="form-select"></select>
+                    <span asp-validation-for="Connection.Type" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Connection.StationIdentifier" class="form-label fw-semibold">Station identifier</label>
+                    <div class="form-text">The callsign of the ATSU on the ACARS network, for example YBBB. Only one connection can use a station identifier.</div>
+                </div>
+                <div class="col-md-5">
+                    <input asp-for="Connection.StationIdentifier" class="form-control text-uppercase" />
+                    <span asp-validation-for="Connection.StationIdentifier" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Connection.FlightSimulationNetwork" class="form-label fw-semibold">Flight simulation network</label>
+                    <div class="form-text">The network that the ACARS messages are for, for example VATSIM or IVAO.</div>
+                </div>
+                <div class="col-md-5">
+                    <input asp-for="Connection.FlightSimulationNetwork" class="form-control" />
+                    <span asp-validation-for="Connection.FlightSimulationNetwork" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.FlightSimulationNetwork</div>
+            </div>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Connection.Url" class="form-label fw-semibold">URL</label>
+                    <div class="form-text">The URL of the ACARS network.</div>
+                </div>
+                <div class="col-md-5">
+                    <input asp-for="Connection.Url" type="url" class="form-control" />
+                    <span asp-validation-for="Connection.Url" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text text-break">Default: @Model.Defaults.Url</div>
+            </div>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="AuthenticationCode" class="form-label fw-semibold">Authentication code</label>
+                    <div class="form-text">
+                        The logon code of the station on the ACARS network. The server keeps it encrypted.
+                        @if (!Model.IsNew)
+                        {
+                            <text>Leave it empty to keep the current code.</text>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <input asp-for="AuthenticationCode" type="password" class="form-control" autocomplete="new-password"
+                           placeholder="@(Model.IsNew ? string.Empty : "Unchanged")" />
+                    <span asp-validation-for="AuthenticationCode" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Connection.DefaultAdscReportingInterval" class="form-label fw-semibold">Default ADS-C reporting interval</label>
+                    <div class="form-text">The reporting interval of the ADS-C contract that the server requests when an aircraft logs on with CPDLC.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Connection.DefaultAdscReportingInterval" class="form-control" min="1" />
+                        <span class="input-group-text">minutes</span>
+                    </div>
+                    <span asp-validation-for="Connection.DefaultAdscReportingInterval" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.DefaultAdscReportingInterval minutes</div>
+            </div>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Connection.SelectedAdscContractDuration" class="form-label fw-semibold">Selected ADS-C contract duration</label>
+                    <div class="form-text">The time from the request of a selected ADS-C contract to its end. Then the server requests the default contract again.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Connection.SelectedAdscContractDuration" class="form-control" min="1" />
+                        <span class="input-group-text">minutes</span>
+                    </div>
+                    <span asp-validation-for="Connection.SelectedAdscContractDuration" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.SelectedAdscContractDuration minutes</div>
+            </div>
+
+            <div class="row py-2">
+                <div class="col-md-5">
+                    <label asp-for="Connection.Notes" class="form-label fw-semibold">Notes</label>
+                    <div class="form-text">Information for the administrators, for example who owns the station. The server does not use it.</div>
+                </div>
+                <div class="col-md-5">
+                    <textarea asp-for="Connection.Notes" class="form-control" rows="4" maxlength="2000"></textarea>
+                    <span asp-validation-for="Connection.Notes" class="text-danger small"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 my-4">
+        <a asp-page="Index" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+</form>

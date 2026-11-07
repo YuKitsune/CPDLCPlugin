@@ -1,5 +1,10 @@
 spec:
   name: cpdlc-server
+  # App Platform has no persistent disk, so the server keeps its data in a PostgreSQL database
+  databases:
+    - name: db
+      engine: PG
+      production: false
   services:
     - name: cpdlc-server
       instance_count: 1
@@ -13,16 +18,15 @@ spec:
       envs:
         - key: Logging__Level
           value: Information
-        - key: Acars__0__Type
-          value: Hoppie
-        - key: Acars__0__FlightSimulationNetwork
-          value: VATSIM
-        - key: Acars__0__StationIdentifier
-          value: CHANGE_ME
-        - key: Acars__0__Url
-          value: http://www.hoppie.nl/acars/system/connect.html
-        - key: Acars__0__AuthenticationCode
-          value: CHANGE_ME
+        - key: DatabaseProvider
+          value: PostgreSql
+        - key: DatabaseConnectionString
+          scope: RUN_TIME
+          value: ${db.DATABASE_URL}
+        # You must set the master key before you deploy. Without it, the server does not start.
+        # Make a key with: openssl rand -base64 32
+        # Keep a copy of the key in a safe place. If the key changes, you must enter the ACARS authentication codes again.
+        - key: MasterKey
+          scope: RUN_TIME
           type: SECRET
-        - key: Handoff__NotificationLeadTime
-          value: "10"
+          value: ""

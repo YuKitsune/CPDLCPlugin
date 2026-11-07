@@ -1,0 +1,54 @@
+@page "/settings/users"
+@model IndexModel
+@{
+    ViewData["Title"] = "Users";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/settings">Settings</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Users</li>
+    </ol>
+</nav>
+
+<h2>Users</h2>
+<p class="text-muted">The users that can log in to the dashboard.</p>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="alert">@Model.StatusMessage</div>
+}
+
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Username</th>
+                        <th>Created</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td>
+                                @user.Username
+                                @if (Model.IsCurrentUser(user))
+                                {
+                                    <span class="text-muted">(you)</span>
+                                }
+                            </td>
+                            <td>@user.Created.ToString("yyyy-MM-dd HH:mm") UTC</td>
+                            <td class="text-end text-nowrap">
+                                <a asp-page="ChangePassword" asp-route-id="@user.Id" class="btn btn-sm btn-outline-secondary">Change password</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
