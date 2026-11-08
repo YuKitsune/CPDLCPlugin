@@ -6,6 +6,7 @@ namespace CPDLCPlugin.Windows;
 public class WindowManager(IGuiInvoker guiInvoker)
 {
     readonly IDictionary<string, VatSysForm> _forms = new Dictionary<string, VatSysForm>();
+    readonly IDictionary<string, System.Drawing.Point> _lastLocations = new Dictionary<string, System.Drawing.Point>();
     readonly object _gate = new();
 
     public void FocusOrCreateWindow(
@@ -33,9 +34,23 @@ public class WindowManager(IGuiInvoker guiInvoker)
                         StartPosition = FormStartPosition.CenterParent
                     };
 
+                    if (_lastLocations.TryGetValue(key, out var lastLocation))
+                    {
+                        form.StartPosition = FormStartPosition.Manual;
+                        form.Location = lastLocation;
+                    }
+
                     configureForm?.Invoke(form);
 
-                    form.Closed += (_, _) => TryRemoveWindowInternal(key);
+                    form.Closed += (_, _) =>
+                    {
+                        // If the window is minimised or maximised, Location is not the normal position of the window
+                        _lastLocations[key] = form.WindowState == FormWindowState.Normal
+                            ? form.Location
+                            : form.RestoreBounds.Location;
+
+                        TryRemoveWindowInternal(key);
+                    };
                     form.Show(mainForm);
 
                     _forms[key] = form;
