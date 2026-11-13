@@ -60,6 +60,9 @@ class Build : FalloutBuild
     [Parameter("Name of the migration to add")]
     readonly string MigrationName;
 
+    [Parameter("Version to use instead of the GitVersion version, for example 1.0.0-rc1")]
+    readonly string ForceVersion;
+
     [GitRepository]
     readonly GitRepository GitRepository;
 
@@ -167,8 +170,8 @@ class Build : FalloutBuild
                 .SetConfiguration(Configuration)
                 .SetOutputDirectory(PluginBuildOutputDirectory)
                 .SetVersion(version)
-                .SetAssemblyVersion(GitVersion.MajorMinorPatch)
-                .SetFileVersion(GitVersion.MajorMinorPatch)
+                .SetAssemblyVersion(GetMajorMinorPatch())
+                .SetFileVersion(GetMajorMinorPatch())
                 .SetInformationalVersion(version)
                 .SetProperty("VatSysPath", VatSysExePath.Parent.Parent));
         });
@@ -368,8 +371,8 @@ class Build : FalloutBuild
                 .SetConfiguration(Configuration)
                 .SetOutput(ServerBuildOutputDirectory)
                 .SetVersion(version)
-                .SetAssemblyVersion(GitVersion.MajorMinorPatch)
-                .SetFileVersion(GitVersion.MajorMinorPatch)
+                .SetAssemblyVersion(GetMajorMinorPatch())
+                .SetFileVersion(GetMajorMinorPatch())
                 .SetInformationalVersion(version));
 
             Log.Information("Server published to {OutputDirectory}", ServerBuildOutputDirectory);
@@ -496,8 +499,20 @@ class Build : FalloutBuild
         return Path.Combine(documentsPath, "vatSys Files", "Profiles", profileName);
     }
 
+    // The assembly and file versions cannot have a pre-release label or build metadata
+    string GetMajorMinorPatch()
+    {
+        if (!string.IsNullOrEmpty(ForceVersion))
+            return ForceVersion.Split('-', '+')[0];
+
+        return GitVersion?.MajorMinorPatch ?? "0.0.0";
+    }
+
     string GetSemanticVersion()
     {
+        if (!string.IsNullOrEmpty(ForceVersion))
+            return ForceVersion;
+
         // For main/master branch, or if we're on a detached head (building from a tag)
         // use major.minor.patch (e.g., "1.2.3")
         if (string.IsNullOrEmpty(GitVersion.BranchName) || GitVersion.BranchName is "main" or "master")
