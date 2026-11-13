@@ -12,7 +12,7 @@ public class AdscContractTests
     public void RequestDefaultContract_SendsDefaultContract()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
 
         // Act
         contract.RequestDefaultContract(DefaultInterval);
@@ -25,10 +25,23 @@ public class AdscContractTests
     }
 
     [Fact]
+    public void RequestDefaultContract_UpdatesDefaultReportingInterval()
+    {
+        // Arrange - the default reporting interval of the ATSU changed after the contract was made
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(15));
+
+        // Act
+        contract.RequestDefaultContract(DefaultInterval);
+
+        // Assert
+        Assert.Equal(DefaultInterval, contract.DefaultReportingInterval);
+    }
+
+    [Fact]
     public void RequestDefaultContract_WhenSelectedContractIsAccepted_EndsSelectedContract()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestSelectedContract(SelectedInterval, Ends);
         contract.ReportReceived();
 
@@ -47,7 +60,7 @@ public class AdscContractTests
     public void RequestDefaultContract_WhenSelectedContractIsRejected_KeepsRejection()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestSelectedContract(SelectedInterval, Ends);
         contract.Reject();
 
@@ -64,7 +77,7 @@ public class AdscContractTests
     public void RequestSelectedContract_SendsSelectedContractAndKeepsDefaultContract()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestDefaultContract(DefaultInterval);
         contract.ReportReceived();
 
@@ -83,7 +96,7 @@ public class AdscContractTests
     public void ReportReceived_WhenDefaultContractIsSent_AcceptsDefaultContract()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestDefaultContract(DefaultInterval);
 
         // Act
@@ -98,7 +111,7 @@ public class AdscContractTests
     public void ReportReceived_WhenSelectedContractIsSent_AcceptsSelectedContractAndEndsDefaultContract()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestDefaultContract(DefaultInterval);
         contract.RequestSelectedContract(SelectedInterval, Ends);
 
@@ -115,7 +128,7 @@ public class AdscContractTests
     public void ReportReceived_WhenDemandReportIsSent_AcceptsDemandReport()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestDemandReport();
 
         // Act
@@ -132,7 +145,7 @@ public class AdscContractTests
     public void ReportReceived_WhenNothingIsSent_ReturnsFalse()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestDefaultContract(DefaultInterval);
         contract.ReportReceived();
 
@@ -148,7 +161,7 @@ public class AdscContractTests
     public void Reject_WhenSelectedContractIsSent_RejectsSelectedContract()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestDefaultContract(DefaultInterval);
         contract.ReportReceived();
         contract.RequestSelectedContract(SelectedInterval, Ends);
@@ -167,7 +180,7 @@ public class AdscContractTests
     public void Reject_WhenSelectedContractIsAccepted_RejectsSelectedContract()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestSelectedContract(SelectedInterval, Ends);
         contract.ReportReceived();
 
@@ -184,7 +197,7 @@ public class AdscContractTests
     public void Reject_WhenDefaultContractIsSent_RejectsDefaultContract()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestDefaultContract(DefaultInterval);
 
         // Act
@@ -200,7 +213,7 @@ public class AdscContractTests
     public void Reject_WhenDemandReportIsSent_RejectsDemandReport()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestDefaultContract(DefaultInterval);
         contract.ReportReceived();
         contract.RequestDemandReport();
@@ -217,7 +230,7 @@ public class AdscContractTests
     public void Reject_WhenDemandReportIsAccepted_KeepsDemandReport()
     {
         // Arrange
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         contract.RequestDemandReport();
         contract.ReportReceived();
         contract.RequestDefaultContract(DefaultInterval);

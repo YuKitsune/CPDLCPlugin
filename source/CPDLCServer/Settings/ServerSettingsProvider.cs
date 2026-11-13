@@ -5,15 +5,16 @@ namespace CPDLCServer.Settings;
 
 public interface IServerSettingsProvider
 {
+    /// <summary>
+    /// Adds the default settings when the database has no settings, for example at the first start
+    /// </summary>
+    Task SeedDefaults(CancellationToken cancellationToken);
     Task<ServerSettings> Load(CancellationToken cancellationToken);
     Task Save(ServerSettings settings, CancellationToken cancellationToken);
 }
 
-// Reads and changes the settings with the database context of the current lifetime scope.
-// The changes are saved when the unit of work of the scope is committed.
 public class ServerSettingsProvider(CpdlcDbContext dbContext) : IServerSettingsProvider
 {
-    // Adds the default settings when the database has no settings, for example at the first start
     public async Task SeedDefaults(CancellationToken cancellationToken)
     {
         if (await dbContext.ServerSettings.AnyAsync(cancellationToken))

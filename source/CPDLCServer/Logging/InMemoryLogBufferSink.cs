@@ -4,8 +4,10 @@ using Serilog.Formatting.Display;
 
 namespace CPDLCServer.Logging;
 
-// Writes the log events to the LogBuffer, for the Logs page
-public class LogBufferSink(LogBuffer logBuffer) : ILogEventSink
+/// <summary>
+/// A log sink that stores log events in-memory.
+/// </summary>
+public class InMemoryLogBufferSink(LogBuffer logBuffer) : ILogEventSink
 {
     // The same text as the console output, without the timestamp, the level and the exception
     readonly MessageTemplateTextFormatter _messageFormatter = new("{Message:lj}");

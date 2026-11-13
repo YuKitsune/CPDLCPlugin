@@ -26,7 +26,9 @@ public static class LogStreamEndpoint
         try
         {
             foreach (var entry in subscription.RecentEntries)
+            {
                 await WriteEvent(context.Response, entry, cancellationToken);
+            }
 
             await context.Response.Body.FlushAsync(cancellationToken);
 

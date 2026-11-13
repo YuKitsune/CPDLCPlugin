@@ -25,7 +25,6 @@ public class AircraftConnectionEstablishedNotificationHandler(
 
         // Find all controllers on the same network and station
         var controllers = await controllerRepository.All(cancellationToken);
-
         if (!controllers.Any())
         {
             logger.Information(

@@ -3,11 +3,12 @@ using System.Text;
 
 namespace CPDLCServer.Security;
 
-// Encrypts secrets with AES-GCM and the master key, so that the database does not contain them as plain text.
-// The encrypted value is the nonce, the tag and the ciphertext, as Base64 text.
-// If the master key changes, the server cannot decrypt the secrets that were encrypted with the old key.
-//
-// The key comes from the MasterKey environment variable. A missing or invalid key stops the server at startup.
+/// <summary>
+/// Encrypts data with AES-GCM and the master key, so that the database does not contain them as plain text.
+/// The encrypted value is the nonce, the tag and the ciphertext, as Base64 text.
+/// If the master key changes, the server cannot decrypt the secrets that were encrypted with the old key.
+/// The key comes from the MasterKey environment variable. A missing or invalid key stops the server at startup.
+/// </summary>
 public class MasterKeyEncryption(string masterKey)
 {
     const int KeySize = 32;

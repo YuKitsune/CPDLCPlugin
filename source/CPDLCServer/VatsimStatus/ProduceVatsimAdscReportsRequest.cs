@@ -2,5 +2,7 @@ using MediatR;
 
 namespace CPDLCServer.VatsimStatus;
 
-// Makes the ADS-C reports that are due from the latest VATSIM status data
+/// <summary>
+///     Creates an ADS-C position report using VATSIM status data.
+/// </summary>
 public record ProduceVatsimAdscReportsRequest : IRequest;

@@ -39,18 +39,19 @@ var dataPath = GetDataPath(builder);
 var databaseProvider = GetDatabaseProvider(builder);
 var databasePath = Path.Combine(dataPath, "cpdlc.db");
 
-builder.Services.AddInfrastructure();
-builder.Services.AddPersistence(builder.Configuration, databaseProvider, databasePath);
-builder.Services.AddSecurity(builder.Configuration);
-builder.Services.AddSetup();
-builder.Services.AddAuth();
-builder.Services.AddSettings();
-builder.Services.AddAcarsConnections();
-builder.Services.AddAirTrafficControllers();
-builder.Services.AddCpdlc();
-builder.Services.AddAdscContracts();
-builder.Services.AddVatsimStatus();
-builder.Services.AddWeb();
+builder.Services
+    .AddInfrastructure()
+    .AddPersistence(builder.Configuration, databaseProvider, databasePath)
+    .AddSecurity(builder.Configuration)
+    .AddSetup()
+    .AddAuth()
+    .AddSettings()
+    .AddAcarsConnections()
+    .AddAirTrafficControllers()
+    .AddCpdlc()
+    .AddAdsContracts()
+    .AddVatsimStatus()
+    .AddWeb();
 
 var app = builder.Build();
 
@@ -59,7 +60,7 @@ await SeedServerSettings(app);
 
 var setupState = app.Services.GetRequiredService<SetupState>();
 await setupState.Load(CancellationToken.None);
-app.Lifetime.ApplicationStarted.Register(() => LogSetupUrl(app, setupState));
+app.Lifetime.ApplicationStarted.Register(() => TryLogSetupUrl(app, setupState));
 
 app.UseHttpsRedirection();
 app.UseRouting();
@@ -72,8 +73,8 @@ app.UseRateLimiter();
 app.MapRazorPages();
 app.MapHub<ControllerHub>("/hubs/controller");
 
-app.MapGet("/health", () => Results.Ok());
 app.MapGet("/logs/stream", LogStreamEndpoint.Handle).RequireAuthorization();
+app.MapGet("/health", () => Results.Ok());
 
 app.Run();
 return;
@@ -112,7 +113,7 @@ DatabaseProvider GetDatabaseProvider(WebApplicationBuilder builder)
         return DatabaseProvider.Sqlite;
 
     if (!Enum.TryParse<DatabaseProvider>(configuredProvider, ignoreCase: true, out var provider))
-        throw new Exception($"The database provider {configuredProvider} is not supported. Use Sqlite or PostgreSql.");
+        throw new Exception($"The database provider {configuredProvider} is not supported. Use {nameof(DatabaseProvider.Sqlite)} or {nameof(DatabaseProvider.PostgreSql)}.");
 
     return provider;
 }
@@ -144,7 +145,7 @@ string? FindRepositoryRoot()
     return null;
 }
 
-void LogSetupUrl(WebApplication app, SetupState setupState)
+void TryLogSetupUrl(WebApplication app, SetupState setupState)
 {
     if (setupState.IsConfigured)
         return;
@@ -200,7 +201,7 @@ async Task MigrateDatabase(WebApplication app, DatabaseProvider provider, string
 async Task SeedServerSettings(WebApplication app)
 {
     await using var scope = app.Services.CreateAsyncScope();
-    await scope.ServiceProvider.GetRequiredService<ServerSettingsProvider>().SeedDefaults(CancellationToken.None);
+    await scope.ServiceProvider.GetRequiredService<IServerSettingsProvider>().SeedDefaults(CancellationToken.None);
     await scope.ServiceProvider.GetRequiredService<UnitOfWork>().Commit(CancellationToken.None);
 }
 
@@ -220,7 +221,7 @@ void ConfigureSerilog(WebApplicationBuilder builder)
         .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
         .Enrich.FromLogContext()
         .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
-        .WriteTo.Sink(new LogBufferSink(logBuffer))
+        .WriteTo.Sink(new InMemoryLogBufferSink(logBuffer))
         .CreateLogger();
 
     builder.Host.UseSerilog();

@@ -6,12 +6,14 @@ public static class ControlMessages
 {
     public static bool IsLogonRequest(ReceivedDownlink downlink)
     {
-        return downlink.Content.Contains("REQUEST LOGON");
+        return downlink.Content.Contains("REQUEST LOGON") ||
+               downlink.Content.Contains("REQUEST LOG ON");
     }
 
     public static bool IsLogoffNotice(ReceivedDownlink downlink)
     {
-        return downlink.Content.Contains("LOGOFF");
+        return downlink.Content.Contains("LOGOFF") ||
+               downlink.Content.Contains("LOG OFF");
     }
 
     public static bool IsEndServiceUplink(UplinkMessage uplink)

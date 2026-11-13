@@ -1,5 +1,4 @@
 using CPDLCServer.Contracts;
-using CPDLCServer.AcarsConnections;
 using CPDLCServer.AcarsConnections.Stations;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.Reports;
@@ -46,7 +45,7 @@ public class ControllerHub(
             throw new HubException("callsign must be provided");
         }
 
-        // Validate API key
+        // TODO: Validate API key
         // var validationResult = await _apiKeyValidator.ValidateAsync(apiKey);
         // if (validationResult is null)
         // {
@@ -58,15 +57,13 @@ public class ControllerHub(
             Guid.NewGuid(),
             Context.ConnectionId,
             stationId,
-            callsign,
-            "TEST");
-            // validationResult.VatsimCid);
+            callsign);
 
         await controllerRepository.Add(controller, Context.GetHttpContext()?.RequestAborted ?? CancellationToken.None);
 
         _logger.Information(
-            "Controller connected: {Callsign} (VATSIM CID: {VatsimCid}; ConnectionId: {ConnectionId})",
-            callsign, "TEST", Context.ConnectionId);
+            "Controller connected: {Callsign}. ConnectionId: {ConnectionId}",
+            callsign, Context.ConnectionId);
 
         await mediator.Publish(
             new ControllerConnectedNotification(
@@ -98,11 +95,12 @@ public class ControllerHub(
             _ => throw new ArgumentOutOfRangeException(nameof(responseType), responseType, null)
         };
 
-        await mediator.Send(new BeginDialogueCommand(
-            controller.Callsign,
-            recipient,
-            modelResponseType,
-            content));
+        await mediator.Send(
+            new BeginDialogueCommand(
+                controller.Callsign,
+                recipient,
+                modelResponseType,
+                content));
     }
 
     public async Task ReplyToDownlink(
@@ -127,12 +125,13 @@ public class ControllerHub(
             _ => throw new ArgumentOutOfRangeException(nameof(responseType), responseType, null)
         };
 
-        await mediator.Send(new ReplyToDownlinkCommand(
-            controller.Callsign,
-            dialogueId,
-            downlinkMessageId,
-            modelResponseType,
-            content));
+        await mediator.Send(
+            new ReplyToDownlinkCommand(
+                controller.Callsign,
+                dialogueId,
+                downlinkMessageId,
+                modelResponseType,
+                content));
     }
 
     public async Task RequestConnection(string callsign, string stationId)
@@ -145,12 +144,6 @@ public class ControllerHub(
         }
 
         await mediator.Send(new SendConnectionRequestCommand(callsign, stationId));
-
-        _logger.Information(
-            "Controller {Callsign} requested a connection between {AircraftCallsign} and {StationId}",
-            controller.Callsign,
-            callsign,
-            stationId);
     }
 
     public async Task<AircraftConnectionDto[]> GetConnectedAircraft()
@@ -162,9 +155,7 @@ public class ControllerHub(
             throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
         }
 
-        var query = new GetConnectedAircraftRequest();
-        var result = await mediator.Send(query);
-
+        var result = await mediator.Send(new GetConnectedAircraftRequest());
         return result.Aircraft;
     }
 
@@ -177,9 +168,7 @@ public class ControllerHub(
             throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
         }
 
-        var query = new GetConnectedControllersRequest();
-        var result = await mediator.Send(query);
-
+        var result = await mediator.Send(new GetConnectedControllersRequest());
         return result.Controllers;
     }
 
@@ -190,34 +179,17 @@ public class ControllerHub(
 
     public async Task AcknowledgeDownlink(Guid dialogueId, int downlinkMessageId)
     {
-        var command = new AcknowledgeDownlinkCommand(dialogueId, downlinkMessageId);
-        await mediator.Send(command);
-
-        _logger.Information(
-            "Controller acknowledged downlink {MessageId} in dialogue {DialogueId}",
-            downlinkMessageId,
-            dialogueId);
+        await mediator.Send(new AcknowledgeDownlinkCommand(dialogueId, downlinkMessageId));
     }
 
     public async Task AcknowledgeUplink(Guid dialogueId, int uplinkMessageId)
     {
-        var command = new AcknowledgeUplinkCommand(dialogueId, uplinkMessageId);
-        await mediator.Send(command);
-
-        _logger.Information(
-            "Controller acknowledged uplink {MessageId} in dialogue {DialogueId}",
-            uplinkMessageId,
-            dialogueId);
+        await mediator.Send(new AcknowledgeUplinkCommand(dialogueId, uplinkMessageId));
     }
 
     public async Task ArchiveDialogue(Guid dialogueId)
     {
-        var command = new ArchiveDialogueCommand(dialogueId);
-        await mediator.Send(command);
-
-        _logger.Information(
-            "Controller manually archived dialogue {DialogueId}",
-            dialogueId);
+        await mediator.Send(new ArchiveDialogueCommand(dialogueId));
     }
 
     public async Task UpdateNextDataAuthority(
@@ -232,60 +204,25 @@ public class ControllerHub(
             throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
         }
 
-        var command = new UpdateNextDataAuthorityCommand(
-            controller.StationId,
-            callsign,
-            nextDataAuthority,
-            expectedTransferTime);
-
-        await mediator.Send(command);
-
-        _logger.Information(
-            "Controller {Callsign} updated next data authority for {AircraftCallsign} to {NextDataAuthority}",
-            controller.Callsign,
-            callsign,
-            nextDataAuthority ?? "(none)");
-    }
-
-    public async Task<AtsuSettingsDto> GetAtsuSettings()
-    {
-        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
-        if (controller is null)
-        {
-            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
-            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
-        }
-
-        return await mediator.Send(new GetAtsuSettingsRequest(controller.StationId));
-    }
-
-    // A null reporting interval ends the selected contract and requests the default contract again
-    public async Task RequestPeriodicAdscContract(string callsign, TimeSpan? reportingInterval)
-    {
-        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
-        if (controller is null)
-        {
-            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
-            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
-        }
-
-        if (reportingInterval is null)
-        {
-            await mediator.Send(new RequestDefaultAdscContractCommand(controller.StationId, callsign));
-        }
-        else
-        {
-            await mediator.Send(new RequestSelectedAdscContractCommand(
+        await mediator.Send(
+            new UpdateNextDataAuthorityCommand(
                 controller.StationId,
                 callsign,
-                reportingInterval.Value));
+                nextDataAuthority,
+                expectedTransferTime));
+    }
+
+    // The default reporting interval of the ATSU requests the default contract. Any other interval requests a selected contract.
+    public async Task RequestPeriodicAdscContract(string callsign, TimeSpan reportingInterval)
+    {
+        var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
+        if (controller is null)
+        {
+            _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
+            throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
         }
 
-        _logger.Information(
-            "Controller {Callsign} requested periodic ADS-C contract with {AircraftCallsign} (Interval: {ReportingInterval})",
-            controller.Callsign,
-            callsign,
-            reportingInterval?.ToString() ?? "Default");
+        await mediator.Send(new RequestPeriodicAdscContractCommand(controller.StationId, callsign, reportingInterval));
     }
 
     public async Task RequestAdscDemandReport(string callsign)
@@ -298,11 +235,6 @@ public class ControllerHub(
         }
 
         await mediator.Send(new RequestAdscDemandReportCommand(controller.StationId, callsign));
-
-        _logger.Information(
-            "Controller {Callsign} requested ADS-C demand report from {AircraftCallsign}",
-            controller.Callsign,
-            callsign);
     }
 
     public async Task CancelAdscContract(string callsign)
@@ -315,11 +247,6 @@ public class ControllerHub(
         }
 
         await mediator.Send(new CancelAdscContractCommand(controller.StationId, callsign));
-
-        _logger.Information(
-            "Controller {Callsign} cancelled ADS-C contract with {AircraftCallsign}",
-            controller.Callsign,
-            callsign);
     }
 
     public async Task<AdscContractDto[]> GetAdscContracts()
@@ -365,12 +292,6 @@ public class ControllerHub(
     async Task<DialogueDto[]> GetAllDialoguesFor(ControllerInfo controller, CancellationToken cancellationToken)
     {
         var dialogues = await dialogueRepository.All(cancellationToken);
-
-        _logger.Information(
-            "Sending {DialogueCount} dialogues to controller {Callsign}",
-            dialogues.Length,
-            controller.Callsign);
-
         return dialogues.Select(DialogueConverter.ToDto).ToArray();
     }
 

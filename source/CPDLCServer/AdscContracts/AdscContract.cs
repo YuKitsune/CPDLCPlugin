@@ -9,13 +9,16 @@ namespace CPDLCServer.AdscContracts;
 /// <item>A demand request asks for one report.</item>
 /// </list>
 /// </summary>
-public class AdscContract(string callsign, string stationId)
+public class AdscContract(string callsign, string stationId, TimeSpan defaultReportingInterval)
 {
     // The ACARS connections poll for messages every 20 to 75 seconds. A shorter interval gives no more data.
     public static readonly TimeSpan MinimumReportingInterval = TimeSpan.FromSeconds(60);
 
     public string Callsign { get; } = callsign;
     public string StationId { get; } = stationId;
+
+    // The default reporting interval of the ATSU. The controller sees it as the default period.
+    public TimeSpan DefaultReportingInterval { get; private set; } = defaultReportingInterval;
 
     // The interval of the latest periodic request. Null when no periodic contract was requested.
     public TimeSpan? ReportingInterval { get; private set; }
@@ -53,15 +56,17 @@ public class AdscContract(string callsign, string stationId)
     /// </summary>
     public void RequestDefaultContract(TimeSpan reportingInterval)
     {
+        // The default reporting interval of the ATSU can change while the server is running
+        DefaultReportingInterval = reportingInterval;
         ReportingInterval = reportingInterval;
         DefaultContractState = AdscContractState.Sent;
 
-        if (SelectedContractState is AdscContractState.Sent or AdscContractState.Accepted)
-        {
-            SelectedReportingInterval = null;
-            SelectedContractState = null;
-            SelectedContractEnds = null;
-        }
+        if (SelectedContractState is not (AdscContractState.Sent or AdscContractState.Accepted))
+            return;
+
+        SelectedReportingInterval = null;
+        SelectedContractState = null;
+        SelectedContractEnds = null;
     }
 
     public void RequestSelectedContract(TimeSpan reportingInterval, DateTimeOffset ends)

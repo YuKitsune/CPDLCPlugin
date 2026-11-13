@@ -9,7 +9,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IClock>(clock);
         services.AddSingleton(new ServerStartTime(clock.UtcNow()));
 
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(InfrastructureServiceCollectionExtensions).Assembly));
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
         services.AddSingleton<IUnitOfWorkMediator, UnitOfWorkMediator>();
 
         return services;

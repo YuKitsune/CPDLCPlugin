@@ -103,7 +103,6 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton<AdscContractStore>()
             .AddSingleton<AdscReportStore>()
             .AddSingleton<AdscTrackDisplay>()
-            .AddSingleton<AtsuSettingsStore>()
             .AddSingleton<WindowManager>()
             .AddSingleton<DialogueStore>()
             .AddSingleton<SuspendedMessageStore>()

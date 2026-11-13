@@ -1,12 +1,15 @@
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.MessageLog;
 using CPDLCServer.AdscContracts.Reports;
+using CPDLCServer.Settings;
 using CPDLCServer.Tests.Mocks;
 
 namespace CPDLCServer.Tests.AdscContracts;
 
 public class PurgeExpiredAdscDataRequestHandlerTests
 {
+    static readonly TestServerSettingsProvider Settings = new(new ServerSettings { AdscReportRetentionHours = 24 });
+
     [Fact]
     public async Task Handle_RemovesAdscMessagesOlderThan24Hours()
     {
@@ -34,11 +37,11 @@ public class PurgeExpiredAdscDataRequestHandlerTests
         await adscMessageLogRepository.Add(oldEntry, CancellationToken.None);
         await adscMessageLogRepository.Add(newEntry, CancellationToken.None);
 
-        var handler = new PurgeExpiredAdscDataRequestHandler(adscMessageLogRepository, new TestAdscReportRepository(), clock);
+        var handler = new PurgeExpiredAdscDataRequestHandler(adscMessageLogRepository, new TestAdscReportRepository(), Settings, clock);
 
         // Act - advance time beyond the purge timeout (24 hours) for the old entry only
         clock.SetUtcNow(startTime.AddHours(25));
-        await handler.Handle(new PurgeExpiredAdscDataRequest(TimeSpan.FromHours(24)), CancellationToken.None);
+        await handler.Handle(new PurgeExpiredAdscDataRequest(), CancellationToken.None);
 
         // Assert
         Assert.Equal([newEntry], await adscMessageLogRepository.All(CancellationToken.None));
@@ -67,11 +70,11 @@ public class PurgeExpiredAdscDataRequestHandlerTests
         await adscReportRepository.Add(oldReport, CancellationToken.None);
         await adscReportRepository.Add(newReport, CancellationToken.None);
 
-        var handler = new PurgeExpiredAdscDataRequestHandler(new TestAdscMessageLogRepository(), adscReportRepository, clock);
+        var handler = new PurgeExpiredAdscDataRequestHandler(new TestAdscMessageLogRepository(), adscReportRepository, Settings, clock);
 
         // Act - advance time beyond the retention (24 hours) for the old report only
         clock.SetUtcNow(startTime.AddHours(25));
-        await handler.Handle(new PurgeExpiredAdscDataRequest(TimeSpan.FromHours(24)), CancellationToken.None);
+        await handler.Handle(new PurgeExpiredAdscDataRequest(), CancellationToken.None);
 
         // Assert
         Assert.Equal([newReport], await adscReportRepository.AllLatest(CancellationToken.None));

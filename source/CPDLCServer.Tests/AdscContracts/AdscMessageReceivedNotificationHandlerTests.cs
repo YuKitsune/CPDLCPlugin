@@ -22,7 +22,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         contract.RequestDefaultContract(DefaultInterval);
 
         var mediator = Substitute.For<IMediator>();
-        var handler = new AdscMessageReceivedNotificationHandler(contractRepository, mediator, Logger.None);
+        var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
 
         var report = new AdscReport(clock.UtcNow(), -33.9461, 151.1772, 37000, AdscReportSource.Hoppie);
         var received = clock.UtcNow().AddSeconds(30);
@@ -50,7 +50,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         // Arrange
         var contractRepository = new TestAdscContractRepository();
         var mediator = Substitute.For<IMediator>();
-        var handler = new AdscMessageReceivedNotificationHandler(contractRepository, mediator, Logger.None);
+        var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
 
         // Act
         await handler.Handle(CreateReport("YBBB"), CancellationToken.None);
@@ -69,7 +69,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         contract.RequestDefaultContract(DefaultInterval);
 
         var mediator = Substitute.For<IMediator>();
-        var handler = new AdscMessageReceivedNotificationHandler(contractRepository, mediator, Logger.None);
+        var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
 
         // Act
         await handler.Handle(CreateReport("YBBB"), CancellationToken.None);
@@ -87,7 +87,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         contract.RequestDefaultContract(DefaultInterval);
 
         var mediator = Substitute.For<IMediator>();
-        var handler = new AdscMessageReceivedNotificationHandler(contractRepository, mediator, Logger.None);
+        var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
 
         // Act
         await handler.Handle(CreateReport("YBBB"), CancellationToken.None);
@@ -110,7 +110,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         contract.ReportReceived();
 
         var mediator = Substitute.For<IMediator>();
-        var handler = new AdscMessageReceivedNotificationHandler(contractRepository, mediator, Logger.None);
+        var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
 
         // Act
         await handler.Handle(CreateReport("YBBB"), CancellationToken.None);
@@ -134,7 +134,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         contract.Reject();
 
         var mediator = Substitute.For<IMediator>();
-        var handler = new AdscMessageReceivedNotificationHandler(contractRepository, mediator, Logger.None);
+        var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
 
         // Act
         await handler.Handle(CreateReport("YBBB"), CancellationToken.None);
@@ -153,7 +153,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         contract.RequestSelectedContract(SelectedInterval, DateTimeOffset.UtcNow.AddHours(1));
 
         var mediator = Substitute.For<IMediator>();
-        var handler = new AdscMessageReceivedNotificationHandler(contractRepository, mediator, Logger.None);
+        var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
 
         // Act
         await handler.Handle(CreateRejection("YBBB"), CancellationToken.None);
@@ -166,7 +166,7 @@ public class AdscMessageReceivedNotificationHandlerTests
             Arg.Is<AdscContractChangedNotification>(n => n.Contract == contract),
             Arg.Any<CancellationToken>());
         await mediator.Received(1).Send(
-            Arg.Is<RequestDefaultAdscContractCommand>(c => c.StationId == "YBBB" && c.Callsign == "UAL123"),
+            Arg.Is<RequestPeriodicAdscContractCommand>(c => c.StationId == "YBBB" && c.Callsign == "UAL123" && c.ReportingInterval == TimeSpan.FromMinutes(10)),
             Arg.Any<CancellationToken>());
     }
 
@@ -179,7 +179,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         contract.RequestDefaultContract(DefaultInterval);
 
         var mediator = Substitute.For<IMediator>();
-        var handler = new AdscMessageReceivedNotificationHandler(contractRepository, mediator, Logger.None);
+        var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
 
         // Act
         await handler.Handle(CreateRejection("YBBB"), CancellationToken.None);
@@ -191,7 +191,7 @@ public class AdscMessageReceivedNotificationHandlerTests
             Arg.Is<AdscContractChangedNotification>(n => n.Contract == contract),
             Arg.Any<CancellationToken>());
         await mediator.DidNotReceive().Send(
-            Arg.Any<RequestDefaultAdscContractCommand>(),
+            Arg.Any<RequestPeriodicAdscContractCommand>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -201,7 +201,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         // Arrange
         var mediator = Substitute.For<IMediator>();
         var handler = new AdscMessageReceivedNotificationHandler(
-            new TestAdscContractRepository(), mediator, Logger.None);
+            new TestAcarsConnectionManager(), new TestAdscContractRepository(), mediator, Logger.None);
 
         // Act
         await handler.Handle(CreateRejection("YBBB"), CancellationToken.None);
@@ -219,7 +219,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         contract.RequestDefaultContract(DefaultInterval);
 
         var handler = new AdscMessageReceivedNotificationHandler(
-            contractRepository, Substitute.For<IMediator>(), Logger.None);
+            new TestAcarsConnectionManager(), contractRepository, Substitute.For<IMediator>(), Logger.None);
         var notification = CreateReport("YBBB");
 
         // Act
@@ -238,7 +238,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         contract.RequestDefaultContract(DefaultInterval);
 
         var handler = new AdscMessageReceivedNotificationHandler(
-            contractRepository, Substitute.For<IMediator>(), Logger.None);
+            new TestAcarsConnectionManager(), contractRepository, Substitute.For<IMediator>(), Logger.None);
         var notification = CreateRejection("YBBB");
 
         // Act
@@ -250,7 +250,7 @@ public class AdscMessageReceivedNotificationHandlerTests
 
     static async Task<AdscContract> AddContract(TestAdscContractRepository contractRepository, string stationId)
     {
-        var contract = new AdscContract("UAL123", stationId);
+        var contract = new AdscContract("UAL123", stationId, TimeSpan.FromMinutes(10));
         await contractRepository.Add(new AdscContractKey("UAL123", stationId), contract, CancellationToken.None);
         return contract;
     }

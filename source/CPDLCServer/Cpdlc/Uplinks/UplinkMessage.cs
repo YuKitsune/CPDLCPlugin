@@ -40,7 +40,7 @@ public class UplinkMessage : CpdlcMessage
     // public bool CanAction { get; set; }
     // public bool Actioned { get; set; }
     public bool IsPilotLate { get; set; }
-    public bool IsTransmissionFailed { get; set; }
+    public bool DidTransmissionFail { get; set; }
 
     public override DateTimeOffset Time => Sent;
 

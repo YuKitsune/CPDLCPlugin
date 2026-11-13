@@ -29,32 +29,18 @@ public interface IAcarsConnectionManager
     Task Stop(Guid settingsId, CancellationToken cancellationToken);
 }
 
-public class AcarsConnectionManager : BackgroundService, IAcarsConnectionManager
+public class AcarsConnectionManager(
+    IServiceScopeFactory serviceScopeFactory,
+    MasterKeyEncryption masterKeyEncryption,
+    IUnitOfWorkMediator mediator,
+    IClock clock,
+    IAdscMessageLogRepository adscMessageLogRepository,
+    ILogger logger)
+    : BackgroundService, IAcarsConnectionManager
 {
     readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     readonly ConcurrentDictionary<string, AcarsConnectionHandle> _connections = [];
-    readonly IServiceScopeFactory _serviceScopeFactory;
-    readonly MasterKeyEncryption _masterKeyEncryption;
-    readonly IClock _clock;
-    readonly IAdscMessageLogRepository _adscMessageLogRepository;
-    readonly ILogger _logger;
-    readonly IUnitOfWorkMediator _mediator;
-
-    public AcarsConnectionManager(
-        IServiceScopeFactory serviceScopeFactory,
-        MasterKeyEncryption masterKeyEncryption,
-        IUnitOfWorkMediator mediator,
-        IClock clock,
-        IAdscMessageLogRepository adscMessageLogRepository,
-        ILogger logger)
-    {
-        _serviceScopeFactory = serviceScopeFactory;
-        _masterKeyEncryption = masterKeyEncryption;
-        _mediator = mediator;
-        _clock = clock;
-        _adscMessageLogRepository = adscMessageLogRepository;
-        _logger = logger.ForContext<AcarsConnectionManager>();
-    }
+    readonly ILogger _logger = logger.ForContext<AcarsConnectionManager>();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -80,7 +66,7 @@ public class AcarsConnectionManager : BackgroundService, IAcarsConnectionManager
 
     async Task<AcarsConnectionSettings[]> LoadEnabledSettings(CancellationToken cancellationToken)
     {
-        await using var scope = _serviceScopeFactory.CreateAsyncScope();
+        await using var scope = serviceScopeFactory.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<CpdlcDbContext>();
 
         return await dbContext.AcarsConnections
@@ -215,7 +201,7 @@ public class AcarsConnectionManager : BackgroundService, IAcarsConnectionManager
             AcarsNetworkType.Hoppie => new HoppiesConfiguration
             {
                 Url = settings.Url,
-                AuthenticationCode = _masterKeyEncryption.Decrypt(settings.EncryptedAuthenticationCode),
+                AuthenticationCode = masterKeyEncryption.Decrypt(settings.EncryptedAuthenticationCode),
                 FlightSimulationNetwork = settings.FlightSimulationNetwork,
                 StationIdentifier = settings.StationIdentifier,
                 DefaultAdscReportingInterval = settings.DefaultAdscReportingInterval,
@@ -246,13 +232,13 @@ public class AcarsConnectionManager : BackgroundService, IAcarsConnectionManager
                 acarsConnectionId,
                 stationId,
                 acarsConnection,
-                _mediator,
+                mediator,
                 subscribeTaskCancellationSource.Token),
             SubscribeAdsc(
                 acarsConnectionId,
                 stationId,
                 acarsConnection,
-                _mediator,
+                mediator,
                 subscribeTaskCancellationSource.Token));
 
         var acarsConnectionHandle = new AcarsConnectionHandle(
@@ -277,8 +263,8 @@ public class AcarsConnectionManager : BackgroundService, IAcarsConnectionManager
         return new HoppieAcarsConnection(
             configuration,
             httpClient,
-            _clock,
-            _adscMessageLogRepository,
+            clock,
+            adscMessageLogRepository,
             _logger.ForContext<HoppieAcarsConnection>());
     }
 

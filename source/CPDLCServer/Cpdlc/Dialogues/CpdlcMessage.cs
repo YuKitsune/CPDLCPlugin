@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace CPDLCServer.Cpdlc.Dialogues;
 
 public abstract class CpdlcMessage(
@@ -17,9 +19,13 @@ public abstract class CpdlcMessage(
     public int Position { get; internal set; }
 
     public DateTimeOffset? Closed { get; protected set; }
+
+    [MemberNotNullWhen(true, nameof(Closed))]
     public bool IsClosed => Closed is not null;
 
     public DateTimeOffset? Acknowledged { get; protected set; }
+
+    [MemberNotNullWhen(true, nameof(Acknowledged))]
     public bool IsAcknowledged => Acknowledged is not null;
 
     public abstract void Close(DateTimeOffset time);

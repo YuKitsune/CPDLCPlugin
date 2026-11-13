@@ -13,7 +13,7 @@ public class GetConnectedControllersRequestHandler(IControllerRepository control
         var controllers = await controllerRepository.All(cancellationToken);
 
         var controllerInfo = controllers
-            .Select(c => new ControllerConnectionDto(c.StationId, c.Callsign, c.VatsimCid))
+            .Select(c => new ControllerConnectionDto(c.StationId, c.Callsign))
             .ToArray();
 
         return new GetConnectedControllersResult(controllerInfo);

@@ -1,5 +1,6 @@
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Infrastructure;
+using CPDLCServer.Settings;
 using CPDLCServer.Tests.Mocks;
 using MediatR;
 using NSubstitute;
@@ -9,6 +10,8 @@ namespace CPDLCServer.Tests.Cpdlc.Connections;
 
 public class CheckLostAircraftConnectionsRequestHandlerTests
 {
+    static readonly TestServerSettingsProvider Settings = new(new ServerSettings { AircraftConnectionTimeoutMinutes = 15 });
+
     // The server has been online for longer than any timeout
     static readonly ServerStartTime StartedLongAgo = new(DateTimeOffset.MinValue);
 
@@ -32,6 +35,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
         var serverStarted = lastSeen.AddHours(2);
         var handler = new CheckLostAircraftConnectionsRequestHandler(
             aircraftRepository,
+            Settings,
             clock,
             new ServerStartTime(serverStarted),
             mediator,
@@ -40,7 +44,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
         clock.SetUtcNow(serverStarted + timeout);
 
         // Act
-        await handler.Handle(new CheckLostAircraftConnectionsRequest(timeout), CancellationToken.None);
+        await handler.Handle(new CheckLostAircraftConnectionsRequest(), CancellationToken.None);
 
         // Assert
         Assert.Empty(mediator.ReceivedCalls());
@@ -66,6 +70,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
         var serverStarted = lastSeen.AddHours(2);
         var handler = new CheckLostAircraftConnectionsRequestHandler(
             aircraftRepository,
+            Settings,
             clock,
             new ServerStartTime(serverStarted),
             mediator,
@@ -74,7 +79,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
         clock.SetUtcNow(serverStarted + timeout + TimeSpan.FromMinutes(1));
 
         // Act
-        await handler.Handle(new CheckLostAircraftConnectionsRequest(timeout), CancellationToken.None);
+        await handler.Handle(new CheckLostAircraftConnectionsRequest(), CancellationToken.None);
 
         // Assert
         await mediator.Received(1).Publish(
@@ -100,6 +105,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
 
         var handler = new CheckLostAircraftConnectionsRequestHandler(
             aircraftRepository,
+            Settings,
             clock,
             StartedLongAgo,
             mediator,
@@ -110,7 +116,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
         var now = initialTime.Add(timeout).AddMinutes(1);
         clock.SetUtcNow(now);
 
-        var request = new CheckLostAircraftConnectionsRequest(timeout);
+        var request = new CheckLostAircraftConnectionsRequest();
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -139,6 +145,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
 
         var handler = new CheckLostAircraftConnectionsRequestHandler(
             aircraftRepository,
+            Settings,
             clock,
             StartedLongAgo,
             mediator,
@@ -149,7 +156,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
         var now = initialTime.AddMinutes(15);
         clock.SetUtcNow(now);
 
-        var request = new CheckLostAircraftConnectionsRequest(timeout);
+        var request = new CheckLostAircraftConnectionsRequest();
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -183,6 +190,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
 
         var handler = new CheckLostAircraftConnectionsRequestHandler(
             aircraftRepository,
+            Settings,
             clock,
             StartedLongAgo,
             mediator,
@@ -193,7 +201,7 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
         var now = initialTime.Add(timeout).AddMinutes(1);
         clock.SetUtcNow(now);
 
-        var request = new CheckLostAircraftConnectionsRequest(timeout);
+        var request = new CheckLostAircraftConnectionsRequest();
 
         // Act
         await handler.Handle(request, CancellationToken.None);
@@ -238,12 +246,13 @@ public class CheckLostAircraftConnectionsRequestHandlerTests
 
         var handler = new CheckLostAircraftConnectionsRequestHandler(
             aircraftRepository,
+            Settings,
             clock,
             StartedLongAgo,
             mediator,
             Logger.None);
 
-        var request = new CheckLostAircraftConnectionsRequest(timeout);
+        var request = new CheckLostAircraftConnectionsRequest();
 
         // Act
         await handler.Handle(request, CancellationToken.None);

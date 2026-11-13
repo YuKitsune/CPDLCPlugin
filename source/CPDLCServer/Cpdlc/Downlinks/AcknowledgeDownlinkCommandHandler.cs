@@ -14,7 +14,6 @@ public class AcknowledgeDownlinkCommandHandler(
     public async Task Handle(AcknowledgeDownlinkCommand request, CancellationToken cancellationToken)
     {
         var dialogue = await dialogueRepository.FindById(request.DialogueId, cancellationToken);
-
         if (dialogue is null)
         {
             logger.Warning("Dialogue not found for downlink acknowledgment: {DialogueId}", request.DialogueId);
@@ -22,7 +21,6 @@ public class AcknowledgeDownlinkCommandHandler(
         }
 
         dialogue.AcknowledgeDownlink(request.DownlinkMessageId, clock.UtcNow());
-
         logger.Information(
             "Acknowledged downlink {MessageId} in dialogue {DialogueId} for {AircraftCallsign}",
             request.DownlinkMessageId,

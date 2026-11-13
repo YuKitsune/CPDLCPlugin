@@ -27,6 +27,7 @@ public class CreateUserCommandHandler(
             Username = request.Username.Trim(),
             Created = clock.UtcNow()
         };
+
         user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
 
         await userRepository.Add(user, cancellationToken);

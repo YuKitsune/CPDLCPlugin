@@ -1,14 +1,18 @@
 namespace CPDLCServer.Persistence;
 
+/// <summary>
+/// One unit of work for each service scope.
+/// The changes in all of the repositories are saved together. Then the messages are sent in the order that they were added.
+/// </summary>
 public interface IUnitOfWork
 {
-    // Runs the action after the changes are saved.
-    // Use this for all messages to controllers and aircraft, so that they do not see changes that were not saved.
+    /// <summary>
+    /// Runs the action after the changes are saved.
+    /// Use this for all messages to controllers and aircraft, so that they do not see changes that were not saved.
+    /// </summary>
     void AfterCommit(Func<CancellationToken, Task> action);
 }
 
-// One unit of work for each service scope.
-// The changes in all of the repositories are saved together. Then the messages are sent in the order that they were added.
 public class UnitOfWork(CpdlcDbContext dbContext) : IUnitOfWork
 {
     readonly List<Func<CancellationToken, Task>> _afterCommitActions = [];

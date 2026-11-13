@@ -5,7 +5,7 @@ namespace CPDLCServer.AdscContracts;
 
 public static class AdscContractsServiceCollectionExtensions
 {
-    public static IServiceCollection AddAdscContracts(this IServiceCollection services)
+    public static IServiceCollection AddAdsContracts(this IServiceCollection services)
     {
         services.AddScoped<IAdscContractRepository, AdscContractRepository>();
         services.AddHostedService<AdscContractExpiryService>();

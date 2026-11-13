@@ -1,23 +1,15 @@
 using CPDLCServer.Infrastructure;
-using CPDLCServer.Settings;
 
 namespace CPDLCServer.AdscContracts;
 
-public class AdscContractExpiryService : IHostedService, IDisposable
+public class AdscContractExpiryService(IUnitOfWorkMediator mediator, ILogger logger) : IHostedService, IDisposable
 {
     readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
 
-    readonly IUnitOfWorkMediator _mediator;
-    readonly ILogger _logger;
+    readonly ILogger _logger = logger.ForContext<AdscContractExpiryService>();
 
     CancellationTokenSource? _cancellationTokenSource;
     Task? _task;
-
-    public AdscContractExpiryService(IUnitOfWorkMediator mediator, ILogger logger)
-    {
-        _mediator = mediator;
-        _logger = logger.ForContext<AdscContractExpiryService>();
-    }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -57,12 +49,8 @@ public class AdscContractExpiryService : IHostedService, IDisposable
                     using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                     timeoutCts.CancelAfter(TimeSpan.FromMinutes(1));
 
-                    var settings = await _mediator.Send(new GetServerSettingsRequest(), timeoutCts.Token);
-                    var contractTimeout = TimeSpan.FromMinutes(settings.AdscContractTimeoutMinutes);
-                    await _mediator.Send(new EndExpiredAdscContractsRequest(contractTimeout), timeoutCts.Token);
-
-                    var adscReportRetention = TimeSpan.FromHours(settings.AdscReportRetentionHours);
-                    await _mediator.Send(new PurgeExpiredAdscDataRequest(adscReportRetention), timeoutCts.Token);
+                    await mediator.Send(new EndExpiredAdscContractsRequest(), timeoutCts.Token);
+                    await mediator.Send(new PurgeExpiredAdscDataRequest(), timeoutCts.Token);
 
                     await Task.Delay(_checkInterval, stoppingToken);
                 }

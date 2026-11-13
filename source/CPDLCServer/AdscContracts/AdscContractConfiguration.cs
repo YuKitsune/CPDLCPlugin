@@ -17,6 +17,7 @@ public class AdscContractConfiguration : IEntityTypeConfiguration<AdscContract>
 
         builder.Property(c => c.Callsign);
         builder.Property(c => c.StationId);
+        builder.Property(c => c.DefaultReportingInterval);
         builder.Property(c => c.ReportingInterval);
         builder.Property(c => c.DefaultContractState);
         builder.Property(c => c.SelectedReportingInterval);

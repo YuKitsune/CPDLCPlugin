@@ -60,7 +60,7 @@ public class CheckMessageTimeoutsRequestHandler(
         // Skip if already closed, in timeout/failed state, or doesn't require response
         if (uplink.IsClosed ||
             uplink.IsPilotLate ||
-            uplink.IsTransmissionFailed ||
+            uplink.DidTransmissionFail ||
             uplink.ResponseType == CpdlcUplinkResponseType.NoResponse)
             return false;
 

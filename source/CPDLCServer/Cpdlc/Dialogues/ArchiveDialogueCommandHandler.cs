@@ -13,7 +13,6 @@ public class ArchiveDialogueCommandHandler(
     public async Task Handle(ArchiveDialogueCommand request, CancellationToken cancellationToken)
     {
         var dialogue = await dialogueRepository.FindById(request.DialogueId, cancellationToken);
-
         if (dialogue is null)
         {
             logger.Warning("Dialogue not found for archival: {DialogueId}", request.DialogueId);

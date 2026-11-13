@@ -20,7 +20,7 @@ public class PurgeExpiredCpdlcDataRequestHandler(
         foreach (var dialogue in oldDialogues)
         {
             await dialogueRepository.Remove(dialogue, cancellationToken);
-            logger.Information("Purging dialogue"); // TODO: Dialogue identifier
+            logger.Information("Purging dialogue {DialogueId}", dialogue.Id);
         }
     }
 }

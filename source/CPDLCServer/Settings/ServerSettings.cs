@@ -2,8 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CPDLCServer.Settings;
 
-// The settings that can be changed while the server is running. They are kept in the database.
-// The initial values are the default values.
+/// <summary>
+/// Settings that can be changed while the server is running.
+/// </summary>
 public record ServerSettings
 {
     [Range(1, int.MaxValue)]

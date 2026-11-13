@@ -44,7 +44,7 @@ public class UplinkMessageConfiguration : IEntityTypeConfiguration<UplinkMessage
         builder.Property(m => m.Sent);
         builder.Property(m => m.ClosedManually);
         builder.Property(m => m.IsPilotLate);
-        builder.Property(m => m.IsTransmissionFailed);
+        builder.Property(m => m.DidTransmissionFail);
     }
 }
 

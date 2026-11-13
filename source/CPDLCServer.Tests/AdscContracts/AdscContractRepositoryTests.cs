@@ -12,7 +12,7 @@ public class AdscContractRepositoryTests
     {
         // Arrange
         using var database = new TestDatabase();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(15));
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
         contract.ReportReceived();
         contract.RequestSelectedContract(TimeSpan.FromMinutes(2), Start.AddHours(1));
@@ -31,6 +31,7 @@ public class AdscContractRepositoryTests
 
         // Assert
         Assert.NotNull(saved);
+        Assert.Equal(TimeSpan.FromMinutes(10), saved.DefaultReportingInterval);
         Assert.Equal(TimeSpan.FromMinutes(2), saved.ReportingInterval);
         Assert.Equal(AdscContractState.Accepted, saved.DefaultContractState);
         Assert.Equal(TimeSpan.FromMinutes(2), saved.SelectedReportingInterval);
@@ -47,7 +48,7 @@ public class AdscContractRepositoryTests
         using var database = new TestDatabase();
         await using (var dbContext = database.CreateDbContext())
         {
-            await new AdscContractRepository(dbContext).Add(new("UAL123", "YBBB"), new AdscContract("UAL123", "YBBB"), CancellationToken.None);
+            await new AdscContractRepository(dbContext).Add(new("UAL123", "YBBB"), new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10)), CancellationToken.None);
             await dbContext.SaveChangesAsync();
         }
 

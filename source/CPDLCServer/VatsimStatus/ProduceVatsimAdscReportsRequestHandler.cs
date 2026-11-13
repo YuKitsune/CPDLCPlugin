@@ -7,7 +7,7 @@ using MediatR;
 namespace CPDLCServer.VatsimStatus;
 
 /// <summary>
-/// Makes ADS-C reports from the VATSIM status data, for aircraft that do not support ADS-C over Hoppie's network.
+/// Creates an ADS-C position report using VATSIM status data.
 /// <list type="bullet">
 /// <item>A report from Hoppie stops the VATSIM reports. The VATSIM reports start again when the Hoppie reports are more than two reporting intervals late.</item>
 /// <item>A rejected contract stops the VATSIM reports.</item>
@@ -71,7 +71,7 @@ public class ProduceVatsimAdscReportsRequestHandler(
         }
 
         logger.Information(
-            "Made ADS-C report from VATSIM data for {Callsign} to {StationId}",
+            "Faking ADS-C report from VATSIM data for {Callsign} to {StationId}",
             contract.Callsign,
             contract.StationId);
 
@@ -109,7 +109,8 @@ public class ProduceVatsimAdscReportsRequestHandler(
         if (!contract.HasPeriodicContract || contract.ReportingInterval is null)
             return false;
 
-        return now - latestReport.Received > contract.ReportingInterval.Value * 2;
+        var timeSinceLastReport = now - latestReport.Received;
+        return timeSinceLastReport > contract.ReportingInterval.Value * 2;
     }
 
     static bool IsReportDue(AdscContract contract, AircraftAdscReport? latestReport, DateTimeOffset now)
@@ -120,6 +121,10 @@ public class ProduceVatsimAdscReportsRequestHandler(
         if (!contract.HasPeriodicContract || contract.ReportingInterval is null)
             return false;
 
-        return latestReport is null || now - latestReport.Received >= contract.ReportingInterval.Value;
+        if (latestReport is null)
+            return true;
+
+        var timeSinceLastReport = now - latestReport.Received;
+        return timeSinceLastReport >= contract.ReportingInterval.Value;
     }
 }

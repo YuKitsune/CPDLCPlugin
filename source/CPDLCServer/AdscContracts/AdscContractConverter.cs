@@ -11,6 +11,7 @@ public static class AdscContractConverter
             contract.Callsign,
             contract.StationId,
             contract.ReportingInterval,
+            contract.DefaultReportingInterval,
             ToDto(contract.DefaultContractState),
             contract.SelectedReportingInterval,
             ToDto(contract.SelectedContractState),

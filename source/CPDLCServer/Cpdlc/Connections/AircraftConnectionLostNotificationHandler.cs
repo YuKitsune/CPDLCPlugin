@@ -48,7 +48,6 @@ public class AircraftConnectionLostNotificationHandler(
 
         // Find all controllers on the same network and station
         var controllers = await controllerRepository.All(cancellationToken);
-
         if (!controllers.Any())
         {
             logger.Information(
@@ -63,7 +62,6 @@ public class AircraftConnectionLostNotificationHandler(
             .ToArray();
 
         var openDialogues = aircraftDialogues.Where(d => !d.IsClosed).ToArray();
-
         if (openDialogues.Any())
         {
             // Add error message to each open dialogue

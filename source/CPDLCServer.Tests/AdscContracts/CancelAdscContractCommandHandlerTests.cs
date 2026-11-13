@@ -14,7 +14,7 @@ public class CancelAdscContractCommandHandlerTests
         // Arrange
         var acarsConnectionManager = new TestAcarsConnectionManager();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -59,8 +59,8 @@ public class CancelAdscContractCommandHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var ybbbContract = new AdscContract("UAL123", "YBBB");
-        var ymmmContract = new AdscContract("UAL123", "YMMM");
+        var ybbbContract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var ymmmContract = new AdscContract("UAL123", "YMMM", TimeSpan.FromMinutes(10));
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), ybbbContract, CancellationToken.None);
         await contractRepository.Add(new AdscContractKey("UAL123", "YMMM"), ymmmContract, CancellationToken.None);
 

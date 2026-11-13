@@ -247,18 +247,10 @@ public class SignalRConnectionManager(
             cancellationToken: cancellationToken);
     }
 
-    public async Task<AtsuSettingsDto> GetAtsuSettings(CancellationToken cancellationToken)
-    {
-        var connection = GetConnectedOrThrow();
-        return await connection.InvokeAsync<AtsuSettingsDto>(
-            "GetAtsuSettings",
-            cancellationToken);
-    }
-
-    // A null reporting interval ends the selected contract and requests the default contract again
+    // The default reporting interval of the ATSU requests the default contract. Any other interval requests a selected contract.
     public async Task RequestPeriodicAdscContract(
         string callsign,
-        TimeSpan? reportingInterval,
+        TimeSpan reportingInterval,
         CancellationToken cancellationToken)
     {
         var connection = GetConnectedOrThrow();

@@ -1,6 +1,8 @@
 namespace CPDLCServer.VatsimStatus;
 
-// A pilot from the VATSIM status data. Altitude is in feet.
+/// <summary>
+/// A pilot from the VATSIM status data
+/// </summary>
 public record VatsimPilot(
     string Callsign,
     double Latitude,

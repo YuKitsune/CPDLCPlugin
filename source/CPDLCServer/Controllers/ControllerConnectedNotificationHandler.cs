@@ -32,10 +32,7 @@ public class ControllerConnectedNotificationHandler(
         }
 
         // Notify all other controllers that a peer controller has connected
-        var controllerDto = new ControllerConnectionDto(
-            notification.StationId,
-            notification.Callsign,
-            controllers.First(c => c.UserId == notification.UserId).VatsimCid);
+        var controllerDto = new ControllerConnectionDto(notification.StationId, notification.Callsign);
 
         unitOfWork.AfterCommit(ct => hubContext.Clients
             .Clients(otherControllers.Select(c => c.ConnectionId))

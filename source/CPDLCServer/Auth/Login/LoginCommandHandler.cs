@@ -31,9 +31,15 @@ public class LoginCommandHandler(
         {
             var lockoutEnd = loginLockout.RecordFailure(request.IpAddress);
             if (lockoutEnd is not null)
-                logger.Warning("Failed login for {Username} from {IpAddress}: the IP address is locked out until {LockoutEnd}", request.Username, request.IpAddress, lockoutEnd);
+            {
+                logger.Warning(
+                    "Failed login for {Username} from {IpAddress}: the IP address is locked out until {LockoutEnd}",
+                    request.Username, request.IpAddress, lockoutEnd);
+            }
             else
+            {
                 logger.Warning("Failed login for {Username} from {IpAddress}", request.Username, request.IpAddress);
+            }
 
             return null;
         }

@@ -78,7 +78,7 @@ public class LogBufferTests
         var logBuffer = new LogBuffer();
         using var logger = new LoggerConfiguration()
             .MinimumLevel.Verbose()
-            .WriteTo.Sink(new LogBufferSink(logBuffer))
+            .WriteTo.Sink(new InMemoryLogBufferSink(logBuffer))
             .CreateLogger();
 
         // Act

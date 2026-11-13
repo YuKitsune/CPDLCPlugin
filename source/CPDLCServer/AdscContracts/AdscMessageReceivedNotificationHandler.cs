@@ -1,9 +1,11 @@
+using CPDLCServer.AcarsConnections;
 using CPDLCServer.AdscContracts.Reports;
 using MediatR;
 
 namespace CPDLCServer.AdscContracts;
 
 public class AdscMessageReceivedNotificationHandler(
+    IAcarsConnectionManager acarsConnectionManager,
     IAdscContractRepository adscContractRepository,
     IMediator mediator,
     ILogger logger)
@@ -73,8 +75,12 @@ public class AdscMessageReceivedNotificationHandler(
                 // Re-establish the default contract
                 if (selectedContractRejected)
                 {
+                    var configuration = await acarsConnectionManager.GetConfigurationForStation(notification.StationId, cancellationToken);
                     await mediator.Send(
-                        new RequestDefaultAdscContractCommand(notification.StationId, message.Sender),
+                        new RequestPeriodicAdscContractCommand(
+                            notification.StationId,
+                            message.Sender,
+                            TimeSpan.FromMinutes(configuration.DefaultAdscReportingInterval)),
                         cancellationToken);
                 }
                 break;

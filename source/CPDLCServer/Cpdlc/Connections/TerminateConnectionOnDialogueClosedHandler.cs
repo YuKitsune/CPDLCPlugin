@@ -19,7 +19,7 @@ public class TerminateConnectionOnDialogueClosedHandler(
         // Check if any uplink in the dialogue contains END SERVICE
         var hasEndService = notification.Dialogue.Messages
             .OfType<UplinkMessage>()
-            .Any(m => ControlMessages.IsEndServiceUplink(m));
+            .Any(ControlMessages.IsEndServiceUplink);
 
         if (!hasEndService)
             return;

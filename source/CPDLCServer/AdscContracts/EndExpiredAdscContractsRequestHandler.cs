@@ -1,6 +1,7 @@
 using CPDLCServer.AcarsConnections;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Persistence;
+using CPDLCServer.Settings;
 using MediatR;
 
 namespace CPDLCServer.AdscContracts;
@@ -8,6 +9,7 @@ namespace CPDLCServer.AdscContracts;
 public class EndExpiredAdscContractsRequestHandler(
     IAcarsConnectionManager acarsConnectionManager,
     IAdscContractRepository adscContractRepository,
+    IServerSettingsProvider settingsProvider,
     IClock clock,
     ServerStartTime serverStartTime,
     IMediator mediator,
@@ -17,15 +19,17 @@ public class EndExpiredAdscContractsRequestHandler(
 {
     public async Task Handle(EndExpiredAdscContractsRequest request, CancellationToken cancellationToken)
     {
+        var settings = await settingsProvider.Load(cancellationToken);
+        var contractTimeout = TimeSpan.FromMinutes(settings.AdscContractTimeoutMinutes);
         var contracts = await adscContractRepository.All(cancellationToken);
         var now = clock.UtcNow();
 
         // The last activity times do not change while the server is stopped
-        var canApplyContractTimeout = now - serverStartTime.Started > request.ContractTimeout;
+        var canApplyContractTimeout = now - serverStartTime.Started > contractTimeout;
 
         foreach (var contract in contracts)
         {
-            if (canApplyContractTimeout && now - contract.LastActivity > request.ContractTimeout)
+            if (canApplyContractTimeout && now - contract.LastActivity > contractTimeout)
             {
                 // A failure for one aircraft must not stop the other aircraft
                 try
@@ -55,8 +59,12 @@ public class EndExpiredAdscContractsRequestHandler(
             // A failure for one aircraft must not stop the other aircraft
             try
             {
+                var configuration = await acarsConnectionManager.GetConfigurationForStation(contract.StationId, cancellationToken);
                 await mediator.Send(
-                    new RequestDefaultAdscContractCommand(contract.StationId, contract.Callsign),
+                    new RequestPeriodicAdscContractCommand(
+                        contract.StationId,
+                        contract.Callsign,
+                        TimeSpan.FromMinutes(configuration.DefaultAdscReportingInterval)),
                     cancellationToken);
             }
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested)

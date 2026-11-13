@@ -1,23 +1,15 @@
 using CPDLCServer.Infrastructure;
-using CPDLCServer.Settings;
 
 namespace CPDLCServer.Cpdlc.Connections;
 
-public class LostConnectionService : IHostedService, IDisposable
+public class LostConnectionService(IUnitOfWorkMediator mediator, ILogger logger) : IHostedService, IDisposable
 {
     readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
 
-    readonly IUnitOfWorkMediator _mediator;
-    readonly ILogger _logger;
+    readonly ILogger _logger = logger.ForContext<LostConnectionService>();
 
     CancellationTokenSource? _cancellationTokenSource;
     Task? _task;
-
-    public LostConnectionService(IUnitOfWorkMediator mediator, ILogger logger)
-    {
-        _mediator = mediator;
-        _logger = logger.ForContext<LostConnectionService>();
-    }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -57,9 +49,7 @@ public class LostConnectionService : IHostedService, IDisposable
                     using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
                     timeoutCts.CancelAfter(TimeSpan.FromMinutes(1));
 
-                    var settings = await _mediator.Send(new GetServerSettingsRequest(), timeoutCts.Token);
-                    var connectionTimeout = TimeSpan.FromMinutes(settings.AircraftConnectionTimeoutMinutes);
-                    await _mediator.Send(new CheckLostAircraftConnectionsRequest(connectionTimeout), timeoutCts.Token);
+                    await mediator.Send(new CheckLostAircraftConnectionsRequest(), timeoutCts.Token);
 
                     await Task.Delay(_checkInterval, stoppingToken);
                 }

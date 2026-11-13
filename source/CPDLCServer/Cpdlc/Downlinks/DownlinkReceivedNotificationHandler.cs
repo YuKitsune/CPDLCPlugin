@@ -26,6 +26,7 @@ public class DownlinkReceivedNotificationHandler(
         logger.Information("Downlink message received from {Callsign}", downlink.Sender);
 
         // Scenario 1: Logon request
+        // TODO: Handle this in hoppies
         if (ControlMessages.IsLogonRequest(downlink))
         {
             await mediator.Send(
@@ -56,6 +57,7 @@ public class DownlinkReceivedNotificationHandler(
         // Scenario 3: Logoff notice
         // Show the logoff to the controller, then terminate the connection.
         // Return early so that the terminated connection is not promoted to CurrentDataAuthority.
+        // TODO: Handle this in hoppies
         if (ControlMessages.IsLogoffNotice(downlink))
         {
             var logoffDialogue = new Dialogue(downlink.Sender);

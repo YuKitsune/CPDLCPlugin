@@ -1,9 +1,11 @@
+using CPDLCServer.AcarsConnections;
 using CPDLCServer.Cpdlc.Connections;
 using MediatR;
 
 namespace CPDLCServer.AdscContracts;
 
 public class RequestAdscContractOnConnectionEstablishedHandler(
+    IAcarsConnectionManager acarsConnectionManager,
     IAdscContractRepository adscContractRepository,
     IMediator mediator,
     ILogger logger)
@@ -27,8 +29,12 @@ public class RequestAdscContractOnConnectionEstablishedHandler(
                 return;
             }
 
+            var configuration = await acarsConnectionManager.GetConfigurationForStation(notification.StationId, cancellationToken);
             await mediator.Send(
-                new RequestDefaultAdscContractCommand(notification.StationId, notification.Callsign),
+                new RequestPeriodicAdscContractCommand(
+                    notification.StationId,
+                    notification.Callsign,
+                    TimeSpan.FromMinutes(configuration.DefaultAdscReportingInterval)),
                 cancellationToken);
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)

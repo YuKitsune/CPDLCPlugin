@@ -78,7 +78,7 @@ public static class DialogueConverter
             Content = uplink.Content,
             Sent = uplink.Sent,
             IsPilotLate = uplink.IsPilotLate,
-            IsTransmissionFailed = uplink.IsTransmissionFailed
+            IsTransmissionFailed = uplink.DidTransmissionFail
         };
     }
 

@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Settings;
@@ -7,29 +6,21 @@ namespace CPDLCServer.VatsimStatus;
 
 /// <summary>
 /// Downloads the VATSIM status data, then makes the ADS-C reports that are due.
-/// Not all aircraft support ADS-C over Hoppie's network, so the server uses the VATSIM data for these aircraft.
 /// </summary>
-public class VatsimStatusService : IHostedService, IDisposable
+public class VatsimStatusService(
+    IVatsimPilotRepository vatsimPilotRepository,
+    IUnitOfWorkMediator mediator,
+    IServiceScopeFactory serviceScopeFactory,
+    ILogger logger)
+    : IHostedService, IDisposable
 {
     readonly TimeSpan _errorInterval = TimeSpan.FromMinutes(1);
 
-    readonly IVatsimPilotRepository _vatsimPilotRepository;
-    readonly IUnitOfWorkMediator _mediator;
-    readonly ILogger _logger;
+    readonly ILogger _logger = logger.ForContext<VatsimStatusService>();
     readonly HttpClient _httpClient = new();
 
     CancellationTokenSource? _cancellationTokenSource;
     Task? _task;
-
-    public VatsimStatusService(
-        IVatsimPilotRepository vatsimPilotRepository,
-        IUnitOfWorkMediator mediator,
-        ILogger logger)
-    {
-        _vatsimPilotRepository = vatsimPilotRepository;
-        _mediator = mediator;
-        _logger = logger.ForContext<VatsimStatusService>();
-    }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -65,7 +56,7 @@ public class VatsimStatusService : IHostedService, IDisposable
                 try
                 {
                     // The settings can change while the server is running, so read them each time
-                    var settings = await _mediator.Send(new GetServerSettingsRequest(), stoppingToken);
+                    var settings = await LoadSettings(stoppingToken);
                     var pollingInterval = TimeSpan.FromSeconds(settings.VatsimStatusPollingIntervalSeconds);
 
                     if (!settings.VatsimStatusEnabled)
@@ -79,7 +70,7 @@ public class VatsimStatusService : IHostedService, IDisposable
                     timeoutCts.CancelAfter(TimeSpan.FromMinutes(1));
 
                     await DownloadPilots(settings.VatsimStatusUrl, timeoutCts.Token);
-                    await _mediator.Send(new ProduceVatsimAdscReportsRequest(), timeoutCts.Token);
+                    await mediator.Send(new ProduceVatsimAdscReportsRequest(), timeoutCts.Token);
 
                     await Task.Delay(pollingInterval, stoppingToken);
                 }
@@ -106,6 +97,14 @@ public class VatsimStatusService : IHostedService, IDisposable
         _logger.Information("Stopped VATSIM status service");
     }
 
+    // The settings provider is scoped, and this service is a singleton
+    async Task<ServerSettings> LoadSettings(CancellationToken cancellationToken)
+    {
+        await using var scope = serviceScopeFactory.CreateAsyncScope();
+        var settingsProvider = scope.ServiceProvider.GetRequiredService<IServerSettingsProvider>();
+        return await settingsProvider.Load(cancellationToken);
+    }
+
     async Task DownloadPilots(Uri url, CancellationToken cancellationToken)
     {
         _logger.Debug("Downloading VATSIM status data");
@@ -124,7 +123,7 @@ public class VatsimStatusService : IHostedService, IDisposable
                 VatsimPilot.HasAdscEquipment(p.FlightPlan?.Aircraft)))
             .ToArray();
 
-        await _vatsimPilotRepository.Replace(pilots, cancellationToken);
+        await vatsimPilotRepository.Replace(pilots, cancellationToken);
 
         _logger.Debug("Downloaded {PilotCount} pilot(s) from VATSIM status data", pilots.Length);
     }

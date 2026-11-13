@@ -37,9 +37,9 @@ public class DialogueChangedNotificationHandler(
         // Convert to DTO and broadcast
         var dialogueDto = DialogueConverter.ToDto(dialogue);
 
-        unitOfWork.AfterCommit(ct => hubContext.Clients
+        await hubContext.Clients
             .Clients(controllers.Select(c => c.ConnectionId))
-            .SendAsync("DialogueChanged", dialogueDto, ct));
+            .SendAsync("DialogueChanged", dialogueDto, cancellationToken);
 
         logger.Information(
             "Notified {ControllerCount} controller(s) about dialogue {DialogueId} change for {Callsign}",

@@ -16,6 +16,7 @@
 
     <ItemGroup>
         <PackageReference Include="DotNetEnv" Version="3.2.0" />
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
         <PackageReference Include="MediatR" Version="12.5.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.13" />

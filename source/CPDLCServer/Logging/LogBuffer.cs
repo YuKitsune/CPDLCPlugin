@@ -2,7 +2,9 @@ using System.Threading.Channels;
 
 namespace CPDLCServer.Logging;
 
-// Keeps the most recent log entries in memory, and sends each new entry to the subscribers
+/// <summary>
+/// Keeps the most recent log entries in memory, and sends each new entry to the subscribers
+/// </summary>
 public class LogBuffer(int capacity = 1000)
 {
     readonly object _lock = new();
@@ -25,8 +27,10 @@ public class LogBuffer(int capacity = 1000)
         }
     }
 
-    // The subscription gets the recent entries, then each new entry.
-    // A slow subscriber loses its oldest entries, so that it cannot use too much memory.
+    /// <summary>
+    /// The subscription gets the recent entries, then each new entry.
+    /// A slow subscriber loses its oldest entries, so that it cannot use too much memory.
+    /// </summary>
     public LogSubscription Subscribe()
     {
         lock (_lock)

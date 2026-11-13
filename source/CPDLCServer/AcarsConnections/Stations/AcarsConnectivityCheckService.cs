@@ -13,6 +13,7 @@ public class AcarsConnectivityCheckService : IHostedService, IDisposable
 
     readonly IAcarsConnectionManager _acarsConnectionManager;
     readonly IUnitOfWorkMediator _mediator;
+    readonly IServiceScopeFactory _serviceScopeFactory;
     readonly ILogger _logger;
 
     CancellationTokenSource? _cancellationTokenSource;
@@ -21,10 +22,12 @@ public class AcarsConnectivityCheckService : IHostedService, IDisposable
     public AcarsConnectivityCheckService(
         IAcarsConnectionManager acarsConnectionManager,
         IUnitOfWorkMediator mediator,
+        IServiceScopeFactory serviceScopeFactory,
         ILogger logger)
     {
         _acarsConnectionManager = acarsConnectionManager;
         _mediator = mediator;
+        _serviceScopeFactory = serviceScopeFactory;
         _logger = logger.ForContext<AcarsConnectivityCheckService>();
     }
 
@@ -82,7 +85,7 @@ public class AcarsConnectivityCheckService : IHostedService, IDisposable
                             timeoutCts.Token);
                     }
 
-                    var settings = await _mediator.Send(new GetServerSettingsRequest(), stoppingToken);
+                    var settings = await LoadSettings(stoppingToken);
                     var checkInterval = TimeSpan.FromMinutes(settings.ConnectivityCheckIntervalMinutes);
                     await Task.Delay(checkInterval, stoppingToken);
                 }
@@ -112,6 +115,14 @@ public class AcarsConnectivityCheckService : IHostedService, IDisposable
         }
 
         _logger.Information("Stopped aircraft connectivity check service");
+    }
+
+    // The settings provider is scoped, and this service is a singleton
+    async Task<ServerSettings> LoadSettings(CancellationToken cancellationToken)
+    {
+        await using var scope = _serviceScopeFactory.CreateAsyncScope();
+        var settingsProvider = scope.ServiceProvider.GetRequiredService<IServerSettingsProvider>();
+        return await settingsProvider.Load(cancellationToken);
     }
 
     public void Dispose()

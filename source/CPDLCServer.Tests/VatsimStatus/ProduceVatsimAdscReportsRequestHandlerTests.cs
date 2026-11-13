@@ -239,7 +239,7 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("QFA1", "YBBB");
+        var contract = new AdscContract("QFA1", "YBBB", TimeSpan.FromMinutes(10));
         await contractRepository.Add(new AdscContractKey("QFA1", "YBBB"), contract, CancellationToken.None);
         contract.RequestDefaultContract(DefaultInterval);
 
@@ -280,7 +280,7 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
 
     static async Task<AdscContract> AddContract(IAdscContractRepository contractRepository)
     {
-        var contract = new AdscContract("UAL123", "YBBB");
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
         return contract;
     }
