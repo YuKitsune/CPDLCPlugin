@@ -47,14 +47,12 @@ public class DownlinkReceivedNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         var controller2 = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-2",
             "YBBB",
-            "BN-OCN_CTR",
-            "7654321");
+            "BN-OCN_CTR");
         await controllerManager.Add(controller1, CancellationToken.None);
         await controllerManager.Add(controller2, CancellationToken.None);
 
@@ -111,8 +109,7 @@ public class DownlinkReceivedNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YMMM",
-            "ML-IND_FSS",
-            "1234567");
+            "ML-IND_FSS");
         await controllerManager.Add(controller, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -164,8 +161,7 @@ public class DownlinkReceivedNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         await controllerManager.Add(controller, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -236,8 +232,7 @@ public class DownlinkReceivedNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         await controllerManager.Add(controller, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -299,8 +294,7 @@ public class DownlinkReceivedNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         await controllerManager.Add(controller, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();
@@ -605,8 +599,7 @@ public class DownlinkReceivedNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var dialogueRepository = new TestDialogueRepository();

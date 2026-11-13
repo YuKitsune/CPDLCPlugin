@@ -106,8 +106,7 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);
@@ -140,8 +139,7 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);
@@ -175,8 +173,7 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);
@@ -218,8 +215,7 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var existing = new AircraftConnection("QFA1", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
@@ -259,8 +255,7 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);

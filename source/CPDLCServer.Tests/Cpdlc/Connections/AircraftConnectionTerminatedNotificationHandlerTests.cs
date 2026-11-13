@@ -19,14 +19,12 @@ public class AircraftConnectionTerminatedNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
+            "BN-TSN_FSS");
         var controller2 = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-2",
             "YBBB",
-            "BN-OCN_CTR",
-            "7654321");
+            "BN-OCN_CTR");
         await controllerManager.Add(controller1, CancellationToken.None);
         await controllerManager.Add(controller2, CancellationToken.None);
 
