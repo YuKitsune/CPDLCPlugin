@@ -6,6 +6,12 @@ public class TestServerSettingsProvider(ServerSettings settings) : IServerSettin
 {
     ServerSettings _settings = settings;
 
+    // The settings are given in the constructor, so there are always settings
+    public Task SeedDefaults(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
     public Task<ServerSettings> Load(CancellationToken cancellationToken)
     {
         return Task.FromResult(_settings);
