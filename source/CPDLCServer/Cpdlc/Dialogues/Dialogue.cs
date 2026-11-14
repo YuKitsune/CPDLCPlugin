@@ -1,0 +1,234 @@
+using System.Diagnostics.CodeAnalysis;
+using CPDLCServer.Cpdlc.Downlinks;
+using CPDLCServer.Cpdlc.Uplinks;
+using Serilog;
+
+namespace CPDLCServer.Cpdlc.Dialogues;
+
+// Messages that are related (e.g. a CPDLC downlink request, the corresponding CPDLC uplink clearance and the subsequent
+// pilot response) constitute a CPDLC dialogue.
+// - A CPDLC dialogue is open if any of the CPDLC messages in the dialogue are open;
+// - A CPDLC dialogue is closed if all CPDLC messages in the dialogue are closed.
+// - A CPDLC message is open if the aircraft or ground system has not yet received a required response.
+// - A CPDLC message is closed if the aircraft or ground system either:
+//   - does not require a response; or
+//   - has already received a required response.
+// - STANDBY and REQUEST DEFERRED responses do not close a downlink
+// - STANDBY response does not close an uplink CPDLC message
+
+public class Dialogue
+{
+    readonly List<CpdlcMessage> _messages = [];
+
+    public Dialogue(string aircraftCallsign)
+    {
+        AircraftCallsign = aircraftCallsign;
+    }
+
+    public Guid Id { get; } = Guid.NewGuid();
+
+    public string AircraftCallsign { get; }
+    public IReadOnlyList<CpdlcMessage> Messages => _messages.AsReadOnly();
+    public DateTimeOffset Opened { get; private set; }
+    public DateTimeOffset? Closed { get; private set; }
+
+    [MemberNotNullWhen(true, nameof(Closed))]
+    public bool IsClosed => Closed.HasValue;
+
+    public DateTimeOffset? Archived { get; private set; }
+
+    [MemberNotNullWhen(true, nameof(Archived))]
+    public bool IsArchived => Archived.HasValue;
+
+    public UplinkMessage AddUplink(
+        int messageId,
+        int? messageReference,
+        string recipient,
+        string senderCallsign,
+        CpdlcUplinkResponseType responseType,
+        AlertType alertType,
+        string content,
+        DateTimeOffset sent)
+    {
+        var message = new UplinkMessage(Id, messageId, messageReference, recipient, senderCallsign, responseType, alertType, content, sent);
+        AddMessage(message);
+        return message;
+    }
+
+    public DownlinkMessage AddDownlink(
+        int messageId,
+        int? messageReference,
+        string sender,
+        CpdlcDownlinkResponseType responseType,
+        AlertType alertType,
+        string content,
+        DateTimeOffset received)
+    {
+        var message = new DownlinkMessage(Id, messageId, messageReference, sender, responseType, alertType, content, received);
+        AddMessage(message);
+        return message;
+    }
+
+    void AddMessage(CpdlcMessage message)
+    {
+        if (_messages.Count == 0)
+            Opened = message.Time;
+
+        Insert(message);
+
+        // Apply closure rules then check if dialogue closes
+        ProcessMessage(message);
+    }
+
+    // The messages are in the order of their times. A message always comes after the message that its message
+    // reference number (MRN) refers to, also when its time is earlier.
+    void Insert(CpdlcMessage message)
+    {
+        var index = _messages.FindLastIndex(m => m.Time <= message.Time) + 1;
+
+        var referencedMessage = FindReferencedMessage(message);
+        if (referencedMessage is not null)
+            index = Math.Max(index, _messages.IndexOf(referencedMessage) + 1);
+
+        _messages.Insert(index, message);
+
+        for (var position = 0; position < _messages.Count; position++)
+            _messages[position].Position = position;
+    }
+
+    CpdlcMessage? FindReferencedMessage(CpdlcMessage message)
+    {
+        return message switch
+        {
+            UplinkMessage { MessageReference: { } reference } =>
+                _messages.OfType<DownlinkMessage>().FirstOrDefault(d => d.MessageId == reference),
+            DownlinkMessage { MessageReference: { } reference } =>
+                _messages.OfType<UplinkMessage>().FirstOrDefault(u => u.MessageId == reference),
+            _ => null
+        };
+    }
+
+    public void Archive(DateTimeOffset now)
+    {
+        foreach (var downlink in _messages.OfType<DownlinkMessage>().Where(d => !d.IsAcknowledged))
+        {
+            downlink.Acknowledge(now);
+        }
+
+        Archived = now;
+    }
+
+    // Close all open messages when no response can arrive (e.g. the aircraft connection is lost)
+    public void Abort(DateTimeOffset now)
+    {
+        foreach (var message in _messages.Where(m => !m.IsClosed))
+        {
+            message.Close(now);
+        }
+
+        TryClose(now);
+    }
+
+    public void AcknowledgeDownlink(int downlinkMessageId, DateTimeOffset now)
+    {
+        var downlink = _messages.OfType<DownlinkMessage>()
+            .FirstOrDefault(dl => dl.MessageId == downlinkMessageId);
+
+        if (downlink is null)
+            throw new InvalidOperationException($"Downlink message {downlinkMessageId} not found in dialogue");
+
+        Log.Debug("[Dialogue {DialogueId}] Acknowledging downlink {DownlinkId} (IsClosed: {IsClosed}, Content: {Content})",
+            Id, downlinkMessageId, downlink.IsClosed, downlink.Content);
+        downlink.Acknowledge(now);
+    }
+
+    void ProcessMessage(CpdlcMessage message)
+    {
+        switch (message)
+        {
+            // Close the corresponding downlink if able
+            case UplinkMessage uplink when uplink.MessageReference is not null && CanCloseDownlink(uplink):
+                {
+                    var downlink = _messages.OfType<DownlinkMessage>().FirstOrDefault(dl => dl.MessageId == uplink.MessageReference.Value);
+                    if (downlink != null)
+                    {
+                        Log.Debug("[Dialogue {DialogueId}] Uplink {UplinkId} references downlink {DownlinkId} - closing and auto-acknowledging downlink",
+                            Id, uplink.MessageId, downlink.MessageId);
+                        downlink.Close(uplink.Sent);
+                        downlink.Acknowledge(uplink.Sent); // Auto-acknowledge when replying
+                    }
+                    else
+                    {
+                        Log.Warning("[Dialogue {DialogueId}] Uplink {UplinkId} references downlink {DownlinkId} but downlink not found in dialogue",
+                            Id, uplink.MessageId, uplink.MessageReference.Value);
+                    }
+                }
+
+                break;
+
+            // Close the corresponding uplink if able
+            case DownlinkMessage downlink when downlink.MessageReference is not null && CanCloseUplink(downlink):
+                {
+                    var uplink = _messages.OfType<UplinkMessage>().FirstOrDefault(ul => ul.MessageId == downlink.MessageReference.Value);
+                    if (uplink != null)
+                    {
+                        Log.Debug("[Dialogue {DialogueId}] Downlink {DownlinkId} references uplink {UplinkId} - closing uplink",
+                            Id, downlink.MessageId, uplink.MessageId);
+                        uplink.Close(downlink.Received);
+                    }
+                }
+
+                break;
+
+            case UplinkMessage uplink when uplink.MessageReference is not null:
+                Log.Debug("[Dialogue {DialogueId}] Uplink {UplinkId} references downlink {DownlinkId} but cannot close (Content: {Content})",
+                    Id, uplink.MessageId, uplink.MessageReference.Value, uplink.Content);
+                break;
+
+            case UplinkMessage uplink when uplink.MessageReference is null:
+                Log.Debug("[Dialogue {DialogueId}] Uplink {UplinkId} has no MessageReference - not closing any downlink",
+                    Id, uplink.MessageId);
+                break;
+        }
+
+        TryClose(message.Time);
+        TryArchive(message);
+    }
+
+    public void TryClose(DateTimeOffset now)
+    {
+        if (_messages.All(m => m.IsClosed))
+        {
+            Closed = now;
+        }
+    }
+
+    void TryArchive(CpdlcMessage message)
+    {
+        // Immediately archive when certain uplinks are added
+        if (message is UplinkMessage uplink && ShouldAutoArchive(uplink))
+        {
+            Archive(uplink.Sent);
+        }
+    }
+
+    bool CanCloseUplink(DownlinkMessage downlink)
+    {
+        // STANDBY responses do not close uplinks
+        return !downlink.Content.Equals("STANDBY");
+    }
+
+    bool CanCloseDownlink(UplinkMessage uplinkMessage)
+    {
+        // STANDBY and REQUEST DEFERRED responses do not close downlinks
+        return !uplinkMessage.Content.Equals("STANDBY") && !uplinkMessage.Content.Equals("REQUEST DEFERRED");
+    }
+
+    bool ShouldAutoArchive(UplinkMessage uplinkMessage)
+    {
+        // Auto-archive dialogues with these uplink messages
+        return uplinkMessage.Content.Equals("LOGON ACCEPTED") ||
+               uplinkMessage.Content.Equals("UNABLE DUE TO AIRSPACE RESTRICTIONS") ||
+               uplinkMessage.Content.Equals("UNABLE DUE TO TRAFFIC");
+    }
+}

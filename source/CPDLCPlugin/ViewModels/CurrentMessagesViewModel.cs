@@ -25,7 +25,8 @@ public partial class CurrentMessagesViewModel :
     readonly IErrorReporter _errorReporter;
     readonly IWindowHandle _windowHandle;
     readonly IJurisdictionChecker _jurisdictionChecker;
-    bool _closeWhenEmpty;
+    // The UI thread reads this field. Another thread can set it to false (see Receive(OpenCurrentMessagesWindowRequest)).
+    volatile bool _closeWhenEmpty;
     bool _disposed;
 
     public CurrentMessagesViewModel(
@@ -590,6 +591,8 @@ public partial class CurrentMessagesViewModel :
         if (_disposed)
             return;
 
+        // The message comes on a background thread. LoadDialoguesAsync changes Dialogues, which the view binds to, and it
+        // can close the window. Both must be on the UI thread.
         _guiInvoker.InvokeOnGUI(async _ =>
         {
             if (_disposed)
@@ -605,6 +608,8 @@ public partial class CurrentMessagesViewModel :
         if (_disposed)
             return;
 
+        // The message comes on a background thread. LoadDialoguesAsync changes Dialogues, which the view binds to, and it
+        // can close the window. Both must be on the UI thread.
         _guiInvoker.InvokeOnGUI(async _ =>
         {
             if (_disposed)
@@ -620,6 +625,8 @@ public partial class CurrentMessagesViewModel :
         if (_disposed)
             return;
 
+        // The message comes on a background thread. LoadDialoguesAsync changes Dialogues, which the view binds to, and it
+        // can close the window. Both must be on the UI thread.
         _guiInvoker.InvokeOnGUI(async _ =>
         {
             if (_disposed)
@@ -629,13 +636,14 @@ public partial class CurrentMessagesViewModel :
         });
     }
 
-    // The window must not close automatically after the controller opens it manually
+    // The window must not close automatically after the controller opens it manually. The view does not bind to this
+    // field. Thus, set it on this thread.
     public void Receive(OpenCurrentMessagesWindowRequest message)
     {
         if (_disposed || message.OpenedAutomatically)
             return;
 
-        _guiInvoker.InvokeOnGUI(_ => _closeWhenEmpty = false);
+        _closeWhenEmpty = false;
     }
 
     [RelayCommand]

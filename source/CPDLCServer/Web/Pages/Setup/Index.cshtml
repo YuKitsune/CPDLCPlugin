@@ -1,0 +1,64 @@
+@page "/setup"
+@model IndexModel
+@{
+    ViewData["Title"] = "Setup";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <h2>Set up the server</h2>
+        <p class="text-muted">Create the first user</p>
+
+        @if (!Model.IsTokenValid)
+        {
+            <div class="alert alert-warning" role="alert">
+                <h5 class="alert-heading">Open the setup URL from the server log</h5>
+                <p class="mb-0">
+                    To protect the server, only a person who can read the server log can do the setup.
+                    When the server starts, it writes the setup URL to its log. The URL contains a token.
+                    Open that URL to continue.
+                </p>
+            </div>
+        }
+        else
+        {
+            <p>
+                The administrator can open the Settings and Logs pages.
+                Keep the password in a safe place. The server cannot show it again.
+            </p>
+
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <form method="post">
+                <input type="hidden" asp-for="Token" />
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="Input.Username" class="form-label fw-semibold"></label>
+                            <input asp-for="Input.Username" class="form-control" autocomplete="username" autofocus />
+                            <span asp-validation-for="Input.Username" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Input.Password" class="form-label fw-semibold"></label>
+                            <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+                            <div class="form-text">Use 12 characters or more.</div>
+                            <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-0">
+                            <label asp-for="Input.ConfirmPassword" class="form-label fw-semibold"></label>
+                            <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                            <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end my-4">
+                    <button type="submit" class="btn btn-primary">Create administrator</button>
+                </div>
+            </form>
+        }
+    </div>
+</div>

@@ -1,0 +1,174 @@
+@page "/logs"
+@model IndexModel
+@{
+    ViewData["Title"] = "Logs";
+}
+
+<style>
+    .log-output {
+        height: 70vh;
+        overflow-y: auto;
+        background-color: var(--bs-gray-900);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    /* The same colours as the console output */
+    .log-verbose { color: var(--bs-gray-600); }
+    .log-debug { color: var(--bs-gray-500); }
+    .log-information { color: var(--bs-gray-100); }
+    .log-warning { color: var(--bs-warning); }
+    .log-error { color: var(--bs-danger); }
+    .log-fatal { color: var(--bs-white); background-color: var(--bs-danger); }
+
+    .log-exception { color: var(--bs-danger); margin: 0 0 0 2rem; }
+</style>
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Logs</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>Logs</h2>
+    <span id="log-status" class="badge text-bg-secondary">Connecting</span>
+</div>
+<p class="text-muted">The live log of the server. When the page opens, it shows the recent entries. Then it adds each new entry. The logging level of the server (<code>Logging__Level</code>) sets which entries the server writes.</p>
+
+<div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+    <div class="d-flex align-items-center gap-2">
+        <label for="log-level" class="form-label mb-0">Minimum level</label>
+        <select id="log-level" class="form-select form-select-sm w-auto">
+            <option value="Verbose" selected>Verbose</option>
+            <option value="Debug">Debug</option>
+            <option value="Information">Information</option>
+            <option value="Warning">Warning</option>
+            <option value="Error">Error</option>
+            <option value="Fatal">Fatal</option>
+        </select>
+    </div>
+    <div class="form-check form-switch mb-0">
+        <input id="log-autoscroll" class="form-check-input" type="checkbox" role="switch" checked />
+        <label for="log-autoscroll" class="form-check-label">Scroll to new entries</label>
+    </div>
+    <button id="log-pause" type="button" class="btn btn-sm btn-outline-secondary">Pause</button>
+    <button id="log-clear" type="button" class="btn btn-sm btn-outline-secondary">Clear</button>
+</div>
+
+<div id="log-output" class="log-output font-monospace small rounded p-2"></div>
+
+@section Scripts {
+    <script>
+        (() => {
+            // The page keeps only this number of entries
+            const maxLines = 2000;
+
+            const levelOrder = { Verbose: 0, Debug: 1, Information: 2, Warning: 3, Error: 4, Fatal: 5 };
+
+            const output = document.getElementById('log-output');
+            const status = document.getElementById('log-status');
+            const levelSelect = document.getElementById('log-level');
+            const autoscroll = document.getElementById('log-autoscroll');
+            const pauseButton = document.getElementById('log-pause');
+            const clearButton = document.getElementById('log-clear');
+
+            let lastSequence = 0;
+            let paused = false;
+            const pausedEntries = [];
+
+            function isVisible(level) {
+                return levelOrder[level] >= levelOrder[levelSelect.value];
+            }
+
+            // Use textContent, not innerHTML. The log entries contain text from pilots and controllers.
+            function append(entry) {
+                const line = document.createElement('div');
+                line.className = `log-${entry.level.toLowerCase()}`;
+                line.dataset.level = entry.level;
+                line.hidden = !isVisible(entry.level);
+                line.textContent = `[${entry.time} ${entry.levelCode}] ${entry.message}`;
+
+                if (entry.exception) {
+                    const exception = document.createElement('pre');
+                    exception.className = 'log-exception';
+                    exception.textContent = entry.exception;
+                    line.appendChild(exception);
+                }
+
+                output.appendChild(line);
+
+                while (output.childElementCount > maxLines) {
+                    output.firstElementChild.remove();
+                }
+
+                if (autoscroll.checked) {
+                    output.scrollTop = output.scrollHeight;
+                }
+            }
+
+            function setStatus(text, className) {
+                status.textContent = text;
+                status.className = `badge ${className}`;
+            }
+
+            const source = new EventSource('/logs/stream');
+
+            source.onopen = () => setStatus('Live', 'text-bg-success');
+
+            // The browser connects again automatically
+            source.onerror = () => setStatus('Reconnecting', 'text-bg-warning');
+
+            source.onmessage = event => {
+                const entry = JSON.parse(event.data);
+
+                // After a reconnection, the server sends the recent entries again
+                if (entry.sequence <= lastSequence) {
+                    return;
+                }
+
+                lastSequence = entry.sequence;
+
+                if (paused) {
+                    pausedEntries.push(entry);
+                    pauseButton.textContent = `Resume (${pausedEntries.length} new)`;
+                    return;
+                }
+
+                append(entry);
+            };
+
+            levelSelect.addEventListener('change', () => {
+                for (const line of output.children) {
+                    line.hidden = !isVisible(line.dataset.level);
+                }
+
+                if (autoscroll.checked) {
+                    output.scrollTop = output.scrollHeight;
+                }
+            });
+
+            pauseButton.addEventListener('click', () => {
+                paused = !paused;
+
+                if (!paused) {
+                    for (const entry of pausedEntries.splice(0)) {
+                        append(entry);
+                    }
+                }
+
+                pauseButton.textContent = paused ? 'Resume' : 'Pause';
+            });
+
+            clearButton.addEventListener('click', () => {
+                output.replaceChildren();
+                pausedEntries.length = 0;
+
+                if (paused) {
+                    pauseButton.textContent = 'Resume';
+                }
+            });
+        })();
+    </script>
+}

@@ -150,3 +150,6 @@ npm-debug.log
 *.db*
 
 /logs
+
+# Local SQLite database of the CPDLC server
+.data/

@@ -1,5 +1,4 @@
-using CPDLCServer.Model;
-using CPDLCServer.Persistence;
+using CPDLCServer.AdscContracts.MessageLog;
 
 namespace CPDLCServer.Tests.Mocks;
 

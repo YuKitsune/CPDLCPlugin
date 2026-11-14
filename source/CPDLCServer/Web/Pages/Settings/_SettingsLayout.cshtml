@@ -1,0 +1,25 @@
+@{
+    Layout = "_Layout";
+
+    var path = Context.Request.Path;
+    var isAcars = path.StartsWithSegments("/settings/acars");
+    var isUsers = path.StartsWithSegments("/settings/users");
+    var isGlobal = !isAcars && !isUsers;
+}
+
+<div class="row">
+    <div class="col-md-3 col-lg-2 mb-4">
+        <nav class="nav nav-pills flex-column">
+            <a href="/settings" class="nav-link @(isGlobal ? "active" : "")" aria-current="@(isGlobal ? "page" : null)">Global Settings</a>
+            <a href="/settings/acars" class="nav-link @(isAcars ? "active" : "")" aria-current="@(isAcars ? "page" : null)">ACARS</a>
+            <a href="/settings/users" class="nav-link @(isUsers ? "active" : "")" aria-current="@(isUsers ? "page" : null)">Users</a>
+        </nav>
+    </div>
+    <div class="col-md-9 col-lg-10">
+        @RenderBody()
+    </div>
+</div>
+
+@section Scripts {
+    @await RenderSectionAsync("Scripts", required: false)
+}
