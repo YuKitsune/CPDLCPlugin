@@ -747,6 +747,12 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
 
     public void Receive(DialogueChangedNotification message)
     {
+        // The dialogues change for all the aircraft. The editor shows the dialogues of one aircraft only. Do not post to
+        // the UI thread for the other aircraft.
+        if (message.Dialogue.AircraftCallsign != Callsign)
+            return;
+
+        // LoadDownlinkMessagesAsync changes the downlink messages, which the view binds to
         _guiInvoker.InvokeOnGUI(async _ => await LoadDownlinkMessagesAsync());
     }
 

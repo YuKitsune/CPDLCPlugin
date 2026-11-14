@@ -226,9 +226,12 @@ public partial class ADSContractViewModel : ObservableObject,
 
     void ReloadIfShown(string callsign)
     {
-        if (_disposed)
+        // The ADS-C reports come for all the aircraft. Do not post to the UI thread for an aircraft that this window
+        // does not show. The UI thread checks again, because the callsign can change before the action runs.
+        if (_disposed || callsign != Callsign)
             return;
 
+        // LoadContractAsync changes the properties that the view binds to
         _guiInvoker.InvokeOnGUI(mainForm =>
         {
             if (_disposed)

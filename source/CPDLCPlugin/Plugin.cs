@@ -617,7 +617,9 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
                     .Where(d => d.AircraftCallsign == updated.Callsign)
                     .Any(d => !d.IsArchived && jurisdictionChecker.ShouldDisplayDialogue(d));
 
-                if (hasDialoguesToDisplay)
+                // vatSys updates the FDRs often. If the window is open, do not post to the UI thread to open it again.
+                var windowManager = ServiceProvider.GetRequiredService<WindowManager>();
+                if (hasDialoguesToDisplay && !windowManager.IsWindowOpen(WindowKeys.CurrentMessages))
                 {
                     var mediator = ServiceProvider.GetRequiredService<IMediator>();
                     await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: true));

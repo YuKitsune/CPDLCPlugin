@@ -48,8 +48,20 @@ public class WindowManager(IGuiInvoker guiInvoker)
         });
     }
 
+    public bool IsWindowOpen(string key)
+    {
+        lock (_gate)
+        {
+            return _forms.ContainsKey(key);
+        }
+    }
+
     public void TryRemoveWindow(string key)
     {
+        // Do not post to the UI thread if the window is not open
+        if (!IsWindowOpen(key))
+            return;
+
         guiInvoker.InvokeOnGUI(_ =>
         {
             lock (_gate)
