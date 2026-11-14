@@ -40,6 +40,10 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
     readonly ColourCache _colourCache;
 
     readonly WorkQueue _workQueue;
+
+    // 1 if a rebuild of the CPDLC status label items is in the work queue, and 0 if not
+    int _isLabelRebuildQueued;
+
     PluginConfiguration? _configuration;
 
     BackgroundWorker? _ndaRecalculationWorker;
@@ -603,7 +607,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             });
 
             // Re-build the CPDLC status label items
-            _workQueue.Enqueue(() => RebuildCpdlcStatusLabelItems());
+            QueueLabelRebuild();
 
             // If this flight has any dialogues that we have jurisdiction over, open the current messages window
             // Ensures flights handed off to us open the window so we can see their requests
@@ -682,6 +686,21 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
     public CustomColour? SelectGroundTrackColour(Track track) => null;
 
+    // vatSys updates the FDRs often, and each rebuild reads all the FDRs. A rebuild reads the state when it runs. Thus,
+    // if a rebuild is already in the work queue, do not queue another one.
+    void QueueLabelRebuild()
+    {
+        if (Interlocked.Exchange(ref _isLabelRebuildQueued, 1) == 1)
+            return;
+
+        _workQueue.Enqueue(() =>
+        {
+            // Clear the flag before the rebuild reads the state. Then a change during the rebuild queues a new rebuild.
+            Interlocked.Exchange(ref _isLabelRebuildQueued, 0);
+            return RebuildCpdlcStatusLabelItems();
+        });
+    }
+
     async Task RebuildCpdlcStatusLabelItems(CancellationToken cancellationToken = default)
     {
         try
@@ -699,7 +718,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
     {
         try
         {
-            _workQueue.Enqueue(() => RebuildCpdlcStatusLabelItems());
+            QueueLabelRebuild();
         }
         catch (Exception ex)
         {
@@ -711,10 +730,12 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
     {
         try
         {
+            // The rebuild is in the work queue before the next work item. Thus, the labels are rebuilt before the window
+            // opens.
+            QueueLabelRebuild();
+
             _workQueue.Enqueue(async () =>
             {
-                await RebuildCpdlcStatusLabelItems().ConfigureAwait(false);
-
                 // Try to open the Current Messages Window if this dialogue is relevant to the controller
                 var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
                 if (dialogueChangedNotification.Dialogue.IsArchived ||
@@ -722,6 +743,11 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
                 {
                     return;
                 }
+
+                // If the window is open, do not post to the UI thread to open and activate it again
+                var windowManager = ServiceProvider.GetRequiredService<WindowManager>();
+                if (windowManager.IsWindowOpen(WindowKeys.CurrentMessages))
+                    return;
 
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
                 await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: true));
