@@ -46,55 +46,23 @@ public class AircraftConnectionLostNotificationHandler(
             notification.Callsign,
             notification.AcarsConnectionId);
 
-        // Find all controllers on the same network and station
-        var controllers = await controllerRepository.All(cancellationToken);
-        if (!controllers.Any())
-        {
-            logger.Information(
-                "No controllers to notify about lost aircraft {Callsign}",
-                notification.Callsign);
-            return;
-        }
+        // Close the dialogues also when no controllers are online, so that no dialogue of the lost connection stays open
+        var openDialogues = await dialogueRepository.FindOpenForAircraft(
+            notification.Callsign,
+            aircraft.StationId,
+            cancellationToken);
 
-        var allDialogues = await dialogueRepository.All(cancellationToken);
-        var aircraftDialogues = allDialogues
-            .Where(d => d.AircraftCallsign == notification.Callsign && !d.IsArchived)
-            .ToArray();
-
-        var openDialogues = aircraftDialogues.Where(d => !d.IsClosed).ToArray();
         if (openDialogues.Any())
         {
-            // Add error message to each open dialogue
+            // Add error message to each open dialogue, then close the remaining open messages, because no response can arrive
             foreach (var dialogue in openDialogues)
             {
-                // Find an open message to reference
-                var openMessage = dialogue.Messages.FirstOrDefault(m => !m.IsClosed);
-
-                if (openMessage is null)
-                {
-                    logger.Warning(
-                        "Dialogue {DialogueId} is marked as open but has no open messages",
-                        dialogue.Id);
-                    continue;
-                }
-
                 var messageId = await messageIdProvider.GetNextMessageId(
                     notification.AcarsConnectionId,
                     notification.Callsign,
                     cancellationToken);
 
-                var now = clock.UtcNow();
-                dialogue.AddDownlink(
-                    messageId,
-                    openMessage.MessageId,
-                    notification.Callsign,
-                    CpdlcDownlinkResponseType.NoResponse,
-                    AlertType.Medium,
-                    "ERROR CONNECTION TIMED OUT",
-                    now);
-
-                // No response can arrive, so close the remaining open messages
-                dialogue.Abort(now);
+                dialogue.AbortWithError(messageId, "ERROR CONNECTION TIMED OUT", clock.UtcNow());
 
                 // Publish DialogueChangedNotification
                 await publisher.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
@@ -113,7 +81,7 @@ public class AircraftConnectionLostNotificationHandler(
                 notification.Callsign,
                 cancellationToken);
 
-            var dialogue = new Dialogue(notification.Callsign);
+            var dialogue = new Dialogue(notification.Callsign, aircraft.StationId);
             dialogue.AddDownlink(
                 messageId,
                 null,
@@ -134,7 +102,19 @@ public class AircraftConnectionLostNotificationHandler(
                 notification.Callsign);
         }
 
+        // After the error messages, because they use the message IDs of the connection
+        await messageIdProvider.Remove(notification.AcarsConnectionId, notification.Callsign, cancellationToken);
+
         // Notify controllers that the aircraft has disconnected
+        var controllers = await controllerRepository.All(cancellationToken);
+        if (!controllers.Any())
+        {
+            logger.Information(
+                "No controllers to notify about lost aircraft {Callsign}",
+                notification.Callsign);
+            return;
+        }
+
         var controllerConnectionIds = controllers.Select(c => c.ConnectionId).ToArray();
         unitOfWork.AfterCommit(ct => hubContext.Clients
             .Clients(controllerConnectionIds)

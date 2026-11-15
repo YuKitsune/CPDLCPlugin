@@ -24,7 +24,8 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     EncryptedAuthenticationCode = table.Column<string>(type: "TEXT", nullable: false),
                     DefaultAdscReportingInterval = table.Column<int>(type: "INTEGER", nullable: false),
                     SelectedAdscContractDuration = table.Column<int>(type: "INTEGER", nullable: false),
-                    Notes = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true)
+                    Notes = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -49,7 +50,8 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     DemandContractState = table.Column<string>(type: "TEXT", nullable: true),
                     LastActivity = table.Column<long>(type: "INTEGER", nullable: false),
                     LastReportReceived = table.Column<long>(type: "INTEGER", nullable: true),
-                    ReportingSource = table.Column<string>(type: "TEXT", nullable: true)
+                    ReportingSource = table.Column<string>(type: "TEXT", nullable: true),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -65,6 +67,7 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     Callsign = table.Column<string>(type: "TEXT", nullable: false),
                     StationId = table.Column<string>(type: "TEXT", nullable: false),
                     Received = table.Column<long>(type: "INTEGER", nullable: false),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false),
                     Altitude = table.Column<int>(type: "INTEGER", nullable: false),
                     Latitude = table.Column<double>(type: "REAL", nullable: false),
                     Longitude = table.Column<double>(type: "REAL", nullable: false),
@@ -92,7 +95,8 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     LastSeen = table.Column<long>(type: "INTEGER", nullable: false),
                     NextDataAuthority = table.Column<string>(type: "TEXT", nullable: true),
                     ExpectedTransferTime = table.Column<long>(type: "INTEGER", nullable: true),
-                    DidSentNextDataAuthorityMessage = table.Column<bool>(type: "INTEGER", nullable: false)
+                    DidSentNextDataAuthorityMessage = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -105,9 +109,11 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     AircraftCallsign = table.Column<string>(type: "TEXT", nullable: false),
+                    StationId = table.Column<string>(type: "TEXT", nullable: false),
                     Opened = table.Column<long>(type: "INTEGER", nullable: false),
                     Closed = table.Column<long>(type: "INTEGER", nullable: true),
-                    Archived = table.Column<long>(type: "INTEGER", nullable: true)
+                    Archived = table.Column<long>(type: "INTEGER", nullable: true),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -120,7 +126,8 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 {
                     AcarsConnectionId = table.Column<string>(type: "TEXT", nullable: false),
                     Callsign = table.Column<string>(type: "TEXT", nullable: false),
-                    LastMessageId = table.Column<int>(type: "INTEGER", nullable: false)
+                    LastMessageId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -136,13 +143,14 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     ConnectivityCheckIntervalMinutes = table.Column<int>(type: "INTEGER", nullable: false),
                     AircraftConnectionTimeoutMinutes = table.Column<int>(type: "INTEGER", nullable: false),
                     AdscContractTimeoutMinutes = table.Column<int>(type: "INTEGER", nullable: false),
-                    AdscReportRetentionHours = table.Column<int>(type: "INTEGER", nullable: false),
+                    DialogueRetentionHours = table.Column<int>(type: "INTEGER", nullable: false),
                     HandoffNotificationLeadTimeMinutes = table.Column<int>(type: "INTEGER", nullable: false),
                     VatsimStatusEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
                     VatsimStatusUrl = table.Column<string>(type: "TEXT", nullable: false),
                     VatsimStatusPollingIntervalSeconds = table.Column<int>(type: "INTEGER", nullable: false),
                     VatsimStatusAllowNonEquippedAircraft = table.Column<bool>(type: "INTEGER", nullable: false),
-                    VatsimStatusReportDelayMinutes = table.Column<int>(type: "INTEGER", nullable: false)
+                    VatsimStatusReportDelayMinutes = table.Column<int>(type: "INTEGER", nullable: false),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -156,7 +164,8 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Username = table.Column<string>(type: "TEXT", nullable: false),
                     PasswordHash = table.Column<string>(type: "TEXT", nullable: false),
-                    Created = table.Column<long>(type: "INTEGER", nullable: false)
+                    Created = table.Column<long>(type: "INTEGER", nullable: false),
+                    Version = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -210,7 +219,8 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
             migrationBuilder.CreateIndex(
                 name: "IX_AdscContracts_Callsign_StationId",
                 table: "AdscContracts",
-                columns: new[] { "Callsign", "StationId" });
+                columns: new[] { "Callsign", "StationId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AdscReports_Callsign_StationId",
@@ -219,14 +229,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_AdscReports_Received",
-                table: "AdscReports",
-                column: "Received");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_AircraftConnections_Callsign_AcarsConnectionId",
                 table: "AircraftConnections",
-                columns: new[] { "Callsign", "AcarsConnectionId" });
+                columns: new[] { "Callsign", "AcarsConnectionId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_CpdlcMessages_DialogueId",
@@ -234,9 +240,14 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 column: "DialogueId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Dialogues_AircraftCallsign",
+                name: "IX_Dialogues_AircraftCallsign_StationId",
                 table: "Dialogues",
-                column: "AircraftCallsign");
+                columns: new[] { "AircraftCallsign", "StationId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dialogues_Opened",
+                table: "Dialogues",
+                column: "Opened");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Username",

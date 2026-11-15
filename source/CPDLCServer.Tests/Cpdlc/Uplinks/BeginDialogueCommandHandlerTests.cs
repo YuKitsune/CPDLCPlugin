@@ -27,7 +27,7 @@ public class BeginDialogueCommandHandlerTests
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
 
         var handler = new BeginDialogueCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         var command = new BeginDialogueCommand("BN-TSN_FSS", "UAL123", CpdlcUplinkResponseType.WilcoUnable, "CLIMB TO FL410");
 
@@ -60,7 +60,7 @@ public class BeginDialogueCommandHandlerTests
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
 
         var handler = new BeginDialogueCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         var command = new BeginDialogueCommand("BN-TSN_FSS", "UAL123", CpdlcUplinkResponseType.WilcoUnable, "CLIMB TO FL410");
 
@@ -90,7 +90,7 @@ public class BeginDialogueCommandHandlerTests
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
 
         var handler = new BeginDialogueCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         var command = new BeginDialogueCommand("BN-TSN_FSS", "UAL123", CpdlcUplinkResponseType.WilcoUnable, "CLIMB TO FL410");
 
@@ -121,7 +121,7 @@ public class BeginDialogueCommandHandlerTests
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
 
         var handler = new BeginDialogueCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         var command = new BeginDialogueCommand("BN-TSN_FSS", "UAL123", CpdlcUplinkResponseType.WilcoUnable, "CLIMB TO FL410");
 
@@ -146,7 +146,7 @@ public class BeginDialogueCommandHandlerTests
         // No aircraft added
 
         var handler = new BeginDialogueCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         var command = new BeginDialogueCommand("BN-TSN_FSS", "UAL123", CpdlcUplinkResponseType.WilcoUnable, "CLIMB TO FL410");
 

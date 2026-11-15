@@ -3,7 +3,6 @@ using CPDLCServer.Controllers;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
-using CPDLCServer.Persistence;
 using MediatR;
 
 namespace CPDLCServer.Cpdlc.Connections;
@@ -16,7 +15,7 @@ public class LogonCommandHandler(
     IMessageIdProvider messageIdProvider,
     IClock clock,
     IMediator mediator,
-    IUnitOfWork unitOfWork,
+    IUplinkTransmitter uplinkTransmitter,
     ILogger logger)
     : IRequestHandler<LogonCommand>
 {
@@ -24,22 +23,18 @@ public class LogonCommandHandler(
     {
         var acarsConnection = await acarsConnectionManager.GetAcarsConnection(request.AcarsConnectionId, cancellationToken);
 
-        // If the aircraft already exists, simply accept the connection again
-        // Likely an issue with the aircraft requiring a reconnect
-        var aircraft = await aircraftRepository.Find(
+        // A new logon replaces the existing connection.
+        // Hoppie identifies an aircraft only by its callsign, so the new logon can be from a different pilot.
+        var existingAircraft = await aircraftRepository.Find(
             new(request.Callsign, request.AcarsConnectionId),
             cancellationToken);
 
-        if (aircraft is not null)
+        if (existingAircraft is not null)
         {
-            logger.Verbose("Duplicate connection request received from {Callsign} on {AcarsConnectionId}. Accepting the request.", request.Callsign, request.AcarsConnectionId);
-
-            await Reply(acarsConnection, request, "LOGON ACCEPTED", cancellationToken);
-
-            return;
+            await ResetConnection(existingAircraft, cancellationToken);
         }
 
-        aircraft = new AircraftConnection(
+        var aircraft = new AircraftConnection(
             request.Callsign,
             request.AcarsConnectionId,
             acarsConnection.StationId,
@@ -83,13 +78,50 @@ public class LogonCommandHandler(
             cancellationToken);
     }
 
+    // No response to the messages of the previous connection can arrive, so close its open dialogues
+    async Task ResetConnection(AircraftConnection existingAircraft, CancellationToken cancellationToken)
+    {
+        logger.Information(
+            "Connection request received from {Callsign} on {AcarsConnectionId}, which is already connected. Resetting the connection.",
+            existingAircraft.Callsign,
+            existingAircraft.AcarsConnectionId);
+
+        var openDialogues = await dialogueRepository.FindOpenForAircraft(
+            existingAircraft.Callsign,
+            existingAircraft.StationId,
+            cancellationToken);
+
+        foreach (var dialogue in openDialogues)
+        {
+            var messageId = await messageIdProvider.GetNextMessageId(
+                existingAircraft.AcarsConnectionId,
+                existingAircraft.Callsign,
+                cancellationToken);
+
+            dialogue.AbortWithError(messageId, "CPDLC CONNECTION RESET", clock.UtcNow());
+            await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
+
+            logger.Information(
+                "Closed dialogue {DialogueId} for reset connection with {Callsign}",
+                dialogue.Id,
+                existingAircraft.Callsign);
+        }
+
+        await mediator.Publish(
+            new AircraftConnectionReset(
+                existingAircraft.AcarsConnectionId,
+                existingAircraft.StationId,
+                existingAircraft.Callsign),
+            cancellationToken);
+    }
+
     async Task Reply(
         IAcarsConnection acarsConnection,
         LogonCommand request,
         string content,
         CancellationToken cancellationToken)
     {
-        var dialogue = new Dialogue(request.Callsign);
+        var dialogue = new Dialogue(request.Callsign, acarsConnection.StationId);
         dialogue.AddDownlink(
             request.DownlinkId,
             request.DownlinkMessageReference,
@@ -119,10 +151,6 @@ public class LogonCommandHandler(
 
         await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
 
-        unitOfWork.AfterCommit(async ct =>
-        {
-            await acarsConnection.Send(uplinkMessage, ct);
-            logger.Information("Sent CPDLC message from SYSTEM to {Callsign}", request.Callsign);
-        });
+        uplinkTransmitter.TransmitAfterCommit(acarsConnection, uplinkMessage);
     }
 }

@@ -57,16 +57,6 @@ public class AdscReportRepository(CpdlcDbContext dbContext) : IAdscReportReposit
         return Task.CompletedTask;
     }
 
-    public async Task RemoveOlderThan(DateTimeOffset cutoff, CancellationToken cancellationToken)
-    {
-        await dbContext.AdscReports
-            .Where(r => r.Received < cutoff)
-            .LoadAsync(cancellationToken);
-
-        var oldReports = dbContext.AdscReports.Local.Where(r => r.Received < cutoff).ToArray();
-        dbContext.AdscReports.RemoveRange(oldReports);
-    }
-
     // An aircraft can report to more than one ATSU, so the reports can arrive out of order
     static AircraftAdscReport SelectLatest(IEnumerable<AircraftAdscReport> reports)
     {

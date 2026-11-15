@@ -14,5 +14,4 @@ public interface IAdscReportRepository
 
     Task<AircraftAdscReport[]> All(CancellationToken cancellationToken);
     Task Remove(AircraftAdscReport report, CancellationToken cancellationToken);
-    Task RemoveOlderThan(DateTimeOffset cutoff, CancellationToken cancellationToken);
 }

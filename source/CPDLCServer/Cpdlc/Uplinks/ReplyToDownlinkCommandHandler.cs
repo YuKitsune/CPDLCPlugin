@@ -2,7 +2,6 @@ using CPDLCServer.AcarsConnections;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Infrastructure;
-using CPDLCServer.Persistence;
 using MediatR;
 
 namespace CPDLCServer.Cpdlc.Uplinks;
@@ -14,7 +13,7 @@ public class ReplyToDownlinkCommandHandler(
     IDialogueRepository dialogueRepository,
     IMediator mediator,
     IClock clock,
-    IUnitOfWork unitOfWork,
+    IUplinkTransmitter uplinkTransmitter,
     ILogger logger)
     : IRequestHandler<ReplyToDownlinkCommand>
 {
@@ -28,10 +27,9 @@ public class ReplyToDownlinkCommandHandler(
         logger.Information("Replying to downlink {DownlinkMessageId} in dialogue {DialogueId} for {Callsign}",
             request.DownlinkMessageId, request.DialogueId, callsign);
 
+        // The reply goes through the connection of the ATSU of the dialogue
         var allAircraft = await aircraftRepository.All(cancellationToken);
-        var aircraftConnection =
-            allAircraft.FirstOrDefault(a => a.Callsign == callsign && a.DataAuthorityState == DataAuthorityState.CurrentDataAuthority)
-            ?? allAircraft.FirstOrDefault(a => a.Callsign == callsign && a.DataAuthorityState == DataAuthorityState.NextDataAuthority);
+        var aircraftConnection = allAircraft.FirstOrDefault(a => a.Callsign == callsign && a.StationId == dialogue.StationId);
         if (aircraftConnection is null)
             throw new Exception($"{callsign} is not connected");
 
@@ -57,10 +55,6 @@ public class ReplyToDownlinkCommandHandler(
 
         await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
 
-        unitOfWork.AfterCommit(async ct =>
-        {
-            await acarsConnection.Send(uplinkMessage, ct);
-            logger.Information("Sent CPDLC message from {Sender} to {Callsign}", request.Sender, callsign);
-        });
+        uplinkTransmitter.TransmitAfterCommit(acarsConnection, uplinkMessage);
     }
 }

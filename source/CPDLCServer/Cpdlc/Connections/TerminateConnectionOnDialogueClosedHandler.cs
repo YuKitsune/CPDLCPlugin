@@ -24,10 +24,11 @@ public class TerminateConnectionOnDialogueClosedHandler(
         if (!hasEndService)
             return;
 
-        // Find the aircraft connection (CDA state)
+        // Find the aircraft connection (CDA state) with the ATSU of the dialogue
         var aircraftConnections = await aircraftRepository.All(cancellationToken);
         var aircraftConnection = aircraftConnections.FirstOrDefault(c =>
             c.Callsign == notification.Dialogue.AircraftCallsign &&
+            c.StationId == notification.Dialogue.StationId &&
             c.DataAuthorityState == DataAuthorityState.CurrentDataAuthority);
 
         if (aircraftConnection is null)

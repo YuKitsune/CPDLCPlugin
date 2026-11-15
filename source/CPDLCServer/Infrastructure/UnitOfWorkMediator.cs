@@ -1,5 +1,6 @@
 using CPDLCServer.Persistence;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace CPDLCServer.Infrastructure;
 
@@ -13,11 +14,15 @@ public interface IUnitOfWorkMediator
     Task Publish(INotification notification, CancellationToken cancellationToken = default);
 }
 
-public class UnitOfWorkMediator(IServiceScopeFactory serviceScopeFactory) : IUnitOfWorkMediator, IDisposable
+// The units of work run at the same time. The database prevents conflicts:
+// - Each changed entity has a version (concurrency token). If a different unit of work changed the entity after it was
+//   read, the commit fails.
+// - Unique indexes prevent two units of work from adding the same entity.
+// When the commit fails, the unit of work runs again in a new scope, so that it reads the new data.
+// The messages to controllers and aircraft are sent only after a successful commit, so a failed attempt sends nothing.
+public class UnitOfWorkMediator(IServiceScopeFactory serviceScopeFactory, ILogger logger) : IUnitOfWorkMediator
 {
-    // Only one unit of work runs at a time.
-    // Two units of work cannot then change the same entity, and the messages are sent in the order of the changes.
-    readonly SemaphoreSlim _semaphore = new(1, 1);
+    const int MaxAttempts = 3;
 
     public async Task Send(IRequest request, CancellationToken cancellationToken = default)
     {
@@ -48,21 +53,29 @@ public class UnitOfWorkMediator(IServiceScopeFactory serviceScopeFactory) : IUni
 
     async Task<TResult> Run<TResult>(Func<IMediator, Task<TResult>> action, CancellationToken cancellationToken)
     {
-        using (await _semaphore.LockAsync(cancellationToken))
+        for (var attempt = 1; ; attempt++)
         {
             await using var scope = serviceScopeFactory.CreateAsyncScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
             var unitOfWork = scope.ServiceProvider.GetRequiredService<UnitOfWork>();
 
-            var result = await action(mediator);
-            await unitOfWork.Commit(cancellationToken);
+            try
+            {
+                var result = await action(mediator);
+                await unitOfWork.Commit(cancellationToken);
 
-            return result;
+                return result;
+            }
+            // DbUpdateConcurrencyException: a different unit of work changed or removed an entity.
+            // DbUpdateException: a different unit of work added an entity with the same unique key.
+            catch (DbUpdateException ex) when (attempt < MaxAttempts)
+            {
+                logger.Warning(
+                    ex,
+                    "Unit of work conflicted with a different unit of work (attempt {Attempt} of {MaxAttempts}), retrying",
+                    attempt,
+                    MaxAttempts);
+            }
         }
-    }
-
-    public void Dispose()
-    {
-        _semaphore.Dispose();
     }
 }

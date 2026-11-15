@@ -15,7 +15,7 @@ public class AcknowledgeDownlinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var downlink = dialogue.AddDownlink(
             1,
             null,
@@ -53,7 +53,7 @@ public class AcknowledgeDownlinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(
             1,
             null,
@@ -90,7 +90,7 @@ public class AcknowledgeDownlinkCommandHandlerTests
         var publisher = new TestPublisher();
 
         // Create a downlink that requires a response
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var downlink = dialogue.AddDownlink(
             1,
             null,
@@ -151,7 +151,7 @@ public class AcknowledgeDownlinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(
             1,
             null,

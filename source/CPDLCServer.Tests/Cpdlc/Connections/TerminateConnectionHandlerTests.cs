@@ -14,10 +14,12 @@ public class TerminateConnectionHandlerTests
         TestAircraftRepository aircraftRepository,
         TestDialogueRepository dialogueRepository,
         TestClock clock,
-        IMediator mediator) =>
+        IMediator mediator,
+        TestMessageIdProvider? messageIdProvider = null) =>
         new(
             aircraftRepository,
             dialogueRepository,
+            messageIdProvider ?? new TestMessageIdProvider(),
             clock,
             mediator,
             Logger.None);
@@ -33,7 +35,7 @@ public class TerminateConnectionHandlerTests
 
     static async Task<Dialogue> AddOpenDialogue(TestDialogueRepository dialogueRepository, TestClock clock, string callsign)
     {
-        var dialogue = new Dialogue(callsign);
+        var dialogue = new Dialogue(callsign, "YBBB");
         dialogue.AddDownlink(
             1,
             null,
@@ -108,7 +110,7 @@ public class TerminateConnectionHandlerTests
         var mediator = Substitute.For<IMediator>();
         await AddConnectedAircraft(aircraftRepository, clock, "UAL123");
 
-        var closedDialogue = new Dialogue("UAL123");
+        var closedDialogue = new Dialogue("UAL123", "YBBB");
         closedDialogue.AddDownlink(
             1,
             null,
@@ -176,5 +178,25 @@ public class TerminateConnectionHandlerTests
 
         await mediator.DidNotReceive().Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
         await mediator.DidNotReceive().Publish(Arg.Any<AircraftConnectionTerminated>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_RemovesMessageIdSequence()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var aircraftRepository = new TestAircraftRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var messageIdProvider = new TestMessageIdProvider();
+        var mediator = Substitute.For<IMediator>();
+        await AddConnectedAircraft(aircraftRepository, clock, "UAL123");
+
+        var handler = BuildHandler(aircraftRepository, dialogueRepository, clock, mediator, messageIdProvider);
+
+        // Act
+        await handler.Handle(new TerminateConnectionRequest("UAL123", "hoppies-ybbb"), CancellationToken.None);
+
+        // Assert
+        Assert.Equal([("hoppies-ybbb", "UAL123")], messageIdProvider.Removed);
     }
 }

@@ -103,4 +103,30 @@ public class MessageIdProviderTests
         // Assert
         Assert.Equal(3, messageId);
     }
+
+    [Fact]
+    public async Task Remove_NextConnectionStartsAtFirstId()
+    {
+        // Arrange
+        using var database = new TestDatabase();
+        await using (var dbContext = database.CreateDbContext())
+        {
+            var provider = new MessageIdProvider(dbContext);
+            await provider.GetNextMessageId("YBBB", "UAL123", CancellationToken.None);
+            await provider.GetNextMessageId("YBBB", "UAL123", CancellationToken.None);
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Act
+        await using (var dbContext = database.CreateDbContext())
+        {
+            await new MessageIdProvider(dbContext).Remove("YBBB", "UAL123", CancellationToken.None);
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Assert
+        await using var readDbContext = database.CreateDbContext();
+        Assert.Empty(readDbContext.MessageIdSequences);
+        Assert.Equal(1, await new MessageIdProvider(readDbContext).GetNextMessageId("YBBB", "UAL123", CancellationToken.None));
+    }
 }

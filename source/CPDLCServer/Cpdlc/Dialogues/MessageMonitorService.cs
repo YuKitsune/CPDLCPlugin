@@ -5,14 +5,19 @@ namespace CPDLCServer.Cpdlc.Dialogues;
 
 public class MessageMonitorService(
     IUnitOfWorkMediator mediator,
+    IClock clock,
     ILogger logger)
     : BackgroundService
 {
     readonly TimeSpan _timeoutCheckInterval = TimeSpan.FromSeconds(5);
 
+    // The retention period is in hours, so the purge does not need to run often
+    readonly TimeSpan _purgeInterval = TimeSpan.FromMinutes(5);
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.Information("Starting message monitor service");
+        DateTimeOffset? lastPurge = null;
         try
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -20,7 +25,13 @@ public class MessageMonitorService(
                 logger.Verbose("Running message monitor iteration");
 
                 // Each request is a separate unit of work, so that a failure in one does not stop the others
-                await Send(new PurgeExpiredCpdlcDataRequest(), stoppingToken);
+                var now = clock.UtcNow();
+                if (lastPurge is null || now - lastPurge >= _purgeInterval)
+                {
+                    await Send(new PurgeExpiredCpdlcDataRequest(), stoppingToken);
+                    lastPurge = now;
+                }
+
                 await Send(new CheckMessageTimeoutsRequest(), stoppingToken);
                 await Send(new ArchiveCompletedDialoguesRequest(), stoppingToken);
 

@@ -14,7 +14,7 @@ public class UnitOfWorkTests
         await using var dbContext = database.CreateDbContext();
         var unitOfWork = new UnitOfWork(dbContext);
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         await new DialogueRepository(dbContext).Add(dialogue, CancellationToken.None);
 
         var savedWhenActionRan = false;

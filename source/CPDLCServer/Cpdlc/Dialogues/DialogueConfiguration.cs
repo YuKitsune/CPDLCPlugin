@@ -13,6 +13,7 @@ public class DialogueConfiguration : IEntityTypeConfiguration<Dialogue>
         builder.Property(d => d.Id).ValueGeneratedNever();
 
         builder.Property(d => d.AircraftCallsign);
+        builder.Property(d => d.StationId);
         builder.Property(d => d.Opened);
         builder.Property(d => d.Closed);
         builder.Property(d => d.Archived);
@@ -26,6 +27,9 @@ public class DialogueConfiguration : IEntityTypeConfiguration<Dialogue>
             .HasField("_messages")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.HasIndex(d => d.AircraftCallsign);
+        builder.HasIndex(d => new { d.AircraftCallsign, d.StationId });
+
+        // The purge finds the old dialogues by the time that they opened
+        builder.HasIndex(d => d.Opened);
     }
 }

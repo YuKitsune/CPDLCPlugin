@@ -56,6 +56,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("StationIdentifier")
@@ -111,9 +115,14 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Callsign", "StationId");
+                    b.HasIndex("Callsign", "StationId")
+                        .IsUnique();
 
                     b.ToTable("AdscContracts", (string)null);
                 });
@@ -134,6 +143,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<string>("StationId")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Report", "CPDLCServer.AdscContracts.Reports.AircraftAdscReport.Report#AdscReport", b1 =>
                         {
@@ -163,8 +176,6 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Received");
-
                     b.HasIndex("Callsign", "StationId")
                         .IsUnique();
 
@@ -186,6 +197,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -239,9 +254,14 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Callsign", "AcarsConnectionId");
+                    b.HasIndex("Callsign", "AcarsConnectionId")
+                        .IsUnique();
 
                     b.ToTable("AircraftConnections", (string)null);
                 });
@@ -308,9 +328,19 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<long>("Opened")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("StationId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("AircraftCallsign");
+                    b.HasIndex("Opened");
+
+                    b.HasIndex("AircraftCallsign", "StationId");
 
                     b.ToTable("Dialogues", (string)null);
                 });
@@ -324,6 +354,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .HasColumnType("TEXT");
 
                     b.Property<int>("LastMessageId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.HasKey("AcarsConnectionId", "Callsign");
@@ -340,13 +374,13 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<int>("AdscContractTimeoutMinutes")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("AdscReportRetentionHours")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("AircraftConnectionTimeoutMinutes")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ConnectivityCheckIntervalMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DialogueRetentionHours")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("HandoffNotificationLeadTimeMinutes")
@@ -367,6 +401,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<string>("VatsimStatusUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 

@@ -60,7 +60,7 @@ public class DownlinkReceivedNotificationHandler(
         // TODO: Handle this in hoppies
         if (ControlMessages.IsLogoffNotice(downlink))
         {
-            var logoffDialogue = new Dialogue(downlink.Sender);
+            var logoffDialogue = new Dialogue(downlink.Sender, notification.StationId);
             logoffDialogue.AddDownlink(
                 downlink.MessageId,
                 downlink.MessageReference,
@@ -113,6 +113,7 @@ public class DownlinkReceivedNotificationHandler(
         {
             var dialogue = await dialogueRepository.FindOpenDialogueByUplink(
                 downlink.Sender,
+                notification.StationId,
                 downlink.MessageReference.Value,
                 cancellationToken);
             if (dialogue is not null)
@@ -125,7 +126,7 @@ public class DownlinkReceivedNotificationHandler(
                 // TODO: This could lead to a bug if the Aircraft thinks we're still in the original message chain.
                 //  Consider returning an error here instead.
                 logger.Warning("No open dialogue found for uplink reference {MessageReference} from {Callsign} - starting new dialogue", downlink.MessageReference.Value, downlink.Sender);
-                dialogue = new Dialogue(downlink.Sender);
+                dialogue = new Dialogue(downlink.Sender, notification.StationId);
                 dialogue.AddDownlink(
                     downlink.MessageId,
                     downlink.MessageReference,
@@ -142,7 +143,7 @@ public class DownlinkReceivedNotificationHandler(
         }
         else // Scenario 5: Aircraft initiates a new dialogue
         {
-            var dialogue = new Dialogue(downlink.Sender);
+            var dialogue = new Dialogue(downlink.Sender, notification.StationId);
             dialogue.AddDownlink(
                 downlink.MessageId,
                 downlink.MessageReference,

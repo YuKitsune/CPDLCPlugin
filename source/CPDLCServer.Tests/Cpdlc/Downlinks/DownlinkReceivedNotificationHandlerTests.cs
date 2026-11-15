@@ -392,7 +392,7 @@ public class DownlinkReceivedNotificationHandlerTests
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
 
         // Create existing dialogue with an uplink
-        var existingDialogue = new Dialogue("UAL123");
+        var existingDialogue = new Dialogue("UAL123", "YBBB");
         existingDialogue.AddUplink(
             5,
             null,
@@ -497,7 +497,7 @@ public class DownlinkReceivedNotificationHandlerTests
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();
 
         // Prior session: uplink ID=5 was sent and fully replied to (dialogue is now closed)
-        var priorDialogue = new Dialogue("UAL123");
+        var priorDialogue = new Dialogue("UAL123", "YBBB");
         priorDialogue.AddUplink(
             5, null, "UAL123", "YBBB",
             CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB FL410",

@@ -16,7 +16,7 @@ public class ArchiveDialogueCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
             CpdlcUplinkResponseType.NoResponse,
@@ -43,7 +43,7 @@ public class ArchiveDialogueCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
             CpdlcUplinkResponseType.WilcoUnable,
@@ -78,7 +78,7 @@ public class ArchiveDialogueCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
             CpdlcUplinkResponseType.WilcoUnable,
@@ -107,7 +107,7 @@ public class ArchiveDialogueCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
             CpdlcUplinkResponseType.NoResponse,

@@ -30,7 +30,7 @@ public class ReplyToDownlinkCommandHandlerTests
         aircraft.AcceptLogon(clock.UtcNow());
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(
             7,
             null,
@@ -42,7 +42,7 @@ public class ReplyToDownlinkCommandHandlerTests
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new ReplyToDownlinkCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         var command = new ReplyToDownlinkCommand("BN-TSN_FSS", dialogue.Id, 7, CpdlcUplinkResponseType.WilcoUnable, "DESCEND FL350");
 
@@ -77,12 +77,12 @@ public class ReplyToDownlinkCommandHandlerTests
         aircraft.AcceptLogon(clock.UtcNow());
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(7, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST DESCENT FL350", clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new ReplyToDownlinkCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         // Act
         await handler.Handle(
@@ -115,16 +115,16 @@ public class ReplyToDownlinkCommandHandlerTests
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
 
         // Both dialogues have a downlink with MessageId=1 (aircraft re-used the same ID)
-        var dialogueA = new Dialogue("UAL123");
+        var dialogueA = new Dialogue("UAL123", "YBBB");
         dialogueA.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST CLIMB FL350", clock.UtcNow());
         await dialogueRepository.Add(dialogueA, CancellationToken.None);
 
-        var dialogueB = new Dialogue("UAL123");
+        var dialogueB = new Dialogue("UAL123", "YBBB");
         dialogueB.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST DESCENT FL250", clock.UtcNow());
         await dialogueRepository.Add(dialogueB, CancellationToken.None);
 
         var handler = new ReplyToDownlinkCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         // Controller explicitly replies to dialogueA
         await handler.Handle(
@@ -152,12 +152,12 @@ public class ReplyToDownlinkCommandHandlerTests
         aircraft.AcceptLogon(clock.UtcNow());
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(7, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST DESCENT FL350", clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new ReplyToDownlinkCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         // Act
         await handler.Handle(
@@ -188,12 +188,12 @@ public class ReplyToDownlinkCommandHandlerTests
         aircraft.AcceptLogon(clock.UtcNow());
         await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(7, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST DESCENT FL350", clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new ReplyToDownlinkCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         // Act
         await handler.Handle(
@@ -218,7 +218,7 @@ public class ReplyToDownlinkCommandHandlerTests
         var aircraftRepository = new TestAircraftRepository();
 
         var handler = new ReplyToDownlinkCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() =>
@@ -239,12 +239,12 @@ public class ReplyToDownlinkCommandHandlerTests
         var aircraftRepository = new TestAircraftRepository();
 
         // Dialogue exists but aircraft is not in the repository
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST DESCENT", clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new ReplyToDownlinkCommandHandler(
-            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUnitOfWork(), Logger.None);
+            aircraftRepository, acarsConnectionManager, messageIdProvider, dialogueRepository, mediator, clock, new TestUplinkTransmitter(), Logger.None);
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() =>

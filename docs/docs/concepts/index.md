@@ -42,6 +42,17 @@ Connections can be initiated by:
 
 In both cases, the server automatically accepts valid logon requests.
 
+### Connection Reset
+
+If an aircraft that is already connected sends `REQUEST LOGON` again, the new logon replaces the existing connection.
+Hoppie's network identifies an aircraft only by its callsign, so the new logon can be from a different pilot with the same callsign.
+
+When the server resets a connection:
+
+- It closes all open dialogues of the previous connection, and adds the message `CPDLC CONNECTION RESET` to each dialogue
+- The aircraft connects as Next Data Authority (NDA) again
+- It cancels the ADS-C contract of the previous connection, then requests a new contract
+
 ## Data Authority
 
 Data authority determines which ground station is responsible for communicating with an aircraft.
@@ -241,9 +252,12 @@ Controllers use ADS-C to see aircraft that are outside radar coverage, such as a
 The aircraft sends reports automatically. The pilot does not have to do anything.
 Each report has the position, the altitude, and the time of the report.
 
-:::note
-ADS-C and CPDLC are separate systems. An aircraft can have an ADS-C contract with a ground station without a CPDLC connection.
-For convenience, this plugin connects ADS-C to CPDLC. The server requests an ADS-C contract when an aircraft logs on with CPDLC, and cancels the contract when the CPDLC connection ends.
+:::note[VATSIM accommodation]
+ADS-C and CPDLC are separate systems. In real operations, an aircraft can have an ADS-C contract with a ground station without a CPDLC connection.
+The aircraft makes ADS-C contracts after an AFN logon, and an ATSU usually keeps its ADS-C contract after it transfers the CPDLC connection to the next ATSU, until the aircraft is clear of its airspace.
+
+Hoppie's network has no AFN logon, so the CPDLC connection is the only signal that an aircraft is online.
+Thus this plugin connects ADS-C to CPDLC. The server requests an ADS-C contract when an aircraft logs on with CPDLC, and cancels the contract when the CPDLC connection ends or is reset.
 :::
 
 ### Contracts

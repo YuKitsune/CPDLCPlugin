@@ -20,14 +20,18 @@ public class Dialogue
 {
     readonly List<CpdlcMessage> _messages = [];
 
-    public Dialogue(string aircraftCallsign)
+    public Dialogue(string aircraftCallsign, string stationId)
     {
         AircraftCallsign = aircraftCallsign;
+        StationId = stationId;
     }
 
     public Guid Id { get; } = Guid.NewGuid();
 
     public string AircraftCallsign { get; }
+
+    // The ATSU of the dialogue
+    public string StationId { get; }
     public IReadOnlyList<CpdlcMessage> Messages => _messages.AsReadOnly();
     public DateTimeOffset Opened { get; private set; }
     public DateTimeOffset? Closed { get; private set; }
@@ -129,6 +133,24 @@ public class Dialogue
         TryClose(now);
     }
 
+    // Adds an error message from the aircraft, then closes all open messages, because no response can arrive.
+    // The error message refers to the first open message.
+    public void AbortWithError(int messageId, string content, DateTimeOffset now)
+    {
+        var openMessage = _messages.FirstOrDefault(m => !m.IsClosed);
+
+        AddDownlink(
+            messageId,
+            openMessage?.MessageId,
+            AircraftCallsign,
+            CpdlcDownlinkResponseType.NoResponse,
+            AlertType.Medium,
+            content,
+            now);
+
+        Abort(now);
+    }
+
     public void AcknowledgeDownlink(int downlinkMessageId, DateTimeOffset now)
     {
         var downlink = _messages.OfType<DownlinkMessage>()
@@ -140,6 +162,17 @@ public class Dialogue
         Log.Debug("[Dialogue {DialogueId}] Acknowledging downlink {DownlinkId} (IsClosed: {IsClosed}, Content: {Content})",
             Id, downlinkMessageId, downlink.IsClosed, downlink.Content);
         downlink.Acknowledge(now);
+    }
+
+    public void MarkTransmissionFailed(int uplinkMessageId)
+    {
+        var uplink = _messages.OfType<UplinkMessage>()
+            .FirstOrDefault(ul => ul.MessageId == uplinkMessageId);
+
+        if (uplink is null)
+            throw new InvalidOperationException($"Uplink message {uplinkMessageId} not found in dialogue");
+
+        uplink.DidTransmissionFail = true;
     }
 
     void ProcessMessage(CpdlcMessage message)

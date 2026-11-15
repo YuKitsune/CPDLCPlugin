@@ -40,12 +40,6 @@ public class TestAdscReportRepository : IAdscReportRepository
         return Task.CompletedTask;
     }
 
-    public Task RemoveOlderThan(DateTimeOffset cutoff, CancellationToken cancellationToken)
-    {
-        _reports.RemoveAll(r => r.Received < cutoff);
-        return Task.CompletedTask;
-    }
-
     static AircraftAdscReport SelectLatest(IEnumerable<AircraftAdscReport> reports)
     {
         return reports

@@ -2,7 +2,6 @@ using CPDLCServer.AcarsConnections;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Infrastructure;
-using CPDLCServer.Persistence;
 using MediatR;
 
 namespace CPDLCServer.Cpdlc.Uplinks;
@@ -14,7 +13,7 @@ public class BeginDialogueCommandHandler(
     IDialogueRepository dialogueRepository,
     IMediator mediator,
     IClock clock,
-    IUnitOfWork unitOfWork,
+    IUplinkTransmitter uplinkTransmitter,
     ILogger logger)
     : IRequestHandler<BeginDialogueCommand>
 {
@@ -37,7 +36,7 @@ public class BeginDialogueCommandHandler(
             request.Recipient,
             cancellationToken);
 
-        var dialogue = new Dialogue(request.Recipient);
+        var dialogue = new Dialogue(request.Recipient, aircraftConnection.StationId);
         var uplinkMessage = dialogue.AddUplink(
             messageId,
             null,
@@ -54,10 +53,6 @@ public class BeginDialogueCommandHandler(
 
         await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
 
-        unitOfWork.AfterCommit(async ct =>
-        {
-            await acarsConnection.Send(uplinkMessage, ct);
-            logger.Information("Sent CPDLC message from {Sender} to {Recipient}", request.Sender, request.Recipient);
-        });
+        uplinkTransmitter.TransmitAfterCommit(acarsConnection, uplinkMessage);
     }
 }

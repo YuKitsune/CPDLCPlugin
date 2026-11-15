@@ -70,10 +70,33 @@
 
     <div class="card mt-3">
         <div class="card-header">
+            <h5 class="mb-0">Dialogues</h5>
+        </div>
+        <div class="card-body">
+            <div class="row py-2">
+                <div class="col-md-5">
+                    <label asp-for="Settings.DialogueRetentionHours" class="form-label fw-semibold">Dialogue retention</label>
+                    <div class="form-text">The time from when a dialogue opens until the server deletes it. The server keeps the dialogues after the aircraft disconnects.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Settings.DialogueRetentionHours" class="form-control" min="1" />
+                        <span class="input-group-text">hours</span>
+                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_DialogueRetentionHours" data-default-value="@Model.Defaults.DialogueRetentionHours">Reset</button>
+                    </div>
+                    <span asp-validation-for="Settings.DialogueRetentionHours" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.DialogueRetentionHours hours</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
             <h5 class="mb-0">ADS-C</h5>
         </div>
         <div class="card-body">
-            <div class="row py-2 border-bottom">
+            <div class="row py-2">
                 <div class="col-md-5">
                     <label asp-for="Settings.AdscContractTimeoutMinutes" class="form-label fw-semibold">ADS-C contract timeout</label>
                     <div class="form-text">The time without ADS-C activity from an aircraft before the server cancels the ADS-C contract.</div>
@@ -87,22 +110,6 @@
                     <span asp-validation-for="Settings.AdscContractTimeoutMinutes" class="text-danger small"></span>
                 </div>
                 <div class="col-md-2 form-text">Default: @Model.Defaults.AdscContractTimeoutMinutes minutes</div>
-            </div>
-
-            <div class="row py-2">
-                <div class="col-md-5">
-                    <label asp-for="Settings.AdscReportRetentionHours" class="form-label fw-semibold">ADS-C report retention</label>
-                    <div class="form-text">The time that the server keeps the history of ADS-C reports.</div>
-                </div>
-                <div class="col-md-5">
-                    <div class="input-group">
-                        <input asp-for="Settings.AdscReportRetentionHours" class="form-control" min="1" />
-                        <span class="input-group-text">hours</span>
-                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_AdscReportRetentionHours" data-default-value="@Model.Defaults.AdscReportRetentionHours">Reset</button>
-                    </div>
-                    <span asp-validation-for="Settings.AdscReportRetentionHours" class="text-danger small"></span>
-                </div>
-                <div class="col-md-2 form-text">Default: @Model.Defaults.AdscReportRetentionHours hours</div>
             </div>
         </div>
     </div>

@@ -25,7 +25,8 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     EncryptedAuthenticationCode = table.Column<string>(type: "text", nullable: false),
                     DefaultAdscReportingInterval = table.Column<int>(type: "integer", nullable: false),
                     SelectedAdscContractDuration = table.Column<int>(type: "integer", nullable: false),
-                    Notes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true)
+                    Notes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    Version = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -50,7 +51,8 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     DemandContractState = table.Column<string>(type: "text", nullable: true),
                     LastActivity = table.Column<long>(type: "bigint", nullable: false),
                     LastReportReceived = table.Column<long>(type: "bigint", nullable: true),
-                    ReportingSource = table.Column<string>(type: "text", nullable: true)
+                    ReportingSource = table.Column<string>(type: "text", nullable: true),
+                    Version = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -66,6 +68,7 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     Callsign = table.Column<string>(type: "text", nullable: false),
                     StationId = table.Column<string>(type: "text", nullable: false),
                     Received = table.Column<long>(type: "bigint", nullable: false),
+                    Version = table.Column<int>(type: "integer", nullable: false),
                     Altitude = table.Column<int>(type: "integer", nullable: false),
                     Latitude = table.Column<double>(type: "double precision", nullable: false),
                     Longitude = table.Column<double>(type: "double precision", nullable: false),
@@ -93,7 +96,8 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     LastSeen = table.Column<long>(type: "bigint", nullable: false),
                     NextDataAuthority = table.Column<string>(type: "text", nullable: true),
                     ExpectedTransferTime = table.Column<long>(type: "bigint", nullable: true),
-                    DidSentNextDataAuthorityMessage = table.Column<bool>(type: "boolean", nullable: false)
+                    DidSentNextDataAuthorityMessage = table.Column<bool>(type: "boolean", nullable: false),
+                    Version = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -106,9 +110,11 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     AircraftCallsign = table.Column<string>(type: "text", nullable: false),
+                    StationId = table.Column<string>(type: "text", nullable: false),
                     Opened = table.Column<long>(type: "bigint", nullable: false),
                     Closed = table.Column<long>(type: "bigint", nullable: true),
-                    Archived = table.Column<long>(type: "bigint", nullable: true)
+                    Archived = table.Column<long>(type: "bigint", nullable: true),
+                    Version = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -121,7 +127,8 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 {
                     AcarsConnectionId = table.Column<string>(type: "text", nullable: false),
                     Callsign = table.Column<string>(type: "text", nullable: false),
-                    LastMessageId = table.Column<int>(type: "integer", nullable: false)
+                    LastMessageId = table.Column<int>(type: "integer", nullable: false),
+                    Version = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -137,13 +144,14 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     ConnectivityCheckIntervalMinutes = table.Column<int>(type: "integer", nullable: false),
                     AircraftConnectionTimeoutMinutes = table.Column<int>(type: "integer", nullable: false),
                     AdscContractTimeoutMinutes = table.Column<int>(type: "integer", nullable: false),
-                    AdscReportRetentionHours = table.Column<int>(type: "integer", nullable: false),
+                    DialogueRetentionHours = table.Column<int>(type: "integer", nullable: false),
                     HandoffNotificationLeadTimeMinutes = table.Column<int>(type: "integer", nullable: false),
                     VatsimStatusEnabled = table.Column<bool>(type: "boolean", nullable: false),
                     VatsimStatusUrl = table.Column<string>(type: "text", nullable: false),
                     VatsimStatusPollingIntervalSeconds = table.Column<int>(type: "integer", nullable: false),
                     VatsimStatusAllowNonEquippedAircraft = table.Column<bool>(type: "boolean", nullable: false),
-                    VatsimStatusReportDelayMinutes = table.Column<int>(type: "integer", nullable: false)
+                    VatsimStatusReportDelayMinutes = table.Column<int>(type: "integer", nullable: false),
+                    Version = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -157,7 +165,8 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     Username = table.Column<string>(type: "text", nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
-                    Created = table.Column<long>(type: "bigint", nullable: false)
+                    Created = table.Column<long>(type: "bigint", nullable: false),
+                    Version = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -211,7 +220,8 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
             migrationBuilder.CreateIndex(
                 name: "IX_AdscContracts_Callsign_StationId",
                 table: "AdscContracts",
-                columns: new[] { "Callsign", "StationId" });
+                columns: new[] { "Callsign", "StationId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AdscReports_Callsign_StationId",
@@ -220,14 +230,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_AdscReports_Received",
-                table: "AdscReports",
-                column: "Received");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_AircraftConnections_Callsign_AcarsConnectionId",
                 table: "AircraftConnections",
-                columns: new[] { "Callsign", "AcarsConnectionId" });
+                columns: new[] { "Callsign", "AcarsConnectionId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_CpdlcMessages_DialogueId",
@@ -235,9 +241,14 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 column: "DialogueId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Dialogues_AircraftCallsign",
+                name: "IX_Dialogues_AircraftCallsign_StationId",
                 table: "Dialogues",
-                column: "AircraftCallsign");
+                columns: new[] { "AircraftCallsign", "StationId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Dialogues_Opened",
+                table: "Dialogues",
+                column: "Opened");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Username",

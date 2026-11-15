@@ -15,11 +15,13 @@ public class TestDialogueRepository : IDialogueRepository
 
     public Task<Dialogue?> FindOpenDialogueByUplink(
         string aircraftCallsign,
+        string stationId,
         int uplinkMessageId,
         CancellationToken cancellationToken)
     {
         var dialogue = _dialogues.FirstOrDefault(d =>
             d.AircraftCallsign == aircraftCallsign &&
+            d.StationId == stationId &&
             !d.IsClosed &&
             d.Messages.OfType<UplinkMessage>().Any(m => m.MessageId == uplinkMessageId));
 
@@ -41,9 +43,16 @@ public class TestDialogueRepository : IDialogueRepository
         return Task.FromResult(_dialogues.Where(d => d.IsClosed && !d.IsArchived).ToArray());
     }
 
-    public Task<Dialogue[]> FindOpenedBefore(DateTimeOffset cutoff, CancellationToken cancellationToken)
+    public Task<Dialogue[]> FindOpenForAircraft(string aircraftCallsign, string stationId, CancellationToken cancellationToken)
     {
-        return Task.FromResult(_dialogues.Where(d => d.Opened < cutoff).ToArray());
+        return Task.FromResult(_dialogues
+            .Where(d => d.AircraftCallsign == aircraftCallsign && d.StationId == stationId && !d.IsClosed && !d.IsArchived)
+            .ToArray());
+    }
+
+    public Task<int> RemoveOpenedBefore(DateTimeOffset cutoff, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(_dialogues.RemoveAll(d => d.Opened < cutoff));
     }
 
     public Task<Dialogue[]> All(CancellationToken cancellationToken)

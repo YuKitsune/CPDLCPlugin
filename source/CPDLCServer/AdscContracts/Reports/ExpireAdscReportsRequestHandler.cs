@@ -23,11 +23,13 @@ public class ExpireAdscReportsRequestHandler(
         var reports = await adscReportRepository.All(cancellationToken);
         var now = clock.UtcNow();
 
+        // Load all of the contracts in one query, not one query for each report
+        var contracts = await adscContractRepository.All(cancellationToken);
+        var contractsByKey = contracts.ToDictionary(c => new AdscContractKey(c.Callsign, c.StationId));
+
         foreach (var report in reports)
         {
-            var contract = await adscContractRepository.Find(
-                new AdscContractKey(report.Callsign, report.StationId),
-                cancellationToken);
+            var contract = contractsByKey.GetValueOrDefault(new AdscContractKey(report.Callsign, report.StationId));
 
             if (contract?.LastReportReceived is not null && now - contract.LastReportReceived.Value <= contract.ReportExpiry)
                 continue;

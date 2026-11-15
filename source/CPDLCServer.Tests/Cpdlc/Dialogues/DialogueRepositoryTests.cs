@@ -14,7 +14,7 @@ public class DialogueRepositoryTests
     {
         // Arrange
         using var database = new TestDatabase();
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(7, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST DESCENT FL350", Start);
         dialogue.AddUplink(1, 7, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "DESCEND TO FL350", Start.AddMinutes(1));
         dialogue.AddDownlink(8, 1, "UAL123", CpdlcDownlinkResponseType.NoResponse, AlertType.None, "WILCO", Start.AddMinutes(2));
@@ -55,7 +55,7 @@ public class DialogueRepositoryTests
     {
         // Arrange
         using var database = new TestDatabase();
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
 
         await using (var dbContext = database.CreateDbContext())
@@ -88,12 +88,12 @@ public class DialogueRepositoryTests
         await using var dbContext = database.CreateDbContext();
         var repository = new DialogueRepository(dbContext);
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
         await repository.Add(dialogue, CancellationToken.None);
 
         // Act
-        var result = await repository.FindOpenDialogueByUplink("UAL123", 1, CancellationToken.None);
+        var result = await repository.FindOpenDialogueByUplink("UAL123", "YBBB", 1, CancellationToken.None);
 
         // Assert
         Assert.Same(dialogue, result);
@@ -136,7 +136,46 @@ public class DialogueRepositoryTests
     }
 
     [Fact]
-    public async Task FindOpenedBefore_ReturnsOnlyOlderDialogues()
+    public async Task FindOpenDialogueByUplink_DoesNotFindDialogueWithDifferentStation()
+    {
+        // Arrange
+        using var database = new TestDatabase();
+        await using var dbContext = database.CreateDbContext();
+        var repository = new DialogueRepository(dbContext);
+
+        var dialogue = new Dialogue("UAL123", "YMMM");
+        dialogue.AddUplink(1, null, "UAL123", "ML-IND_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
+        await repository.Add(dialogue, CancellationToken.None);
+
+        // Act
+        var result = await repository.FindOpenDialogueByUplink("UAL123", "YBBB", 1, CancellationToken.None);
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task FindOpenForAircraft_ReturnsOnlyOpenDialoguesOfAircraftAndStation()
+    {
+        // Arrange
+        using var database = new TestDatabase();
+        var open = CreateOpenDialogue("UAL123", Start);
+        var closed = CreateClosedDialogue("UAL123", Start);
+        var otherAircraft = CreateOpenDialogue("QFA1", Start);
+        var otherStation = new Dialogue("UAL123", "YMMM");
+        otherStation.AddUplink(1, null, "UAL123", "ML-IND_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
+        await AddAndSave(database, open, closed, otherAircraft, otherStation);
+
+        // Act
+        await using var dbContext = database.CreateDbContext();
+        var result = await new DialogueRepository(dbContext).FindOpenForAircraft("UAL123", "YBBB", CancellationToken.None);
+
+        // Assert
+        Assert.Equal([open.Id], result.Select(d => d.Id));
+    }
+
+    [Fact]
+    public async Task RemoveOpenedBefore_DeletesOnlyOlderDialoguesAndTheirMessages()
     {
         // Arrange
         using var database = new TestDatabase();
@@ -145,11 +184,18 @@ public class DialogueRepositoryTests
         await AddAndSave(database, older, newer);
 
         // Act
-        await using var dbContext = database.CreateDbContext();
-        var result = await new DialogueRepository(dbContext).FindOpenedBefore(Start.AddHours(1), CancellationToken.None);
+        int removedCount;
+        await using (var dbContext = database.CreateDbContext())
+        {
+            removedCount = await new DialogueRepository(dbContext).RemoveOpenedBefore(Start.AddHours(1), CancellationToken.None);
+            await dbContext.SaveChangesAsync();
+        }
 
-        // Assert
-        Assert.Equal([older.Id], result.Select(d => d.Id));
+        // Assert - the messages of the removed dialogue are deleted by the database
+        Assert.Equal(1, removedCount);
+        await using var readDbContext = database.CreateDbContext();
+        Assert.Equal([newer.Id], (await new DialogueRepository(readDbContext).All(CancellationToken.None)).Select(d => d.Id));
+        Assert.All(readDbContext.Set<CpdlcMessage>(), m => Assert.Equal(newer.Id, m.DialogueId));
     }
 
     [Fact]
@@ -157,7 +203,7 @@ public class DialogueRepositoryTests
     {
         // Arrange
         using var database = new TestDatabase();
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
 
         await using (var dbContext = database.CreateDbContext())
@@ -194,14 +240,14 @@ public class DialogueRepositoryTests
 
     static Dialogue CreateOpenDialogue(string callsign, DateTimeOffset time)
     {
-        var dialogue = new Dialogue(callsign);
+        var dialogue = new Dialogue(callsign, "YBBB");
         dialogue.AddUplink(1, null, callsign, "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", time);
         return dialogue;
     }
 
     static Dialogue CreateClosedDialogue(string callsign, DateTimeOffset time)
     {
-        var dialogue = new Dialogue(callsign);
+        var dialogue = new Dialogue(callsign, "YBBB");
         dialogue.AddUplink(1, null, callsign, "BN-TSN_FSS", CpdlcUplinkResponseType.NoResponse, AlertType.None, "MONITOR BRISBANE CENTRE 128.6", time);
         return dialogue;
     }

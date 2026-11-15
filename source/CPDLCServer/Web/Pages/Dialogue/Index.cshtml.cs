@@ -34,9 +34,9 @@ public class IndexModel : PageModel
         }
 
         var aircraft = await _aircraftRepository.All(cancellationToken);
-        var match = aircraft.FirstOrDefault(a => a.Callsign == Dialogue.AircraftCallsign);
+        var match = aircraft.FirstOrDefault(a => a.Callsign == Dialogue.AircraftCallsign && a.StationId == Dialogue.StationId);
         AcarsNetwork = match?.AcarsConnectionId ?? "Unknown";
-        StationId = match?.StationId ?? "Unknown";
+        StationId = Dialogue.StationId;
 
         var aircraftLookup = aircraft.ToDictionary(a => a.Callsign, a => a);
 

@@ -1,4 +1,5 @@
 using CPDLCServer.Cpdlc.Dialogues;
+using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
 using MediatR;
 
@@ -7,6 +8,7 @@ namespace CPDLCServer.Cpdlc.Connections;
 public class TerminateConnectionHandler(
     IAircraftRepository aircraftRepository,
     IDialogueRepository dialogueRepository,
+    IMessageIdProvider messageIdProvider,
     IClock clock,
     IMediator mediator,
     ILogger logger)
@@ -28,10 +30,10 @@ public class TerminateConnectionHandler(
             return;
 
         // No response can arrive after the connection ends, so close the open dialogues
-        var allDialogues = await dialogueRepository.All(cancellationToken);
-        var openDialogues = allDialogues
-            .Where(d => d.AircraftCallsign == request.Callsign && !d.IsClosed && !d.IsArchived)
-            .ToArray();
+        var openDialogues = await dialogueRepository.FindOpenForAircraft(
+            request.Callsign,
+            aircraftConnection.StationId,
+            cancellationToken);
 
         foreach (var dialogue in openDialogues)
         {
@@ -43,6 +45,8 @@ public class TerminateConnectionHandler(
                 dialogue.Id,
                 request.Callsign);
         }
+
+        await messageIdProvider.Remove(request.AcarsConnectionId, request.Callsign, cancellationToken);
 
         await mediator.Publish(
             new AircraftConnectionTerminated(

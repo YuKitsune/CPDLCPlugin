@@ -11,7 +11,7 @@ public class DialogueTests
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
 
         // Act
         var downlink = dialogue.AddDownlink(
@@ -33,7 +33,7 @@ public class DialogueTests
     {
         // Arrange
         var time = new DateTimeOffset(2025, 1, 15, 10, 30, 0, TimeSpan.Zero);
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
 
         // Act
         dialogue.AddDownlink(
@@ -53,7 +53,7 @@ public class DialogueTests
     public void Constructor_SetsCallsignFromParameter()
     {
         // Arrange
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
 
         // Act
         dialogue.AddDownlink(
@@ -74,7 +74,7 @@ public class DialogueTests
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var downlink = dialogue.AddDownlink(
             1,
             null,
@@ -105,7 +105,7 @@ public class DialogueTests
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var uplink = dialogue.AddUplink(
             1,
             null,
@@ -136,7 +136,7 @@ public class DialogueTests
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var uplink = dialogue.AddUplink(
             1,
             null,
@@ -166,7 +166,7 @@ public class DialogueTests
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var downlink = dialogue.AddDownlink(
             1,
             null,
@@ -197,7 +197,7 @@ public class DialogueTests
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var downlink = dialogue.AddDownlink(
             1,
             null,
@@ -228,7 +228,7 @@ public class DialogueTests
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(
             1,
             null,
@@ -259,7 +259,7 @@ public class DialogueTests
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var downlink = dialogue.AddDownlink(
             1,
             null,
@@ -291,7 +291,7 @@ public class DialogueTests
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
 
         // Act
         var downlink = dialogue.AddDownlink(
@@ -315,7 +315,7 @@ public class DialogueTests
         // Arrange - Simulate a realistic CPDLC exchange
         var time = DateTimeOffset.UtcNow;
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
 
         // Pilot requests climb
         var downlink1 = dialogue.AddDownlink(
@@ -380,7 +380,7 @@ public class DialogueTests
         // Arrange
         var time = DateTimeOffset.UtcNow;
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
 
         // Pilot sends logon request
         var logonRequest = dialogue.AddDownlink(
@@ -420,7 +420,7 @@ public class DialogueTests
     {
         // Arrange
         var time = new DateTimeOffset(2025, 1, 15, 10, 30, 0, TimeSpan.Zero);
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST CLIMB FL410", time);
         dialogue.AddDownlink(3, null, "UAL123", CpdlcDownlinkResponseType.NoResponse, AlertType.None, "FREE TEXT", time.AddMinutes(2));
 
@@ -437,7 +437,7 @@ public class DialogueTests
     {
         // Arrange - the reply has an earlier time than the request, for example because of a clock difference
         var time = new DateTimeOffset(2025, 1, 15, 10, 30, 0, TimeSpan.Zero);
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(7, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST CLIMB FL410", time);
 
         // Act

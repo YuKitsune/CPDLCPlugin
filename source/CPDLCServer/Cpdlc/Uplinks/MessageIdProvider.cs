@@ -8,6 +8,12 @@ public interface IMessageIdProvider
         string acarsConnectionId,
         string callsign,
         CancellationToken cancellationToken);
+
+    // Removes the message IDs of an aircraft when its connection ends. The next connection starts at the first ID.
+    Task Remove(
+        string acarsConnectionId,
+        string callsign,
+        CancellationToken cancellationToken);
 }
 
 // The last message ID is saved with the unit of work, so that the IDs continue after a restart
@@ -26,5 +32,15 @@ public class MessageIdProvider(CpdlcDbContext dbContext) : IMessageIdProvider
         }
 
         return sequence.Next();
+    }
+
+    public async Task Remove(
+        string acarsConnectionId,
+        string callsign,
+        CancellationToken cancellationToken)
+    {
+        var sequence = await dbContext.MessageIdSequences.FindAsync([acarsConnectionId, callsign], cancellationToken);
+        if (sequence is not null)
+            dbContext.MessageIdSequences.Remove(sequence);
     }
 }

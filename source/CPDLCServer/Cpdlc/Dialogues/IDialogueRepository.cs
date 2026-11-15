@@ -8,6 +8,7 @@ public interface IDialogueRepository
 
     Task<Dialogue?> FindOpenDialogueByUplink(
         string aircraftCallsign,
+        string stationId,
         int uplinkMessageId,
         CancellationToken cancellationToken);
 
@@ -17,7 +18,11 @@ public interface IDialogueRepository
 
     Task<Dialogue[]> FindClosedAndNotArchived(CancellationToken cancellationToken);
 
-    Task<Dialogue[]> FindOpenedBefore(DateTimeOffset cutoff, CancellationToken cancellationToken);
+    // The open dialogues of an aircraft with an ATSU
+    Task<Dialogue[]> FindOpenForAircraft(string aircraftCallsign, string stationId, CancellationToken cancellationToken);
+
+    // Removes the dialogues that opened before the cutoff, and returns the number of dialogues that were removed
+    Task<int> RemoveOpenedBefore(DateTimeOffset cutoff, CancellationToken cancellationToken);
 
     Task<Dialogue[]> All(CancellationToken cancellationToken);
 

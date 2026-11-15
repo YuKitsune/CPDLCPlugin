@@ -95,31 +95,6 @@ public class AdscReportRepositoryTests
     }
 
     [Fact]
-    public async Task RemoveOlderThan_RemovesOnlyOlderReports()
-    {
-        // Arrange
-        using var database = new TestDatabase();
-        var older = CreateReport("UAL123", "YBBB", 0);
-        var atCutoff = CreateReport("QFA1", "YBBB", 5);
-        var newer = CreateReport("VOZ1", "YBBB", 10);
-        await AddAndSave(database, older, atCutoff, newer);
-
-        // Act
-        await using (var dbContext = database.CreateDbContext())
-        {
-            var repository = new AdscReportRepository(dbContext);
-            await repository.RemoveOlderThan(atCutoff.Received, CancellationToken.None);
-            await dbContext.SaveChangesAsync();
-        }
-
-        // Assert
-        var reports = await AllLatest(database);
-        Assert.Equal(2, reports.Length);
-        Assert.Contains(atCutoff, reports);
-        Assert.Contains(newer, reports);
-    }
-
-    [Fact]
     public async Task Find_ReturnsReportForContract()
     {
         // Arrange

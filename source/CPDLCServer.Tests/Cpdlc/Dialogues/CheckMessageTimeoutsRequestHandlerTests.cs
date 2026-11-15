@@ -20,7 +20,7 @@ public class CheckMessageTimeoutsRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         // Create an uplink that requires a response
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var uplink = dialogue.AddUplink(
             1,
             null,
@@ -56,7 +56,7 @@ public class CheckMessageTimeoutsRequestHandlerTests
         var startTime = DateTimeOffset.UtcNow;
         clock.SetUtcNow(startTime);
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var uplink = dialogue.AddUplink(
             1,
             null,
@@ -91,7 +91,7 @@ public class CheckMessageTimeoutsRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         // Create an uplink that doesn't require a response
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var uplink = dialogue.AddUplink(
             1,
             null,
@@ -126,7 +126,7 @@ public class CheckMessageTimeoutsRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         // Create a downlink that requires a response
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var downlink = dialogue.AddDownlink(
             1,
             null,
@@ -161,7 +161,7 @@ public class CheckMessageTimeoutsRequestHandlerTests
         var startTime = DateTimeOffset.UtcNow;
         clock.SetUtcNow(startTime);
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var uplink = dialogue.AddUplink(
             1,
             null,
@@ -200,7 +200,7 @@ public class CheckMessageTimeoutsRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         // Create a self-closing uplink (NoResponse)
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -235,10 +235,10 @@ public class CheckMessageTimeoutsRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         // Create multiple dialogues with different aircraft
-        var dialogue1 = new Dialogue("UAL123");
+        var dialogue1 = new Dialogue("UAL123", "YBBB");
         var uplink1 = dialogue1.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB", startTime);
 
-        var dialogue2 = new Dialogue("DAL456");
+        var dialogue2 = new Dialogue("DAL456", "YBBB");
         var uplink2 = dialogue2.AddUplink(2, null, "DAL456", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "DESCEND", startTime);
 
         await repository.Add(dialogue1, CancellationToken.None);

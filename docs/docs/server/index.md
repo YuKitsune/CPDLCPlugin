@@ -88,7 +88,15 @@ The server can use SQLite or PostgreSQL (`DatabaseProvider`):
 
 The server applies the migrations when it starts. With SQLite, it also makes the database file.
 
-The server deletes dialogues 24 hours after they open. It deletes ADS-C reports after the configured ADS-C report retention period. These periods start when the dialogue opens or the report is received, not when the server starts. Thus, after a restart, the server immediately deletes the data that is older than the period.
+The server deletes a dialogue when the dialogue retention period ends (default: 24 hours). The period starts when the dialogue opens, not when the server starts. Thus, after a restart, the server deletes the dialogues that are older than the period within a few minutes. The server keeps the dialogues after the aircraft disconnects.
+
+The server keeps only the latest ADS-C report for each contract. The report expires soon after the next periodic reports do not arrive (see [ADS-C](#ads-c)).
+
+When a CPDLC connection ends, the server deletes the CPDLC message IDs of the aircraft. The next connection starts again at the first message ID.
+
+### Concurrent Changes
+
+The server processes the requests from controllers, the ACARS connections and the background tasks at the same time. Each changed record has a version. If two requests change the same record at the same time, the second request fails and the server runs it again with the new data, up to three times.
 
 ### ACARS Connections
 
@@ -113,7 +121,11 @@ You can show only the entries at or above a level, pause the log, and clear the 
 
 ### ADS-C
 
-When an aircraft logs on with CPDLC, the server requests the default ADS-C contract with the aircraft. When the CPDLC connection ends, the server cancels the contract.
+When an aircraft logs on with CPDLC, the server requests the default ADS-C contract with the aircraft. When the CPDLC connection ends or is reset, the server cancels the contract.
+
+:::note[VATSIM accommodation]
+In real operations, ADS-C does not depend on CPDLC, and an ATSU usually keeps its ADS-C contract after a CPDLC transfer. Hoppie's network has no AFN logon, so the server uses the CPDLC connection as the signal that an aircraft is online.
+:::
 
 Each ATSU has its own default reporting interval, set on its ACARS connection. Controllers can read this value.
 

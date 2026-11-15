@@ -16,6 +16,7 @@ public static class CpdlcServiceCollectionExtensions
         services.AddHostedService<MessageMonitorService>();
 
         services.AddScoped<IMessageIdProvider, MessageIdProvider>();
+        services.AddScoped<IUplinkTransmitter, UplinkTransmitter>();
 
         return services;
     }

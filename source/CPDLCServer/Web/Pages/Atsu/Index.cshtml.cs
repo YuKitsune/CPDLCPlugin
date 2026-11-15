@@ -38,13 +38,10 @@ public class IndexModel : PageModel
         Controllers = controllers.Where(c => c.StationId == stationId).ToArray();
 
         var aircraftLookup = aircraft.ToDictionary(a => a.Callsign, a => a);
-        var aircraftAtStation = aircraft
-            .Where(a => a.StationId == stationId)
-            .Select(a => a.Callsign)
-            .ToHashSet();
 
+        // The dialogues stay after the aircraft disconnects, so find them by their own station
         Messages = dialogues
-            .Where(d => aircraftAtStation.Contains(d.AircraftCallsign))
+            .Where(d => d.StationId == stationId)
             .SelectMany(d => d.Messages.Select(m => MessageRowViewModel.From(d, m, aircraftLookup)))
             .OrderByDescending(m => m.Timestamp)
             .ToList();

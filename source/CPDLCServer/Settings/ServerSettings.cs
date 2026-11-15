@@ -17,7 +17,7 @@ public record ServerSettings
     public int AdscContractTimeoutMinutes { get; init; } = 120;
 
     [Range(1, int.MaxValue)]
-    public int AdscReportRetentionHours { get; init; } = 24;
+    public int DialogueRetentionHours { get; init; } = 24;
 
     [Range(0, int.MaxValue)]
     public int HandoffNotificationLeadTimeMinutes { get; init; } = 20;

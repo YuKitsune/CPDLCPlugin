@@ -27,6 +27,8 @@ public class AircraftConnectionConfiguration : IEntityTypeConfiguration<Aircraft
         builder.Property(c => c.ExpectedTransferTime);
         builder.Property(c => c.DidSentNextDataAuthorityMessage);
 
-        builder.HasIndex(c => new { c.Callsign, c.AcarsConnectionId });
+        // One connection for each aircraft on an ACARS connection.
+        // Two units of work that add the same connection at the same time cannot both commit.
+        builder.HasIndex(c => new { c.Callsign, c.AcarsConnectionId }).IsUnique();
     }
 }

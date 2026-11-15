@@ -4,12 +4,19 @@ using MediatR;
 
 namespace CPDLCServer.AdscContracts;
 
+// VATSIM accommodation: in real operations, ADS-C does not depend on CPDLC.
+// The aircraft makes ADS-C contracts after an AFN logon, and an ATSU usually keeps its contract after a CPDLC transfer,
+// until the aircraft is clear of its airspace.
+// Hoppie has no AFN logon, so the CPDLC connection is the only signal that an aircraft is online.
+// Thus the server cancels the ADS-C contract when the CPDLC connection ends, and when a new logon resets it.
 public class CancelAdscContractOnConnectionEndedHandler(
     IAcarsConnectionManager acarsConnectionManager,
     IAdscContractRepository adscContractRepository,
     IMediator mediator,
     ILogger logger)
-    : INotificationHandler<AircraftConnectionTerminated>, INotificationHandler<AircraftConnectionLost>
+    : INotificationHandler<AircraftConnectionTerminated>,
+        INotificationHandler<AircraftConnectionLost>,
+        INotificationHandler<AircraftConnectionReset>
 {
     public async Task Handle(AircraftConnectionTerminated notification, CancellationToken cancellationToken)
     {
@@ -20,6 +27,13 @@ public class CancelAdscContractOnConnectionEndedHandler(
     {
         var acarsConnection = await acarsConnectionManager.GetAcarsConnection(notification.AcarsConnectionId, cancellationToken);
         await CancelContract(notification.Callsign, acarsConnection.StationId, cancellationToken);
+    }
+
+    // The contract was made with the previous logon.
+    // Cancel it, so that the server requests a new contract for the new logon.
+    public async Task Handle(AircraftConnectionReset notification, CancellationToken cancellationToken)
+    {
+        await CancelContract(notification.Callsign, notification.StationId, cancellationToken);
     }
 
     async Task CancelContract(string callsign, string stationId, CancellationToken cancellationToken)

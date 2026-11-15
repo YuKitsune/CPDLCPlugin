@@ -38,7 +38,7 @@ public class LogonCommandHandlerTests
             messageIdProvider,
             clock,
             mediator,
-            new TestUnitOfWork(),
+            new TestUplinkTransmitter(),
             Logger.None);
 
     [Fact]
@@ -199,8 +199,28 @@ public class LogonCommandHandlerTests
         await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
     }
 
+    static async Task<AircraftConnection> AddExistingConnection(TestAircraftRepository aircraftRepository, TestClock clock)
+    {
+        var existing = new AircraftConnection("QFA1", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        existing.RequestLogon(clock.UtcNow());
+        existing.AcceptLogon(clock.UtcNow());
+        existing.SetNextDataAuthority("YMMM", clock.UtcNow().AddMinutes(30));
+        await aircraftRepository.Add(new("QFA1", "hoppies-ybbb"), existing, CancellationToken.None);
+        return existing;
+    }
+
+    static async Task AddController(TestControllerRepository controllerRepository)
+    {
+        var controller = new ControllerInfo(
+            Guid.NewGuid(),
+            "Connection-1",
+            "YBBB",
+            "BN-TSN_FSS");
+        await controllerRepository.Add(controller, CancellationToken.None);
+    }
+
     [Fact]
-    public async Task Handle_ExistingConnection_AcceptsLogon_AndDoesNotDuplicateConnection()
+    public async Task Handle_ExistingConnection_ReplacesConnection()
     {
         // Arrange
         var clock = new TestClock();
@@ -211,17 +231,45 @@ public class LogonCommandHandlerTests
         var messageIdProvider = new TestMessageIdProvider();
         var mediator = Substitute.For<IMediator>();
 
-        var controller = new ControllerInfo(
-            Guid.NewGuid(),
-            "Connection-1",
-            "YBBB",
-            "BN-TSN_FSS");
-        await controllerRepository.Add(controller, CancellationToken.None);
+        await AddController(controllerRepository);
+        var existing = await AddExistingConnection(aircraftRepository, clock);
 
-        var existing = new AircraftConnection("QFA1", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
-        existing.RequestLogon(clock.UtcNow());
-        existing.AcceptLogon(clock.UtcNow());
-        await aircraftRepository.Add(new("QFA1", "hoppies-ybbb"), existing, CancellationToken.None);
+        var command = BuildLogonCommand(clock);
+        var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
+
+        // Act
+        await handler.Handle(command, CancellationToken.None);
+
+        // Assert - the logon is accepted
+        var acarsConnection = (TestAcarsConnection)await acarsConnectionManager.GetAcarsConnection("hoppies-ybbb", CancellationToken.None);
+        Assert.Equal("LOGON ACCEPTED", Assert.Single(acarsConnection.SentMessages).Content);
+
+        // Assert - a new connection replaces the existing connection, and does not keep its state
+        var connection = Assert.Single(await aircraftRepository.All(CancellationToken.None));
+        Assert.NotSame(existing, connection);
+        Assert.Equal(DataAuthorityState.NextDataAuthority, connection.DataAuthorityState);
+        Assert.False(connection.HasNextDataAuthority);
+
+        // Assert - the new connection is established, so that a new ADS-C contract is requested
+        await mediator.Received(1).Publish(
+            new AircraftConnectionEstablished("hoppies-ybbb", "YBBB", "QFA1", DataAuthorityState.NextDataAuthority),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_ExistingConnection_PublishesReset()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var acarsConnectionManager = new TestAcarsConnectionManager();
+        var aircraftRepository = new TestAircraftRepository();
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var messageIdProvider = new TestMessageIdProvider();
+        var mediator = Substitute.For<IMediator>();
+
+        await AddController(controllerRepository);
+        await AddExistingConnection(aircraftRepository, clock);
 
         var command = BuildLogonCommand(clock);
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
@@ -230,13 +278,52 @@ public class LogonCommandHandlerTests
         await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        var acarsConnection = (TestAcarsConnection)await acarsConnectionManager.GetAcarsConnection("hoppies-ybbb", CancellationToken.None);
-        Assert.Single(acarsConnection.SentMessages);
-        Assert.Equal("LOGON ACCEPTED", acarsConnection.SentMessages[0].Content);
+        await mediator.Received(1).Publish(
+            new AircraftConnectionReset("hoppies-ybbb", "YBBB", "QFA1"),
+            Arg.Any<CancellationToken>());
+    }
 
-        var allTrackedAircraft = await aircraftRepository.All(CancellationToken.None);
-        Assert.Same(existing, Assert.Single(allTrackedAircraft));
-        Assert.Equal(DataAuthorityState.CurrentDataAuthority, existing.DataAuthorityState);
+    [Fact]
+    public async Task Handle_ExistingConnection_ClosesOpenDialoguesWithResetMessage()
+    {
+        // Arrange
+        var clock = new TestClock();
+        var acarsConnectionManager = new TestAcarsConnectionManager();
+        var aircraftRepository = new TestAircraftRepository();
+        var controllerRepository = new TestControllerRepository();
+        var dialogueRepository = new TestDialogueRepository();
+        var messageIdProvider = new TestMessageIdProvider();
+        messageIdProvider.SetNextId(10);
+        var mediator = Substitute.For<IMediator>();
+
+        await AddController(controllerRepository);
+        await AddExistingConnection(aircraftRepository, clock);
+
+        var openDialogue = new Dialogue("QFA1", "YBBB");
+        openDialogue.AddUplink(5, null, "QFA1", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", clock.UtcNow());
+        await dialogueRepository.Add(openDialogue, CancellationToken.None);
+
+        // A dialogue with a different ATSU is not part of the connection
+        var otherStationDialogue = new Dialogue("QFA1", "YMMM");
+        otherStationDialogue.AddUplink(6, null, "QFA1", "ML-IND_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL390", clock.UtcNow());
+        await dialogueRepository.Add(otherStationDialogue, CancellationToken.None);
+
+        var command = BuildLogonCommand(clock);
+        var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
+
+        // Act
+        await handler.Handle(command, CancellationToken.None);
+
+        // Assert - the open dialogue is closed with the reset message
+        Assert.True(openDialogue.IsClosed);
+        var resetMessage = Assert.IsType<DownlinkMessage>(openDialogue.Messages.Last());
+        Assert.Equal("CPDLC CONNECTION RESET", resetMessage.Content);
+        Assert.Equal(10, resetMessage.MessageId);
+        Assert.Equal(5, resetMessage.MessageReference);
+
+        // Assert - the dialogue with the other ATSU does not change
+        Assert.False(otherStationDialogue.IsClosed);
+        Assert.Single(otherStationDialogue.Messages);
     }
 
     [Fact]

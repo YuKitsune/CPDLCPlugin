@@ -29,6 +29,5 @@ public class AircraftAdscReportConfiguration : IEntityTypeConfiguration<Aircraft
         });
 
         builder.HasIndex(r => new { r.Callsign, r.StationId }).IsUnique();
-        builder.HasIndex(r => r.Received);
     }
 }

@@ -27,7 +27,7 @@ public class ServerSettingsProviderTests
         // Arrange
         using var database = new TestDatabase();
         await Seed(database);
-        await SaveAndCommit(database, new ServerSettings { AdscReportRetentionHours = 48 });
+        await SaveAndCommit(database, new ServerSettings { DialogueRetentionHours = 48 });
 
         // Act
         await Seed(database);
@@ -36,7 +36,7 @@ public class ServerSettingsProviderTests
         await using var dbContext = database.CreateDbContext();
         Assert.Equal(1, await dbContext.ServerSettings.CountAsync());
         var settings = await new ServerSettingsProvider(dbContext).Load(CancellationToken.None);
-        Assert.Equal(48, settings.AdscReportRetentionHours);
+        Assert.Equal(48, settings.DialogueRetentionHours);
     }
 
     [Fact]
@@ -72,14 +72,14 @@ public class ServerSettingsProviderTests
         await using (var dbContext = database.CreateDbContext())
         {
             await new ServerSettingsProvider(dbContext).Save(
-                new ServerSettings { AdscReportRetentionHours = 48 },
+                new ServerSettings { DialogueRetentionHours = 48 },
                 CancellationToken.None);
         }
 
         // Assert
         await using var otherDbContext = database.CreateDbContext();
         var settings = await new ServerSettingsProvider(otherDbContext).Load(CancellationToken.None);
-        Assert.Equal(new ServerSettings().AdscReportRetentionHours, settings.AdscReportRetentionHours);
+        Assert.Equal(new ServerSettings().DialogueRetentionHours, settings.DialogueRetentionHours);
     }
 
     [Fact]
@@ -92,10 +92,10 @@ public class ServerSettingsProviderTests
         var provider = new ServerSettingsProvider(dbContext);
 
         // Act
-        await provider.Save(new ServerSettings { AdscReportRetentionHours = 48 }, CancellationToken.None);
+        await provider.Save(new ServerSettings { DialogueRetentionHours = 48 }, CancellationToken.None);
 
         // Assert
-        Assert.Equal(48, (await provider.Load(CancellationToken.None)).AdscReportRetentionHours);
+        Assert.Equal(48, (await provider.Load(CancellationToken.None)).DialogueRetentionHours);
     }
 
     static async Task Seed(TestDatabase database)

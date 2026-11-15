@@ -31,7 +31,7 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a closed dialogue with END SERVICE
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -76,7 +76,7 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create an open dialogue with END SERVICE (requires response)
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -119,7 +119,7 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a closed dialogue WITHOUT END SERVICE
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -162,7 +162,7 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a dialogue with multiple messages including END SERVICE
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
 
         // Pilot request
         dialogue.AddDownlink(
@@ -225,7 +225,7 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a closed dialogue with END SERVICE
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -268,7 +268,7 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             Logger.None);
 
         // Create a closed dialogue with END SERVICE
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,

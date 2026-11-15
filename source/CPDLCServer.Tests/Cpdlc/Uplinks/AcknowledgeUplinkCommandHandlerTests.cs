@@ -16,7 +16,7 @@ public class AcknowledgeUplinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var uplink = dialogue.AddUplink(
             1,
             null,
@@ -57,7 +57,7 @@ public class AcknowledgeUplinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -95,7 +95,7 @@ public class AcknowledgeUplinkCommandHandlerTests
         var publisher = new TestPublisher();
 
         // Create an uplink that requires a response
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var uplink = dialogue.AddUplink(
             1,
             null,
@@ -135,7 +135,7 @@ public class AcknowledgeUplinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         var uplink1 = dialogue.AddUplink(
             1,
             null,
@@ -211,7 +211,7 @@ public class AcknowledgeUplinkCommandHandlerTests
         var clock = new TestClock();
         var publisher = new TestPublisher();
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -246,7 +246,7 @@ public class AcknowledgeUplinkCommandHandlerTests
         var publisher = new TestPublisher();
 
         // Create a dialogue with a downlink (not an uplink)
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(
             1,
             null,

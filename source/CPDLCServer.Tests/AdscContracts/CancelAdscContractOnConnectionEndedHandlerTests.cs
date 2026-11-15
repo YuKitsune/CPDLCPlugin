@@ -114,4 +114,27 @@ public class CancelAdscContractOnConnectionEndedHandlerTests
             new AircraftConnectionTerminated("hoppies-ybbb", "YBBB", "UAL123"),
             CancellationToken.None);
     }
+
+    [Fact]
+    public async Task Handle_ConnectionReset_CancelsContract()
+    {
+        // Arrange
+        var contractRepository = new TestAdscContractRepository();
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
+        await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
+
+        var mediator = Substitute.For<IMediator>();
+        var handler = new CancelAdscContractOnConnectionEndedHandler(
+            new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
+
+        // Act
+        await handler.Handle(
+            new AircraftConnectionReset("hoppies-ybbb", "YBBB", "UAL123"),
+            CancellationToken.None);
+
+        // Assert
+        await mediator.Received(1).Send(
+            Arg.Is<CancelAdscContractCommand>(c => c.StationId == "YBBB" && c.Callsign == "UAL123"),
+            Arg.Any<CancellationToken>());
+    }
 }

@@ -20,7 +20,7 @@ public class ArchiveCompletedDialoguesRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         // Create a closed dialogue with acknowledged message
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -56,7 +56,7 @@ public class ArchiveCompletedDialoguesRequestHandlerTests
         var startTime = DateTimeOffset.UtcNow;
         clock.SetUtcNow(startTime);
 
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -91,7 +91,7 @@ public class ArchiveCompletedDialoguesRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         // Create an open dialogue (requires response)
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1,
             null,
@@ -127,7 +127,7 @@ public class ArchiveCompletedDialoguesRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         // Create a downlink that's closed but not acknowledged
-        var dialogue = new Dialogue("UAL123");
+        var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddDownlink(
             1,
             null,

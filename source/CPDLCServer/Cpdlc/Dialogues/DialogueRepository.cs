@@ -17,11 +17,12 @@ public class DialogueRepository(CpdlcDbContext dbContext) : IDialogueRepository
 
     public async Task<Dialogue?> FindOpenDialogueByUplink(
         string aircraftCallsign,
+        string stationId,
         int uplinkMessageId,
         CancellationToken cancellationToken)
     {
         await DialoguesWithMessages()
-            .Where(d => d.AircraftCallsign == aircraftCallsign && d.Closed == null)
+            .Where(d => d.AircraftCallsign == aircraftCallsign && d.StationId == stationId && d.Closed == null)
             .LoadAsync(cancellationToken);
 
         // BUG: It's possible to have messageId collisions, since the server generates incrementing ids, and some
@@ -36,6 +37,7 @@ public class DialogueRepository(CpdlcDbContext dbContext) : IDialogueRepository
         return dbContext.Dialogues.Local
             .FirstOrDefault(d =>
                 d.AircraftCallsign == aircraftCallsign &&
+                d.StationId == stationId &&
                 !d.IsClosed &&
                 d.Messages.OfType<UplinkMessage>().Any(m => m.MessageId == uplinkMessageId));
     }
@@ -67,13 +69,26 @@ public class DialogueRepository(CpdlcDbContext dbContext) : IDialogueRepository
         return dbContext.Dialogues.Local.Where(d => d.IsClosed && !d.IsArchived).ToArray();
     }
 
-    public async Task<Dialogue[]> FindOpenedBefore(DateTimeOffset cutoff, CancellationToken cancellationToken)
+    public async Task<Dialogue[]> FindOpenForAircraft(string aircraftCallsign, string stationId, CancellationToken cancellationToken)
     {
         await DialoguesWithMessages()
-            .Where(d => d.Opened < cutoff)
+            .Where(d => d.AircraftCallsign == aircraftCallsign && d.StationId == stationId && d.Closed == null && d.Archived == null)
             .LoadAsync(cancellationToken);
 
-        return dbContext.Dialogues.Local.Where(d => d.Opened < cutoff).ToArray();
+        return dbContext.Dialogues.Local
+            .Where(d => d.AircraftCallsign == aircraftCallsign && d.StationId == stationId && !d.IsClosed && !d.IsArchived)
+            .ToArray();
+    }
+
+    public async Task<int> RemoveOpenedBefore(DateTimeOffset cutoff, CancellationToken cancellationToken)
+    {
+        // The messages are not loaded. The database deletes them with their dialogue (cascade delete).
+        var dialogues = await dbContext.Dialogues
+            .Where(d => d.Opened < cutoff)
+            .ToArrayAsync(cancellationToken);
+
+        dbContext.Dialogues.RemoveRange(dialogues);
+        return dialogues.Length;
     }
 
     public async Task<Dialogue[]> All(CancellationToken cancellationToken)

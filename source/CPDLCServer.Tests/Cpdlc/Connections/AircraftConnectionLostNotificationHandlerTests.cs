@@ -2,6 +2,7 @@ using CPDLCServer.Controllers;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
+using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Web;
 using CPDLCServer.Tests.Mocks;
 using Microsoft.AspNetCore.SignalR;
@@ -203,6 +204,42 @@ public class AircraftConnectionLostNotificationHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ClosesOpenDialoguesWhenNoControllersConnected()
+    {
+        // Arrange
+        var aircraftManager = new TestAircraftRepository();
+        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
+        aircraft.RequestLogon(DateTimeOffset.UtcNow);
+        aircraft.AcceptLogon(DateTimeOffset.UtcNow);
+        await aircraftManager.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
+
+        var clock = new TestClock();
+        var dialogueRepository = new TestDialogueRepository();
+        var openDialogue = new Dialogue("UAL123", "YBBB");
+        openDialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", clock.UtcNow());
+        await dialogueRepository.Add(openDialogue, CancellationToken.None);
+
+        var messageIdProvider = new TestMessageIdProvider();
+        var handler = new AircraftConnectionLostNotificationHandler(
+            aircraftManager,
+            new TestControllerRepository(),
+            dialogueRepository,
+            Substitute.For<IHubContext<ControllerHub>>(),
+            messageIdProvider,
+            new TestPublisher(),
+            clock,
+            new TestUnitOfWork(), Logger.None);
+
+        // Act
+        await handler.Handle(new AircraftConnectionLost("hoppies-ybbb", "UAL123"), CancellationToken.None);
+
+        // Assert - the dialogue is closed with the error message, and the message IDs are removed
+        Assert.True(openDialogue.IsClosed);
+        Assert.Equal("ERROR CONNECTION TIMED OUT", Assert.IsType<DownlinkMessage>(openDialogue.Messages.Last()).Content);
+        Assert.Equal([("hoppies-ybbb", "UAL123")], messageIdProvider.Removed);
+    }
+
+    [Fact]
     public async Task Handle_AddsErrorMessageToExistingOpenDialogue()
     {
         // Arrange
@@ -224,7 +261,7 @@ public class AircraftConnectionLostNotificationHandlerTests
         var clock = new TestClock();
 
         // Create an existing dialogue with an open downlink message
-        var existingDialogue = new Dialogue("UAL123");
+        var existingDialogue = new Dialogue("UAL123", "YBBB");
         existingDialogue.AddDownlink(
             1,
             null,
@@ -268,6 +305,9 @@ public class AircraftConnectionLostNotificationHandlerTests
         Assert.Equal("ERROR CONNECTION TIMED OUT", errorMessage.Content);
         Assert.Equal(AlertType.Medium, errorMessage.AlertType);
         Assert.Equal(1, errorMessage.MessageReference); // References the open downlink
+
+        // Assert - the message IDs of the connection are removed after the error message
+        Assert.Equal([("hoppies-ybbb", "UAL123")], messageIdProvider.Removed);
     }
 
     [Fact]
@@ -292,7 +332,7 @@ public class AircraftConnectionLostNotificationHandlerTests
         var clock = new TestClock();
 
         // Create an existing dialogue with an open downlink message
-        var existingDialogue = new Dialogue("UAL123");
+        var existingDialogue = new Dialogue("UAL123", "YBBB");
         var openDownlink = existingDialogue.AddDownlink(
             1,
             null,

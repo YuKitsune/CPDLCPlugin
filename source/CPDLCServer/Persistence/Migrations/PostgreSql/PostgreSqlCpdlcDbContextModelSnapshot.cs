@@ -61,6 +61,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("StationIdentifier")
@@ -118,9 +122,14 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Callsign", "StationId");
+                    b.HasIndex("Callsign", "StationId")
+                        .IsUnique();
 
                     b.ToTable("AdscContracts", (string)null);
                 });
@@ -143,6 +152,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<string>("StationId")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "Report", "CPDLCServer.AdscContracts.Reports.AircraftAdscReport.Report#AdscReport", b1 =>
                         {
@@ -172,8 +185,6 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Received");
-
                     b.HasIndex("Callsign", "StationId")
                         .IsUnique();
 
@@ -195,6 +206,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -250,9 +265,14 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Callsign", "AcarsConnectionId");
+                    b.HasIndex("Callsign", "AcarsConnectionId")
+                        .IsUnique();
 
                     b.ToTable("AircraftConnections", (string)null);
                 });
@@ -321,9 +341,19 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<long>("Opened")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("StationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("AircraftCallsign");
+                    b.HasIndex("Opened");
+
+                    b.HasIndex("AircraftCallsign", "StationId");
 
                     b.ToTable("Dialogues", (string)null);
                 });
@@ -337,6 +367,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .HasColumnType("text");
 
                     b.Property<int>("LastMessageId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
                         .HasColumnType("integer");
 
                     b.HasKey("AcarsConnectionId", "Callsign");
@@ -355,13 +389,13 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<int>("AdscContractTimeoutMinutes")
                         .HasColumnType("integer");
 
-                    b.Property<int>("AdscReportRetentionHours")
-                        .HasColumnType("integer");
-
                     b.Property<int>("AircraftConnectionTimeoutMinutes")
                         .HasColumnType("integer");
 
                     b.Property<int>("ConnectivityCheckIntervalMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DialogueRetentionHours")
                         .HasColumnType("integer");
 
                     b.Property<int>("HandoffNotificationLeadTimeMinutes")
@@ -382,6 +416,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<string>("VatsimStatusUrl")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

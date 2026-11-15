@@ -29,6 +29,8 @@ public class AdscContractConfiguration : IEntityTypeConfiguration<AdscContract>
         builder.Property(c => c.LastReportReceived);
         builder.Property(c => c.ReportingSource);
 
-        builder.HasIndex(c => new { c.Callsign, c.StationId });
+        // One contract for each aircraft and ATSU.
+        // Two units of work that add the same contract at the same time cannot both commit.
+        builder.HasIndex(c => new { c.Callsign, c.StationId }).IsUnique();
     }
 }
