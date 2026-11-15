@@ -25,7 +25,7 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     EncryptedAuthenticationCode = table.Column<string>(type: "text", nullable: false),
                     DefaultAdscReportingInterval = table.Column<int>(type: "integer", nullable: false),
                     SelectedAdscContractDuration = table.Column<int>(type: "integer", nullable: false),
-                    Notes = table.Column<string>(type: "text", nullable: true)
+                    Notes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -40,13 +40,17 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Callsign = table.Column<string>(type: "text", nullable: false),
                     StationId = table.Column<string>(type: "text", nullable: false),
+                    Created = table.Column<long>(type: "bigint", nullable: false),
+                    DefaultReportingInterval = table.Column<long>(type: "bigint", nullable: false),
                     ReportingInterval = table.Column<long>(type: "bigint", nullable: true),
                     DefaultContractState = table.Column<string>(type: "text", nullable: true),
                     SelectedReportingInterval = table.Column<long>(type: "bigint", nullable: true),
                     SelectedContractState = table.Column<string>(type: "text", nullable: true),
                     SelectedContractEnds = table.Column<long>(type: "bigint", nullable: true),
                     DemandContractState = table.Column<string>(type: "text", nullable: true),
-                    LastActivity = table.Column<long>(type: "bigint", nullable: false)
+                    LastActivity = table.Column<long>(type: "bigint", nullable: false),
+                    LastReportReceived = table.Column<long>(type: "bigint", nullable: true),
+                    ReportingSource = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -62,7 +66,6 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     Callsign = table.Column<string>(type: "text", nullable: false),
                     StationId = table.Column<string>(type: "text", nullable: false),
                     Received = table.Column<long>(type: "bigint", nullable: false),
-                    IsLatest = table.Column<bool>(type: "boolean", nullable: false),
                     Altitude = table.Column<int>(type: "integer", nullable: false),
                     Latitude = table.Column<double>(type: "double precision", nullable: false),
                     Longitude = table.Column<double>(type: "double precision", nullable: false),
@@ -139,7 +142,8 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     VatsimStatusEnabled = table.Column<bool>(type: "boolean", nullable: false),
                     VatsimStatusUrl = table.Column<string>(type: "text", nullable: false),
                     VatsimStatusPollingIntervalSeconds = table.Column<int>(type: "integer", nullable: false),
-                    VatsimStatusAllowNonEquippedAircraft = table.Column<bool>(type: "boolean", nullable: false)
+                    VatsimStatusAllowNonEquippedAircraft = table.Column<bool>(type: "boolean", nullable: false),
+                    VatsimStatusReportDelayMinutes = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -185,7 +189,7 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     Sent = table.Column<long>(type: "bigint", nullable: true),
                     ClosedManually = table.Column<bool>(type: "boolean", nullable: true),
                     IsPilotLate = table.Column<bool>(type: "boolean", nullable: true),
-                    IsTransmissionFailed = table.Column<bool>(type: "boolean", nullable: true)
+                    DidTransmissionFail = table.Column<bool>(type: "boolean", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -210,9 +214,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 columns: new[] { "Callsign", "StationId" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AdscReports_Callsign",
+                name: "IX_AdscReports_Callsign_StationId",
                 table: "AdscReports",
-                column: "Callsign");
+                columns: new[] { "Callsign", "StationId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AdscReports_Received",

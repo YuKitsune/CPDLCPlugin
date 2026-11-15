@@ -128,6 +128,8 @@ public class SignalRConnectionManager(
             WithCancellationToken<string, string>(downlinkHandlerDelegate.AdscContractRemoved)(callsign, stationId));
         _connection.On<AdscReportDto>("AdscReportReceived", adscReport =>
             WithCancellationToken<AdscReportDto>(downlinkHandlerDelegate.AdscReportReceived)(adscReport));
+        _connection.On<string, string>("AdscReportExpired", (callsign, stationId) =>
+            WithCancellationToken<string, string>(downlinkHandlerDelegate.AdscReportExpired)(callsign, stationId));
     }
 
     Func<T, Task> WithCancellationToken<T>(Func<T, CancellationToken, Task> action)

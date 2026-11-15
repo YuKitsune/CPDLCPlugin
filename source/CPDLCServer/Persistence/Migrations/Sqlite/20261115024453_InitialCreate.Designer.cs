@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CPDLCServer.Persistence.Migrations.Sqlite
 {
     [DbContext(typeof(SqliteCpdlcDbContext))]
-    [Migration("20261107042233_InitialCreate")]
+    [Migration("20261115024453_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -41,6 +41,7 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Notes")
+                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("SelectedAdscContractDuration")
@@ -76,8 +77,14 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<long>("Created")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("DefaultContractState")
                         .HasColumnType("TEXT");
+
+                    b.Property<long>("DefaultReportingInterval")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("DemandContractState")
                         .HasColumnType("TEXT");
@@ -85,8 +92,14 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<long>("LastActivity")
                         .HasColumnType("INTEGER");
 
+                    b.Property<long?>("LastReportReceived")
+                        .HasColumnType("INTEGER");
+
                     b.Property<long?>("ReportingInterval")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReportingSource")
+                        .HasColumnType("TEXT");
 
                     b.Property<long?>("SelectedContractEnds")
                         .HasColumnType("INTEGER");
@@ -117,9 +130,6 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<string>("Callsign")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<bool>("IsLatest")
-                        .HasColumnType("INTEGER");
 
                     b.Property<long>("Received")
                         .HasColumnType("INTEGER");
@@ -156,9 +166,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Callsign");
-
                     b.HasIndex("Received");
+
+                    b.HasIndex("Callsign", "StationId")
+                        .IsUnique();
 
                     b.ToTable("AdscReports", (string)null);
                 });
@@ -353,6 +364,9 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<int>("VatsimStatusPollingIntervalSeconds")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("VatsimStatusReportDelayMinutes")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("VatsimStatusUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -403,10 +417,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .HasColumnType("TEXT")
                         .HasColumnName("Content");
 
-                    b.Property<bool>("IsPilotLate")
+                    b.Property<bool>("DidTransmissionFail")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("IsTransmissionFailed")
+                    b.Property<bool>("IsPilotLate")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Recipient")

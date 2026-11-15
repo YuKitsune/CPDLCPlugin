@@ -9,14 +9,14 @@ namespace CPDLCServer.VatsimStatus;
 /// <summary>
 /// Creates an ADS-C position report using VATSIM status data.
 /// <list type="bullet">
-/// <item>A report from Hoppie stops the VATSIM reports. The VATSIM reports start again when the Hoppie reports are more than two reporting intervals late.</item>
+/// <item>The VATSIM reports start after the report delay from when the contract was made, so that the aircraft can send its first report through Hoppie.</item>
+/// <item>A report from Hoppie stops the VATSIM reports. The VATSIM reports start again when the Hoppie report times out.</item>
 /// <item>A rejected contract stops the VATSIM reports.</item>
 /// <item>A report is made only when the contract needs one: a demand request, or a periodic report that is due.</item>
 /// </list>
 /// </summary>
 public class ProduceVatsimAdscReportsRequestHandler(
     IAdscContractRepository adscContractRepository,
-    IAdscReportRepository adscReportRepository,
     IVatsimPilotRepository vatsimPilotRepository,
     IServerSettingsProvider settingsProvider,
     IClock clock,
@@ -53,8 +53,8 @@ public class ProduceVatsimAdscReportsRequestHandler(
         if (!contract.IsActive)
             return;
 
-        var latestReport = await adscReportRepository.FindLatest(contract.Callsign, cancellationToken);
-        if (!CanUseVatsimData(contract, latestReport, now) || !IsReportDue(contract, latestReport, now))
+        var reportDelay = TimeSpan.FromMinutes(settings.VatsimStatusReportDelayMinutes);
+        if (!CanUseVatsimData(contract, reportDelay, now) || !IsReportDue(contract, now))
             return;
 
         var pilot = await vatsimPilotRepository.Find(contract.Callsign, cancellationToken);
@@ -75,18 +75,6 @@ public class ProduceVatsimAdscReportsRequestHandler(
             contract.Callsign,
             contract.StationId);
 
-        contract.LogActivity(now);
-
-        if (contract.ReportReceived())
-        {
-            logger.Information(
-                "{Callsign} accepted the ADS-C contract with {StationId}",
-                contract.Callsign,
-                contract.StationId);
-
-            await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
-        }
-
         var report = new AdscReport(
             pilot.LastUpdated,
             pilot.Latitude,
@@ -94,26 +82,25 @@ public class ProduceVatsimAdscReportsRequestHandler(
             pilot.Altitude,
             AdscReportSource.VATSIM);
 
+        contract.LogActivity(now);
+        contract.ReportReceived(report);
+        await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
+
         await mediator.Publish(
             new AdscReportReceivedNotification(contract.Callsign, contract.StationId, report, now),
             cancellationToken);
     }
 
-    // VATSIM data is used only when there is no report from Hoppie, or when the Hoppie reports are late
-    static bool CanUseVatsimData(AdscContract contract, AircraftAdscReport? latestReport, DateTimeOffset now)
+    static bool CanUseVatsimData(AdscContract contract, TimeSpan reportDelay, DateTimeOffset now)
     {
-        if (latestReport is null || latestReport.Report.Source == AdscReportSource.VATSIM)
-            return true;
-
-        // Only a periodic contract makes the reports late
-        if (!contract.HasPeriodicContract || contract.ReportingInterval is null)
+        if (now - contract.Created < reportDelay)
             return false;
 
-        var timeSinceLastReport = now - latestReport.Received;
-        return timeSinceLastReport > contract.ReportingInterval.Value * 2;
+        // The source is null when there is no report, or when the last report timed out
+        return contract.ReportingSource is null or AdscReportSource.VATSIM;
     }
 
-    static bool IsReportDue(AdscContract contract, AircraftAdscReport? latestReport, DateTimeOffset now)
+    static bool IsReportDue(AdscContract contract, DateTimeOffset now)
     {
         if (contract.DemandContractState == AdscContractState.Sent)
             return true;
@@ -121,10 +108,10 @@ public class ProduceVatsimAdscReportsRequestHandler(
         if (!contract.HasPeriodicContract || contract.ReportingInterval is null)
             return false;
 
-        if (latestReport is null)
+        if (contract.LastReportReceived is null)
             return true;
 
-        var timeSinceLastReport = now - latestReport.Received;
+        var timeSinceLastReport = now - contract.LastReportReceived.Value;
         return timeSinceLastReport >= contract.ReportingInterval.Value;
     }
 }

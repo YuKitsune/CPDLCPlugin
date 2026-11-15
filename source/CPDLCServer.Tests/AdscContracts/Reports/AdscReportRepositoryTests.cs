@@ -9,104 +9,73 @@ public class AdscReportRepositoryTests
     static readonly DateTimeOffset Start = new(2026, 10, 13, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task Add_KeepsLatestReportForEachAircraft()
+    public async Task Add_KeepsOneReportForEachContract()
     {
         // Arrange
         using var database = new TestDatabase();
         var first = CreateReport("UAL123", "YBBB", 0);
         var second = CreateReport("UAL123", "YBBB", 5);
-        var other = CreateReport("QFA1", "YBBB", 0);
+        var otherStation = CreateReport("UAL123", "YMMM", 0);
+        var otherAircraft = CreateReport("QFA1", "YBBB", 0);
 
         // Act
-        await AddAndSave(database, first, second, other);
-
-        // Assert
-        var reports = await AllLatest(database);
-        Assert.Equal(2, reports.Length);
-        Assert.Contains(second, reports);
-        Assert.Contains(other, reports);
-    }
-
-    [Fact]
-    public async Task Add_KeepsHistoryOfReports()
-    {
-        // Arrange
-        using var database = new TestDatabase();
-        var first = CreateReport("UAL123", "YBBB", 0);
-        var second = CreateReport("UAL123", "YBBB", 5);
-
-        // Act
-        await AddAndSave(database, first);
+        await AddAndSave(database, first, otherStation, otherAircraft);
         await AddAndSave(database, second);
 
         // Assert
         await using var dbContext = database.CreateDbContext();
-        var history = await dbContext.AdscReports.ToArrayAsync();
-        Assert.Equal(2, history.Length);
-        Assert.Contains(first, history);
-        Assert.Contains(second, history);
+        var reports = await dbContext.AdscReports.ToArrayAsync();
+        Assert.Equal(3, reports.Length);
+        Assert.Contains(second, reports);
+        Assert.Contains(otherStation, reports);
+        Assert.Contains(otherAircraft, reports);
     }
 
     [Fact]
-    public async Task Add_WhenReportIsOlder_KeepsNewerReport()
-    {
-        // Arrange
-        using var database = new TestDatabase();
-        var newer = CreateReport("UAL123", "YBBB", 5);
-        var older = CreateReport("UAL123", "YMMM", 0);
-
-        // Act
-        await AddAndSave(database, newer);
-        await AddAndSave(database, older);
-
-        // Assert
-        Assert.Equal([newer], await AllLatest(database));
-    }
-
-    [Fact]
-    public async Task Add_InSameUnitOfWork_KeepsOneLatestReport()
+    public async Task Add_InSameUnitOfWork_KeepsOneReportForEachContract()
     {
         // Arrange
         using var database = new TestDatabase();
         var first = CreateReport("UAL123", "YBBB", 0);
-        var second = CreateReport("UAL123", "YMMM", 5);
+        var second = CreateReport("UAL123", "YBBB", 5);
 
         // Act
         await AddAndSave(database, first, second);
 
         // Assert
-        Assert.Equal([second], await AllLatest(database));
+        await using var dbContext = database.CreateDbContext();
+        Assert.Equal([second], await dbContext.AdscReports.ToArrayAsync());
     }
 
     [Fact]
-    public async Task Add_WhenHoppieReportIsOlderThanVatsimReport_ReplacesVatsimReport()
+    public async Task AllLatest_ReturnsLatestReportForEachAircraft()
     {
         // Arrange
         using var database = new TestDatabase();
-        var vatsimReport = CreateReport("UAL123", "YBBB", 5, AdscReportSource.VATSIM);
+        var older = CreateReport("UAL123", "YBBB", 0);
+        var newer = CreateReport("UAL123", "YMMM", 5);
+        var other = CreateReport("QFA1", "YBBB", 0);
+        await AddAndSave(database, older, newer, other);
+
+        // Act
+        var reports = await AllLatest(database);
+
+        // Assert
+        Assert.Equal(2, reports.Length);
+        Assert.Contains(newer, reports);
+        Assert.Contains(other, reports);
+    }
+
+    [Fact]
+    public async Task AllLatest_WhenVatsimReportIsNewerThanHoppieReport_ReturnsHoppieReport()
+    {
+        // Arrange
+        using var database = new TestDatabase();
         var hoppieReport = CreateReport("UAL123", "YBBB", 0);
+        var vatsimReport = CreateReport("UAL123", "YMMM", 5, AdscReportSource.VATSIM);
+        await AddAndSave(database, hoppieReport, vatsimReport);
 
-        // Act
-        await AddAndSave(database, vatsimReport);
-        await AddAndSave(database, hoppieReport);
-
-        // Assert
-        Assert.Equal([hoppieReport], await AllLatest(database));
-    }
-
-    [Fact]
-    public async Task Add_WhenVatsimReportIsOlderThanHoppieReport_KeepsHoppieReport()
-    {
-        // Arrange
-        using var database = new TestDatabase();
-        var hoppieReport = CreateReport("UAL123", "YBBB", 5);
-        var vatsimReport = CreateReport("UAL123", "YBBB", 0, AdscReportSource.VATSIM);
-
-        // Act
-        await AddAndSave(database, hoppieReport);
-        await AddAndSave(database, vatsimReport);
-
-        // Assert
+        // Act & Assert
         Assert.Equal([hoppieReport], await AllLatest(database));
     }
 
@@ -148,6 +117,43 @@ public class AdscReportRepositoryTests
         Assert.Equal(2, reports.Length);
         Assert.Contains(atCutoff, reports);
         Assert.Contains(newer, reports);
+    }
+
+    [Fact]
+    public async Task Find_ReturnsReportForContract()
+    {
+        // Arrange
+        using var database = new TestDatabase();
+        var report = CreateReport("UAL123", "YBBB", 0);
+        await AddAndSave(database, report);
+
+        // Act & Assert
+        await using var dbContext = database.CreateDbContext();
+        var repository = new AdscReportRepository(dbContext);
+        Assert.Equal(report, await repository.Find("UAL123", "YBBB", CancellationToken.None));
+        Assert.Null(await repository.Find("UAL123", "YMMM", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Remove_RemovesReport()
+    {
+        // Arrange
+        using var database = new TestDatabase();
+        var removed = CreateReport("UAL123", "YBBB", 0);
+        var kept = CreateReport("QFA1", "YBBB", 0);
+        await AddAndSave(database, removed, kept);
+
+        // Act
+        await using (var dbContext = database.CreateDbContext())
+        {
+            var repository = new AdscReportRepository(dbContext);
+            var report = await repository.Find("UAL123", "YBBB", CancellationToken.None);
+            await repository.Remove(report!, CancellationToken.None);
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Assert
+        Assert.Equal([kept], await AllLatest(database));
     }
 
     static async Task AddAndSave(TestDatabase database, params AircraftAdscReport[] reports)

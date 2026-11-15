@@ -1,4 +1,5 @@
 using CPDLCServer.AdscContracts;
+using CPDLCServer.AdscContracts.Reports;
 using CPDLCServer.Tests.Mocks;
 using MediatR;
 using NSubstitute;
@@ -8,6 +9,8 @@ namespace CPDLCServer.Tests.AdscContracts;
 
 public class RequestPeriodicAdscContractCommandHandlerTests
 {
+    static readonly AdscReport Report = new(DateTimeOffset.UtcNow, -33.9461, 151.1772, 37000, AdscReportSource.Hoppie);
+
     [Fact]
     public async Task Handle_SendsDefaultIntervalViaAcarsConnectionForStation()
     {
@@ -74,9 +77,9 @@ public class RequestPeriodicAdscContractCommandHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var existingContract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var existingContract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         existingContract.RequestSelectedContract(TimeSpan.FromMinutes(2), DateTimeOffset.UtcNow.AddHours(1));
-        existingContract.ReportReceived();
+        existingContract.ReportReceived(Report);
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), existingContract, CancellationToken.None);
 
         var handler = new RequestPeriodicAdscContractCommandHandler(
@@ -171,9 +174,9 @@ public class RequestPeriodicAdscContractCommandHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var existingContract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var existingContract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         existingContract.RequestDefaultContract(TimeSpan.FromMinutes(10));
-        existingContract.ReportReceived();
+        existingContract.ReportReceived(Report);
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), existingContract, CancellationToken.None);
 
         var handler = new RequestPeriodicAdscContractCommandHandler(

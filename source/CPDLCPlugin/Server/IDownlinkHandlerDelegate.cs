@@ -11,5 +11,6 @@ public interface IDownlinkHandlerDelegate
     Task AdscContractUpdated(AdscContractDto adscContractDto, CancellationToken cancellationToken);
     Task AdscContractRemoved(string callsign, string stationId, CancellationToken cancellationToken);
     Task AdscReportReceived(AdscReportDto adscReportDto, CancellationToken cancellationToken);
+    Task AdscReportExpired(string callsign, string stationId, CancellationToken cancellationToken);
     void Error(Exception exception);
 }

@@ -10,32 +10,51 @@ public class AdscReportRepository(CpdlcDbContext dbContext) : IAdscReportReposit
 {
     public async Task Add(AircraftAdscReport report, CancellationToken cancellationToken)
     {
-        var latest = await FindLatest(report.Callsign, cancellationToken);
-
-        var isLatest = latest is null || ReplacesLatest(report, latest);
-        if (isLatest && latest is not null)
-            SetIsLatest(latest, false);
+        var previous = await Find(report.Callsign, report.StationId, cancellationToken);
+        if (previous is not null)
+            dbContext.AdscReports.Remove(previous);
 
         dbContext.AdscReports.Add(report);
-        SetIsLatest(report, isLatest);
+    }
+
+    public async Task<AircraftAdscReport?> Find(string callsign, string stationId, CancellationToken cancellationToken)
+    {
+        await dbContext.AdscReports
+            .Where(r => r.Callsign == callsign && r.StationId == stationId)
+            .LoadAsync(cancellationToken);
+
+        return dbContext.AdscReports.Local.FirstOrDefault(r => r.Callsign == callsign && r.StationId == stationId);
     }
 
     public async Task<AircraftAdscReport?> FindLatest(string callsign, CancellationToken cancellationToken)
     {
         await dbContext.AdscReports
-            .Where(r => r.Callsign == callsign && EF.Property<bool>(r, AircraftAdscReportConfiguration.IsLatestProperty))
+            .Where(r => r.Callsign == callsign)
             .LoadAsync(cancellationToken);
 
-        return dbContext.AdscReports.Local.FirstOrDefault(r => r.Callsign == callsign && IsLatest(r));
+        var reports = dbContext.AdscReports.Local.Where(r => r.Callsign == callsign).ToArray();
+        return reports.Length == 0 ? null : SelectLatest(reports);
     }
 
     public async Task<AircraftAdscReport[]> AllLatest(CancellationToken cancellationToken)
     {
-        await dbContext.AdscReports
-            .Where(r => EF.Property<bool>(r, AircraftAdscReportConfiguration.IsLatestProperty))
-            .LoadAsync(cancellationToken);
+        var reports = await All(cancellationToken);
+        return reports
+            .GroupBy(r => r.Callsign)
+            .Select(SelectLatest)
+            .ToArray();
+    }
 
-        return dbContext.AdscReports.Local.Where(IsLatest).ToArray();
+    public async Task<AircraftAdscReport[]> All(CancellationToken cancellationToken)
+    {
+        await dbContext.AdscReports.LoadAsync(cancellationToken);
+        return dbContext.AdscReports.Local.ToArray();
+    }
+
+    public Task Remove(AircraftAdscReport report, CancellationToken cancellationToken)
+    {
+        dbContext.AdscReports.Remove(report);
+        return Task.CompletedTask;
     }
 
     public async Task RemoveOlderThan(DateTimeOffset cutoff, CancellationToken cancellationToken)
@@ -48,23 +67,12 @@ public class AdscReportRepository(CpdlcDbContext dbContext) : IAdscReportReposit
         dbContext.AdscReports.RemoveRange(oldReports);
     }
 
-    static bool ReplacesLatest(AircraftAdscReport report, AircraftAdscReport latest)
+    // An aircraft can report to more than one ATSU, so the reports can arrive out of order
+    static AircraftAdscReport SelectLatest(IEnumerable<AircraftAdscReport> reports)
     {
-        // A report from Hoppie always replaces a report from VATSIM
-        if (report.Report.Source == AdscReportSource.Hoppie && latest.Report.Source == AdscReportSource.VATSIM)
-            return true;
-
-        // An aircraft can report to more than one ATSU, so reports can arrive out of order
-        return report.Report.Timestamp >= latest.Report.Timestamp;
-    }
-
-    bool IsLatest(AircraftAdscReport report)
-    {
-        return dbContext.Entry(report).Property<bool>(AircraftAdscReportConfiguration.IsLatestProperty).CurrentValue;
-    }
-
-    void SetIsLatest(AircraftAdscReport report, bool isLatest)
-    {
-        dbContext.Entry(report).Property<bool>(AircraftAdscReportConfiguration.IsLatestProperty).CurrentValue = isLatest;
+        return reports
+            .OrderByDescending(r => r.Report.Source == AdscReportSource.Hoppie)
+            .ThenByDescending(r => r.Report.Timestamp)
+            .First();
     }
 }

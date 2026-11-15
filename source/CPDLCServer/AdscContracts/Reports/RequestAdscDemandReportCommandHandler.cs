@@ -31,7 +31,7 @@ public class RequestAdscDemandReportCommandHandler(
         if (contract is null)
         {
             var configuration = await acarsConnectionManager.GetConfigurationForStation(request.StationId, cancellationToken);
-            contract = new AdscContract(request.Callsign, request.StationId, TimeSpan.FromMinutes(configuration.DefaultAdscReportingInterval));
+            contract = new AdscContract(request.Callsign, request.StationId, TimeSpan.FromMinutes(configuration.DefaultAdscReportingInterval), clock.UtcNow());
             await adscContractRepository.Add(contractKey, contract, cancellationToken);
         }
 

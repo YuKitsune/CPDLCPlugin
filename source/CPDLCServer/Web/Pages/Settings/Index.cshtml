@@ -179,6 +179,22 @@
                 <div class="col-md-2 form-text">Default: @Model.Defaults.VatsimStatusPollingIntervalSeconds seconds</div>
             </div>
 
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Settings.VatsimStatusReportDelayMinutes" class="form-label fw-semibold">Report delay</label>
+                    <div class="form-text">The time after a new ADS-C contract before VATSIM reports are made. During this time, the aircraft can send its first report through Hoppie.</div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <input asp-for="Settings.VatsimStatusReportDelayMinutes" class="form-control" min="0" />
+                        <span class="input-group-text">minutes</span>
+                        <button type="button" class="btn btn-outline-secondary" data-reset-for="Settings_VatsimStatusReportDelayMinutes" data-default-value="@Model.Defaults.VatsimStatusReportDelayMinutes">Reset</button>
+                    </div>
+                    <span asp-validation-for="Settings.VatsimStatusReportDelayMinutes" class="text-danger small"></span>
+                </div>
+                <div class="col-md-2 form-text">Default: @Model.Defaults.VatsimStatusReportDelayMinutes minutes</div>
+            </div>
+
             <div class="row py-2">
                 <div class="col-md-5">
                     <label asp-for="Settings.VatsimStatusAllowNonEquippedAircraft" class="form-label fw-semibold">Allow aircraft without ADS-C equipment</label>

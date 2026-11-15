@@ -120,6 +120,22 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
     }
 
+    public async Task AdscReportExpired(string callsign, string stationId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await mediator.Publish(new AdscReportExpiredNotification(callsign, stationId), cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation is requested
+        }
+        catch (Exception ex)
+        {
+            Plugin.AddError(ex, "Failed to handle AdscReportExpired notification");
+        }
+    }
+
     public void Error(Exception error)
     {
         Plugin.AddError(error, "Error from SignalR connection");

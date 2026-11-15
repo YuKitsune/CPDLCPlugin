@@ -24,7 +24,7 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     EncryptedAuthenticationCode = table.Column<string>(type: "TEXT", nullable: false),
                     DefaultAdscReportingInterval = table.Column<int>(type: "INTEGER", nullable: false),
                     SelectedAdscContractDuration = table.Column<int>(type: "INTEGER", nullable: false),
-                    Notes = table.Column<string>(type: "TEXT", nullable: true)
+                    Notes = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -39,13 +39,17 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .Annotation("Sqlite:Autoincrement", true),
                     Callsign = table.Column<string>(type: "TEXT", nullable: false),
                     StationId = table.Column<string>(type: "TEXT", nullable: false),
+                    Created = table.Column<long>(type: "INTEGER", nullable: false),
+                    DefaultReportingInterval = table.Column<long>(type: "INTEGER", nullable: false),
                     ReportingInterval = table.Column<long>(type: "INTEGER", nullable: true),
                     DefaultContractState = table.Column<string>(type: "TEXT", nullable: true),
                     SelectedReportingInterval = table.Column<long>(type: "INTEGER", nullable: true),
                     SelectedContractState = table.Column<string>(type: "TEXT", nullable: true),
                     SelectedContractEnds = table.Column<long>(type: "INTEGER", nullable: true),
                     DemandContractState = table.Column<string>(type: "TEXT", nullable: true),
-                    LastActivity = table.Column<long>(type: "INTEGER", nullable: false)
+                    LastActivity = table.Column<long>(type: "INTEGER", nullable: false),
+                    LastReportReceived = table.Column<long>(type: "INTEGER", nullable: true),
+                    ReportingSource = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -61,7 +65,6 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     Callsign = table.Column<string>(type: "TEXT", nullable: false),
                     StationId = table.Column<string>(type: "TEXT", nullable: false),
                     Received = table.Column<long>(type: "INTEGER", nullable: false),
-                    IsLatest = table.Column<bool>(type: "INTEGER", nullable: false),
                     Altitude = table.Column<int>(type: "INTEGER", nullable: false),
                     Latitude = table.Column<double>(type: "REAL", nullable: false),
                     Longitude = table.Column<double>(type: "REAL", nullable: false),
@@ -138,7 +141,8 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     VatsimStatusEnabled = table.Column<bool>(type: "INTEGER", nullable: false),
                     VatsimStatusUrl = table.Column<string>(type: "TEXT", nullable: false),
                     VatsimStatusPollingIntervalSeconds = table.Column<int>(type: "INTEGER", nullable: false),
-                    VatsimStatusAllowNonEquippedAircraft = table.Column<bool>(type: "INTEGER", nullable: false)
+                    VatsimStatusAllowNonEquippedAircraft = table.Column<bool>(type: "INTEGER", nullable: false),
+                    VatsimStatusReportDelayMinutes = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -184,7 +188,7 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     Sent = table.Column<long>(type: "INTEGER", nullable: true),
                     ClosedManually = table.Column<bool>(type: "INTEGER", nullable: true),
                     IsPilotLate = table.Column<bool>(type: "INTEGER", nullable: true),
-                    IsTransmissionFailed = table.Column<bool>(type: "INTEGER", nullable: true)
+                    DidTransmissionFail = table.Column<bool>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -209,9 +213,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 columns: new[] { "Callsign", "StationId" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_AdscReports_Callsign",
+                name: "IX_AdscReports_Callsign_StationId",
                 table: "AdscReports",
-                column: "Callsign");
+                columns: new[] { "Callsign", "StationId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AdscReports_Received",

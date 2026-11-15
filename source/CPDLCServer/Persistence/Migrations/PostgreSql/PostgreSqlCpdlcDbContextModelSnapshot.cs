@@ -43,7 +43,8 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .HasColumnType("text");
 
                     b.Property<string>("Notes")
-                        .HasColumnType("text");
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
                     b.Property<int>("SelectedAdscContractDuration")
                         .HasColumnType("integer");
@@ -80,8 +81,14 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<long>("Created")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("DefaultContractState")
                         .HasColumnType("text");
+
+                    b.Property<long>("DefaultReportingInterval")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("DemandContractState")
                         .HasColumnType("text");
@@ -89,8 +96,14 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<long>("LastActivity")
                         .HasColumnType("bigint");
 
+                    b.Property<long?>("LastReportReceived")
+                        .HasColumnType("bigint");
+
                     b.Property<long?>("ReportingInterval")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("ReportingSource")
+                        .HasColumnType("text");
 
                     b.Property<long?>("SelectedContractEnds")
                         .HasColumnType("bigint");
@@ -123,9 +136,6 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<string>("Callsign")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsLatest")
-                        .HasColumnType("boolean");
 
                     b.Property<long>("Received")
                         .HasColumnType("bigint");
@@ -162,9 +172,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Callsign");
-
                     b.HasIndex("Received");
+
+                    b.HasIndex("Callsign", "StationId")
+                        .IsUnique();
 
                     b.ToTable("AdscReports", (string)null);
                 });
@@ -365,6 +376,9 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<int>("VatsimStatusPollingIntervalSeconds")
                         .HasColumnType("integer");
 
+                    b.Property<int>("VatsimStatusReportDelayMinutes")
+                        .HasColumnType("integer");
+
                     b.Property<string>("VatsimStatusUrl")
                         .IsRequired()
                         .HasColumnType("text");
@@ -415,10 +429,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .HasColumnType("text")
                         .HasColumnName("Content");
 
-                    b.Property<bool>("IsPilotLate")
+                    b.Property<bool>("DidTransmissionFail")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsTransmissionFailed")
+                    b.Property<bool>("IsPilotLate")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Recipient")

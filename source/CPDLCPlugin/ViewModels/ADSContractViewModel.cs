@@ -11,6 +11,7 @@ public partial class ADSContractViewModel : ObservableObject,
     IRecipient<AdscContractUpdatedNotification>,
     IRecipient<AdscContractRemovedNotification>,
     IRecipient<AdscReportReceivedNotification>,
+    IRecipient<AdscReportExpiredNotification>,
     IDisposable
 {
     readonly Plugin _plugin;
@@ -42,6 +43,7 @@ public partial class ADSContractViewModel : ObservableObject,
         WeakReferenceMessenger.Default.Register<AdscContractUpdatedNotification>(this);
         WeakReferenceMessenger.Default.Register<AdscContractRemovedNotification>(this);
         WeakReferenceMessenger.Default.Register<AdscReportReceivedNotification>(this);
+        WeakReferenceMessenger.Default.Register<AdscReportExpiredNotification>(this);
 
         if (!string.IsNullOrWhiteSpace(initialCallsign))
         {
@@ -224,6 +226,11 @@ public partial class ADSContractViewModel : ObservableObject,
         ReloadIfShown(notification.AdscReportDto.Callsign);
     }
 
+    public void Receive(AdscReportExpiredNotification notification)
+    {
+        ReloadIfShown(notification.Callsign);
+    }
+
     void ReloadIfShown(string callsign)
     {
         // The ADS-C reports come for all the aircraft. Do not post to the UI thread for an aircraft that this window
@@ -259,6 +266,7 @@ public partial class ADSContractViewModel : ObservableObject,
         WeakReferenceMessenger.Default.Unregister<AdscContractUpdatedNotification>(this);
         WeakReferenceMessenger.Default.Unregister<AdscContractRemovedNotification>(this);
         WeakReferenceMessenger.Default.Unregister<AdscReportReceivedNotification>(this);
+        WeakReferenceMessenger.Default.Unregister<AdscReportExpiredNotification>(this);
         _disposed = true;
     }
 }

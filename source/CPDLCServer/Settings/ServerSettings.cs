@@ -31,4 +31,7 @@ public record ServerSettings
     public int VatsimStatusPollingIntervalSeconds { get; init; } = 120;
 
     public bool VatsimStatusAllowNonEquippedAircraft { get; init; }
+
+    [Range(0, int.MaxValue)]
+    public int VatsimStatusReportDelayMinutes { get; init; } = 5;
 }

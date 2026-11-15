@@ -14,6 +14,7 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
     static readonly TimeSpan DefaultInterval = TimeSpan.FromMinutes(10);
     static readonly DateTimeOffset Now = new(2026, 10, 17, 12, 0, 0, TimeSpan.Zero);
     static readonly DateTimeOffset LastUpdated = Now.AddSeconds(-10);
+    static readonly TimeSpan ReportDelay = TimeSpan.FromMinutes(5);
 
     [Fact]
     public async Task Handle_WhenNoReport_PublishesVatsimReportAndAcceptsContract()
@@ -24,7 +25,7 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
         contract.RequestDefaultContract(DefaultInterval);
 
         var mediator = Substitute.For<IMediator>();
-        var handler = await CreateHandler(contractRepository, new TestAdscReportRepository(), mediator);
+        var handler = await CreateHandler(contractRepository, mediator);
 
         // Act
         await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
@@ -42,6 +43,42 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenContractIsNewerThanReportDelay_PublishesNothing()
+    {
+        // Arrange
+        var contractRepository = new TestAdscContractRepository();
+        var contract = await AddContract(contractRepository, Now - ReportDelay + TimeSpan.FromSeconds(1));
+        contract.RequestDefaultContract(DefaultInterval);
+
+        var mediator = Substitute.For<IMediator>();
+        var handler = await CreateHandler(contractRepository, mediator);
+
+        // Act
+        await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
+
+        // Assert
+        await mediator.DidNotReceive().Publish(Arg.Any<AdscReportReceivedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenContractIsReportDelayOld_PublishesVatsimReport()
+    {
+        // Arrange
+        var contractRepository = new TestAdscContractRepository();
+        var contract = await AddContract(contractRepository, Now - ReportDelay);
+        contract.RequestDefaultContract(DefaultInterval);
+
+        var mediator = Substitute.For<IMediator>();
+        var handler = await CreateHandler(contractRepository, mediator);
+
+        // Act
+        await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
+
+        // Assert
+        await mediator.Received(1).Publish(Arg.Any<AdscReportReceivedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Handle_WhenVatsimReportIsDue_PublishesVatsimReport()
     {
         // Arrange
@@ -49,11 +86,10 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
         var contract = await AddContract(contractRepository);
         contract.RequestDefaultContract(DefaultInterval);
 
-        var reportRepository = new TestAdscReportRepository();
-        await AddReport(reportRepository, AdscReportSource.VATSIM, Now - DefaultInterval);
+        ReceiveReport(contract, AdscReportSource.VATSIM, Now - DefaultInterval);
 
         var mediator = Substitute.For<IMediator>();
-        var handler = await CreateHandler(contractRepository, reportRepository, mediator);
+        var handler = await CreateHandler(contractRepository, mediator);
 
         // Act
         await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
@@ -70,11 +106,10 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
         var contract = await AddContract(contractRepository);
         contract.RequestDefaultContract(DefaultInterval);
 
-        var reportRepository = new TestAdscReportRepository();
-        await AddReport(reportRepository, AdscReportSource.VATSIM, Now.AddMinutes(-5));
+        ReceiveReport(contract, AdscReportSource.VATSIM, Now.AddMinutes(-5));
 
         var mediator = Substitute.For<IMediator>();
-        var handler = await CreateHandler(contractRepository, reportRepository, mediator);
+        var handler = await CreateHandler(contractRepository, mediator);
 
         // Act
         await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
@@ -84,45 +119,24 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenHoppieReportIsTwoIntervalsLate_PublishesNothing()
+    public async Task Handle_WhenSourceIsHoppie_PublishesNothing()
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
         var contract = await AddContract(contractRepository);
         contract.RequestDefaultContract(DefaultInterval);
 
-        var reportRepository = new TestAdscReportRepository();
-        await AddReport(reportRepository, AdscReportSource.Hoppie, Now - DefaultInterval * 2);
+        // The periodic report is due, but the report must come from Hoppie
+        ReceiveReport(contract, AdscReportSource.Hoppie, Now - DefaultInterval * 2 - TimeSpan.FromSeconds(1));
 
         var mediator = Substitute.For<IMediator>();
-        var handler = await CreateHandler(contractRepository, reportRepository, mediator);
+        var handler = await CreateHandler(contractRepository, mediator);
 
         // Act
         await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
 
         // Assert
         await mediator.DidNotReceive().Publish(Arg.Any<AdscReportReceivedNotification>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_WhenHoppieReportIsMoreThanTwoIntervalsLate_PublishesVatsimReport()
-    {
-        // Arrange
-        var contractRepository = new TestAdscContractRepository();
-        var contract = await AddContract(contractRepository);
-        contract.RequestDefaultContract(DefaultInterval);
-
-        var reportRepository = new TestAdscReportRepository();
-        await AddReport(reportRepository, AdscReportSource.Hoppie, Now - DefaultInterval * 2 - TimeSpan.FromSeconds(1));
-
-        var mediator = Substitute.For<IMediator>();
-        var handler = await CreateHandler(contractRepository, reportRepository, mediator);
-
-        // Act
-        await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
-
-        // Assert
-        await mediator.Received(1).Publish(Arg.Any<AdscReportReceivedNotification>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -135,7 +149,7 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
         contract.Reject();
 
         var mediator = Substitute.For<IMediator>();
-        var handler = await CreateHandler(contractRepository, new TestAdscReportRepository(), mediator);
+        var handler = await CreateHandler(contractRepository, mediator);
 
         // Act
         await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
@@ -151,14 +165,13 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
         var contractRepository = new TestAdscContractRepository();
         var contract = await AddContract(contractRepository);
         contract.RequestDefaultContract(DefaultInterval);
-        contract.RequestDemandReport();
 
         // The periodic report is not due
-        var reportRepository = new TestAdscReportRepository();
-        await AddReport(reportRepository, AdscReportSource.VATSIM, Now.AddMinutes(-1));
+        ReceiveReport(contract, AdscReportSource.VATSIM, Now.AddMinutes(-1));
+        contract.RequestDemandReport();
 
         var mediator = Substitute.For<IMediator>();
-        var handler = await CreateHandler(contractRepository, reportRepository, mediator);
+        var handler = await CreateHandler(contractRepository, mediator);
 
         // Act
         await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
@@ -174,19 +187,37 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
         // Arrange
         var contractRepository = new TestAdscContractRepository();
         var contract = await AddContract(contractRepository);
+        ReceiveReport(contract, AdscReportSource.Hoppie, Now.AddHours(-1));
         contract.RequestDemandReport();
 
-        var reportRepository = new TestAdscReportRepository();
-        await AddReport(reportRepository, AdscReportSource.Hoppie, Now.AddHours(-1));
-
         var mediator = Substitute.For<IMediator>();
-        var handler = await CreateHandler(contractRepository, reportRepository, mediator);
+        var handler = await CreateHandler(contractRepository, mediator);
 
         // Act
         await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
 
         // Assert
         await mediator.DidNotReceive().Publish(Arg.Any<AdscReportReceivedNotification>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenHoppieReportTimedOut_PublishesVatsimReport()
+    {
+        // Arrange
+        var contractRepository = new TestAdscContractRepository();
+        var contract = await AddContract(contractRepository);
+        ReceiveReport(contract, AdscReportSource.Hoppie, Now.AddHours(-1));
+        contract.ReportTimedOut();
+        contract.RequestDemandReport();
+
+        var mediator = Substitute.For<IMediator>();
+        var handler = await CreateHandler(contractRepository, mediator);
+
+        // Act
+        await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
+
+        // Assert
+        await mediator.Received(1).Publish(Arg.Any<AdscReportReceivedNotification>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -200,7 +231,6 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
         var mediator = Substitute.For<IMediator>();
         var handler = await CreateHandler(
             contractRepository,
-            new TestAdscReportRepository(),
             mediator,
             isAdscEquipped: false);
 
@@ -222,7 +252,6 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
         var mediator = Substitute.For<IMediator>();
         var handler = await CreateHandler(
             contractRepository,
-            new TestAdscReportRepository(),
             mediator,
             isAdscEquipped: false,
             allowNonEquippedAircraft: true);
@@ -239,12 +268,12 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("QFA1", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("QFA1", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         await contractRepository.Add(new AdscContractKey("QFA1", "YBBB"), contract, CancellationToken.None);
         contract.RequestDefaultContract(DefaultInterval);
 
         var mediator = Substitute.For<IMediator>();
-        var handler = await CreateHandler(contractRepository, new TestAdscReportRepository(), mediator);
+        var handler = await CreateHandler(contractRepository, mediator);
 
         // Act
         await handler.Handle(new ProduceVatsimAdscReportsRequest(), CancellationToken.None);
@@ -255,7 +284,6 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
 
     static async Task<ProduceVatsimAdscReportsRequestHandler> CreateHandler(
         IAdscContractRepository contractRepository,
-        IAdscReportRepository reportRepository,
         IMediator mediator,
         bool isAdscEquipped = true,
         bool allowNonEquippedAircraft = false)
@@ -270,29 +298,28 @@ public class ProduceVatsimAdscReportsRequestHandlerTests
 
         return new ProduceVatsimAdscReportsRequestHandler(
             contractRepository,
-            reportRepository,
             pilotRepository,
-            new TestServerSettingsProvider(new ServerSettings { VatsimStatusEnabled = true, VatsimStatusAllowNonEquippedAircraft = allowNonEquippedAircraft }),
+            new TestServerSettingsProvider(new ServerSettings
+            {
+                VatsimStatusEnabled = true,
+                VatsimStatusAllowNonEquippedAircraft = allowNonEquippedAircraft,
+                VatsimStatusReportDelayMinutes = (int)ReportDelay.TotalMinutes
+            }),
             clock,
             mediator,
             Logger.None);
     }
 
-    static async Task<AdscContract> AddContract(IAdscContractRepository contractRepository)
+    // The contract was made before the report delay, unless the test gives a different time
+    static async Task<AdscContract> AddContract(IAdscContractRepository contractRepository, DateTimeOffset? created = null)
     {
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), created ?? DateTimeOffset.MinValue);
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
         return contract;
     }
 
-    static async Task AddReport(IAdscReportRepository reportRepository, AdscReportSource source, DateTimeOffset received)
+    static void ReceiveReport(AdscContract contract, AdscReportSource source, DateTimeOffset timestamp)
     {
-        await reportRepository.Add(
-            new AircraftAdscReport(
-                "UAL123",
-                "YBBB",
-                new AdscReport(received.AddSeconds(-30), -33.9461, 151.1772, 37000, source),
-                received),
-            CancellationToken.None);
+        contract.ReportReceived(new AdscReport(timestamp, -33.9461, 151.1772, 37000, source));
     }
 }

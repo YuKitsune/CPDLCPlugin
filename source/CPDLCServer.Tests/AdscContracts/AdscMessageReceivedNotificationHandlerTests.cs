@@ -9,6 +9,7 @@ namespace CPDLCServer.Tests.AdscContracts;
 
 public class AdscMessageReceivedNotificationHandlerTests
 {
+    static readonly AdscReport Report = new(DateTimeOffset.UtcNow, -33.9461, 151.1772, 37000, AdscReportSource.Hoppie);
     static readonly TimeSpan DefaultInterval = TimeSpan.FromMinutes(10);
     static readonly TimeSpan SelectedInterval = TimeSpan.FromMinutes(2);
 
@@ -101,13 +102,13 @@ public class AdscMessageReceivedNotificationHandlerTests
     }
 
     [Fact]
-    public async Task Handle_Report_WhenContractIsAccepted_DoesNotPublishContractChange()
+    public async Task Handle_Report_WhenContractIsAccepted_PublishesContractChange()
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
         var contract = await AddContract(contractRepository, "YBBB");
         contract.RequestDefaultContract(DefaultInterval);
-        contract.ReportReceived();
+        contract.ReportReceived(Report);
 
         var mediator = Substitute.For<IMediator>();
         var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);
@@ -116,8 +117,8 @@ public class AdscMessageReceivedNotificationHandlerTests
         await handler.Handle(CreateReport("YBBB"), CancellationToken.None);
 
         // Assert
-        await mediator.DidNotReceive().Publish(
-            Arg.Any<AdscContractChangedNotification>(),
+        await mediator.Received(1).Publish(
+            Arg.Is<AdscContractChangedNotification>(n => n.Contract == contract),
             Arg.Any<CancellationToken>());
         await mediator.Received(1).Publish(
             Arg.Any<AdscReportReceivedNotification>(),
@@ -250,7 +251,7 @@ public class AdscMessageReceivedNotificationHandlerTests
 
     static async Task<AdscContract> AddContract(TestAdscContractRepository contractRepository, string stationId)
     {
-        var contract = new AdscContract("UAL123", stationId, TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", stationId, TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         await contractRepository.Add(new AdscContractKey("UAL123", stationId), contract, CancellationToken.None);
         return contract;
     }

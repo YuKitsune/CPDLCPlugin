@@ -9,6 +9,8 @@ namespace CPDLCServer.Tests.AdscContracts.Reports;
 
 public class RequestAdscDemandReportCommandHandlerTests
 {
+    static readonly AdscReport Report = new(DateTimeOffset.UtcNow, -33.9461, 151.1772, 37000, AdscReportSource.Hoppie);
+
     [Fact]
     public async Task Handle_SendsRequestViaAcarsConnectionForStation()
     {
@@ -56,9 +58,9 @@ public class RequestAdscDemandReportCommandHandlerTests
     {
         // Arrange
         var contractRepository = new TestAdscContractRepository();
-        var existingContract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var existingContract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         existingContract.RequestDefaultContract(TimeSpan.FromMinutes(10));
-        existingContract.ReportReceived();
+        existingContract.ReportReceived(Report);
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), existingContract, CancellationToken.None);
 
         var mediator = Substitute.For<IMediator>();

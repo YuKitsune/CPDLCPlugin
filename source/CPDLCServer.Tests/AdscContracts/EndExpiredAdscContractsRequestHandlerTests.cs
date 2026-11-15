@@ -22,7 +22,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow());
         contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
@@ -46,7 +46,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow().AddSeconds(1));
         contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
@@ -68,7 +68,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
         contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
@@ -92,7 +92,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         var contractRepository = new TestAdscContractRepository();
         foreach (var callsign in new[] { "UAL123", "QFA1" })
         {
-            var contract = new AdscContract(callsign, "YBBB", TimeSpan.FromMinutes(10));
+            var contract = new AdscContract(callsign, "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
             contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow());
             contract.LogActivity(clock.UtcNow());
             await contractRepository.Add(new AdscContractKey(callsign, "YBBB"), contract, CancellationToken.None);
@@ -121,7 +121,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
         contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
@@ -150,7 +150,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange - the last activity was long before the server started
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
         contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
@@ -178,7 +178,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow());
         contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
@@ -202,7 +202,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange - TestAcarsConnectionManager has no ACARS connection for YSSY, so the cancel fails
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YSSY", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YSSY", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
         contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YSSY"), contract, CancellationToken.None);
@@ -228,7 +228,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
         contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);
@@ -252,7 +252,7 @@ public class EndExpiredAdscContractsRequestHandlerTests
         // Arrange
         var clock = new TestClock();
         var contractRepository = new TestAdscContractRepository();
-        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10));
+        var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow().AddMinutes(60));
         contract.LogActivity(clock.UtcNow());
         await contractRepository.Add(new AdscContractKey("UAL123", "YBBB"), contract, CancellationToken.None);

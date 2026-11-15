@@ -1,3 +1,5 @@
+using CPDLCServer.AdscContracts.Reports;
+
 namespace CPDLCServer.AdscContracts;
 
 /// <summary>
@@ -9,18 +11,22 @@ namespace CPDLCServer.AdscContracts;
 /// <item>A demand request asks for one report.</item>
 /// </list>
 /// </summary>
-public class AdscContract(string callsign, string stationId, TimeSpan defaultReportingInterval)
+public class AdscContract(string callsign, string stationId, TimeSpan defaultReportingInterval, DateTimeOffset created)
 {
     // The ACARS connections poll for messages every 20 to 75 seconds. A shorter interval gives no more data.
     public static readonly TimeSpan MinimumReportingInterval = TimeSpan.FromSeconds(60);
 
+    // The maximum delivery time of a report
+    static readonly TimeSpan ReportDeliveryTolerance = TimeSpan.FromMinutes(3);
+
     public string Callsign { get; } = callsign;
     public string StationId { get; } = stationId;
 
-    // The default reporting interval of the ATSU. The controller sees it as the default period.
+    // The time that the ATSU made the contract
+    public DateTimeOffset Created { get; } = created;
+
     public TimeSpan DefaultReportingInterval { get; private set; } = defaultReportingInterval;
 
-    // The interval of the latest periodic request. Null when no periodic contract was requested.
     public TimeSpan? ReportingInterval { get; private set; }
 
     public AdscContractState? DefaultContractState { get; private set; }
@@ -30,11 +36,14 @@ public class AdscContract(string callsign, string stationId, TimeSpan defaultRep
 
     // Null when no selected contract is in use
     public DateTimeOffset? SelectedContractEnds { get; private set; }
-
     public AdscContractState? DemandContractState { get; private set; }
 
     // The latest time that a request was sent, or that a message was received from the aircraft
     public DateTimeOffset LastActivity { get; private set; }
+
+    public DateTimeOffset? LastReportReceived { get; private set; }
+
+    public AdscReportSource? ReportingSource { get; private set; }
 
     public bool HasPeriodicContract =>
         DefaultContractState is AdscContractState.Sent or AdscContractState.Accepted ||
@@ -44,6 +53,10 @@ public class AdscContract(string callsign, string stationId, TimeSpan defaultRep
     public bool IsActive =>
         HasPeriodicContract ||
         DemandContractState is AdscContractState.Sent or AdscContractState.Accepted;
+
+    // A report expires when the next two periodic reports do not arrive.
+    // A contract with only a demand request uses the default reporting interval.
+    public TimeSpan ReportExpiry => (ReportingInterval ?? DefaultReportingInterval) * 2 + ReportDeliveryTolerance;
 
     public void LogActivity(DateTimeOffset now)
     {
@@ -86,30 +99,35 @@ public class AdscContract(string callsign, string stationId, TimeSpan defaultRep
     /// The aircraft does not acknowledge a request, so a report accepts the latest periodic request and the demand request.
     /// When the selected contract is accepted, it replaces the default contract on the aircraft.
     /// </summary>
-    /// <returns>True if the state of a request changed.</returns>
-    public bool ReportReceived()
+    public void ReportReceived(AdscReport report)
     {
-        var changed = false;
+        ReportingSource = report.Source;
+        LastReportReceived = report.Timestamp;
 
         if (SelectedContractState == AdscContractState.Sent)
         {
             SelectedContractState = AdscContractState.Accepted;
             DefaultContractState = null;
-            changed = true;
         }
         else if (DefaultContractState == AdscContractState.Sent)
         {
             DefaultContractState = AdscContractState.Accepted;
-            changed = true;
         }
 
         if (DemandContractState == AdscContractState.Sent)
         {
             DemandContractState = AdscContractState.Accepted;
-            changed = true;
         }
+    }
 
-        return changed;
+    /// <summary>
+    /// The last report is too old to show the position of the aircraft.
+    /// The time of the last report stays, so that the next periodic report is due immediately.
+    /// The source is removed, so that reports from VATSIM can replace the reports from Hoppie.
+    /// </summary>
+    public void ReportTimedOut()
+    {
+        ReportingSource = null;
     }
 
     /// <summary>
@@ -133,7 +151,9 @@ public class AdscContract(string callsign, string stationId, TimeSpan defaultRep
         }
 
         if (DemandContractState == AdscContractState.Sent)
+        {
             DemandContractState = AdscContractState.Rejected;
+        }
 
         return selectedContractRejected;
     }

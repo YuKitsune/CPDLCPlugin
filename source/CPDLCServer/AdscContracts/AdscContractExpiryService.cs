@@ -1,3 +1,4 @@
+using CPDLCServer.AdscContracts.Reports;
 using CPDLCServer.Infrastructure;
 
 namespace CPDLCServer.AdscContracts;
@@ -50,6 +51,9 @@ public class AdscContractExpiryService(IUnitOfWorkMediator mediator, ILogger log
                     timeoutCts.CancelAfter(TimeSpan.FromMinutes(1));
 
                     await mediator.Send(new EndExpiredAdscContractsRequest(), timeoutCts.Token);
+
+                    // After the contracts, so that the reports of removed contracts expire immediately
+                    await mediator.Send(new ExpireAdscReportsRequest(), timeoutCts.Token);
                     await mediator.Send(new PurgeExpiredAdscDataRequest(), timeoutCts.Token);
 
                     await Task.Delay(_checkInterval, stoppingToken);

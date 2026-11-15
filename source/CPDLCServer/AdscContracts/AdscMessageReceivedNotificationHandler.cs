@@ -44,15 +44,8 @@ public class AdscMessageReceivedNotificationHandler(
                     "ADS-C report received from {Callsign}",
                     message.Sender);
 
-                if (contract.ReportReceived())
-                {
-                    logger.Information(
-                        "{Callsign} accepted the ADS-C contract with {StationId}",
-                        message.Sender,
-                        notification.StationId);
-
-                    await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
-                }
+                contract.ReportReceived(reportMessage.Report);
+                await mediator.Publish(new AdscContractChangedNotification(contract), cancellationToken);
 
                 await mediator.Publish(
                     new AdscReportReceivedNotification(

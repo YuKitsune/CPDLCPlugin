@@ -38,13 +38,13 @@ public class RequestPeriodicAdscContractCommandHandler(
 
         var contractKey = new AdscContractKey(request.Callsign, request.StationId);
         var contract = await adscContractRepository.Find(contractKey, cancellationToken);
+        var now = clock.UtcNow();
         if (contract is null)
         {
-            contract = new AdscContract(request.Callsign, request.StationId, defaultReportingInterval);
+            contract = new AdscContract(request.Callsign, request.StationId, defaultReportingInterval, now);
             await adscContractRepository.Add(contractKey, contract, cancellationToken);
         }
 
-        var now = clock.UtcNow();
         if (isDefaultContract)
         {
             contract.RequestDefaultContract(request.ReportingInterval);

@@ -7,9 +7,6 @@ public class AircraftAdscReportConfiguration : IEntityTypeConfiguration<Aircraft
 {
     public const string IdProperty = "Id";
 
-    // True for the report that is the latest report of the aircraft
-    public const string IsLatestProperty = "IsLatest";
-
     public void Configure(EntityTypeBuilder<AircraftAdscReport> builder)
     {
         builder.ToTable("AdscReports");
@@ -17,8 +14,6 @@ public class AircraftAdscReportConfiguration : IEntityTypeConfiguration<Aircraft
         // The domain model has no ID, so the key is a shadow property
         builder.Property<long>(IdProperty);
         builder.HasKey(IdProperty);
-
-        builder.Property<bool>(IsLatestProperty);
 
         builder.Property(r => r.Callsign);
         builder.Property(r => r.StationId);
@@ -33,7 +28,7 @@ public class AircraftAdscReportConfiguration : IEntityTypeConfiguration<Aircraft
             report.Property(r => r.Source).HasColumnName("Source");
         });
 
-        builder.HasIndex(r => r.Callsign);
+        builder.HasIndex(r => new { r.Callsign, r.StationId }).IsUnique();
         builder.HasIndex(r => r.Received);
     }
 }

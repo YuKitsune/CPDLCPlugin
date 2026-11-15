@@ -121,7 +121,9 @@ A controller can select a different reporting interval for an aircraft. The sele
 
 The aircraft does not acknowledge a request. The first report after a request accepts it. If the aircraft rejects a selected contract, the server requests the default contract again. If the aircraft rejects the default contract, the server does not send it again.
 
-The server keeps a history of the reports for the ADS-C report retention period. When a controller connects, the plugin loads the latest report for each aircraft, so that the controller sees the ADS-C tracks immediately.
+The server keeps one report for each contract. A new report replaces the previous report. When a controller connects, the plugin loads the latest report for each aircraft, so that the controller sees the ADS-C tracks immediately.
+
+A report expires when the next two periodic reports do not arrive. The expiry time is two reporting intervals plus three minutes, from the time in the report. A contract with only a demand request uses the default reporting interval. When a report expires, or when its contract is removed, the server deletes the report and the plugin shows the flight plan track again.
 
 The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, and a log of all the ADS-C messages that the server sent and received.
 
@@ -129,7 +131,7 @@ The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their stat
 
 Not all aircraft support ADS-C over Hoppie's network. When the "ADS-C from VATSIM status data" setting is on, the server fakes ADS-C reports using data from the [VATSIM status API](https://data.vatsim.net/v3/vatsim-data.json).
 
-This is only done for aircraft that have `D1` or `G1` in Item 10b of the flight plan, unless the "allow aircraft without ADS-C equipment" setting is on. A report from Hoppie always has priority. If the Hoppie reports stop for more than two reporting intervals, the server uses the VATSIM status data again.
+This is only done for aircraft that have `D1` or `G1` in Item 10b of the flight plan, unless the "allow aircraft without ADS-C equipment" setting is on. The server waits for the "report delay" after it makes a contract before it uses the VATSIM status data, so that the aircraft can send its first report through Hoppie. A report from Hoppie always has priority, and it stops the VATSIM reports for that contract. When the Hoppie report expires, the server uses the VATSIM status data again.
 
 ## Running
 
