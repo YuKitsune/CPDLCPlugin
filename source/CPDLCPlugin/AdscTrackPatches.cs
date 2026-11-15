@@ -10,6 +10,7 @@ namespace CPDLCPlugin;
 /// <list type="bullet">
 /// <item>When a report arrives, the track moves to the reported position and uses the ADSC symbol.</item>
 /// <item>Each time vatSys extrapolates the flight plan positions, the track moves along the route from the reported position and uses the ADSCExtrapolated symbol.</item>
+/// <item>The controller cannot open the PRL menu, because the PRL comes from the reports.</item>
 /// </list>
 /// A coupled radar track always has priority over an ADS-C report.
 /// </summary>
@@ -44,6 +45,11 @@ public static class AdscTrackPatches
             harmony.Patch(
                 RequireMethod("vatsys.FDP2:GenerateTrackPosition"),
                 postfix: new HarmonyMethod(typeof(AdscTrackPatches), nameof(GenerateTrackPositionPostfix)));
+
+            // The PRL label item and the PRL strip item open this menu on a left click
+            harmony.Patch(
+                RequireMethod("vatsys.MMI:OpenPRLMenu"),
+                prefix: new HarmonyMethod(typeof(AdscTrackPatches), nameof(OpenPRLMenuPrefix)));
         }
         catch
         {
@@ -87,6 +93,20 @@ public static class AdscTrackPatches
 
         // vatSys does not rotate a symbol when the heading is -1
         aircraftHeading = -1;
+    }
+
+    static bool OpenPRLMenuPrefix(FDP2.FDR SourceFDR, ref bool __result)
+    {
+        if (!HasAdscTrack(SourceFDR))
+            return true;
+
+        __result = false;
+        return false;
+    }
+
+    static bool HasAdscTrack(FDP2.FDR? fdr)
+    {
+        return _display is not null && fdr is not null && _display.TryGetTrack(fdr.Callsign, out _);
     }
 
     static void GenerateTrackPositionPostfix(FDP2.FDR fdr)
