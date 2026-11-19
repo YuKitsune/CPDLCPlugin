@@ -13,6 +13,9 @@
   <img src="./README.png" />
 </h3>
 
+> [!NOTE]
+> Even though the development of this plugin was inspired by real ATM systems such as those from Thales Group, the plugin is absolutely NOT affiliated with or endorsed by said company. The plugin and all associated files shall be used solely for the purpose of simulation on the VATSIM network.
+
 ## Overview
 
 This plugin enables CPDLC (Controller-Pilot Data Link Communications) functionality in vatSys, allowing controllers to send and receive datalink messages with aircraft on the VATSIM network.
