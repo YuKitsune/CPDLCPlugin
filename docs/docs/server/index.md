@@ -62,6 +62,7 @@ All users log in with [VATSIM Connect](https://vatsim.dev/services/connect). Mak
 - `VatsimConnect__ClientId`: the ID of the client.
 - `VatsimConnect__ClientSecret`: the secret of the client.
 - `VatsimConnect__Authority` (optional): the VATSIM Connect server. The default is `https://auth.vatsim.net`.
+- `VatsimConnect__DevCid` (optional, development only): the login page logs in all users with this CID, and does not use VATSIM Connect. The client ID and the client secret are then not necessary. The server uses this value only when `ASPNETCORE_ENVIRONMENT` is `Development`.
 
 Any VATSIM user can log in, open the CPDLC and ADS-C areas, and connect with the plugin. Only an administrator can open the Configuration area.
 

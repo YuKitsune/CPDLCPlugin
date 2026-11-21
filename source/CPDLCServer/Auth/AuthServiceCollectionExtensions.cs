@@ -16,16 +16,14 @@ public static class AuthServiceCollectionExtensions
     // The time without a request before the user must log in again. The privacy policy shows this value.
     public static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(8);
 
-    public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAuth(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
-        var vatsimConnectOptions = new VatsimConnectOptions
-        {
-            ClientId = configuration.GetRequiredValue("VatsimConnect:ClientId"),
-            ClientSecret = configuration.GetRequiredValue("VatsimConnect:ClientSecret"),
-            Authority = configuration["VatsimConnect:Authority"] is { Length: > 0 } authority
-                ? new Uri(authority)
-                : new Uri("https://auth.vatsim.net")
-        };
+        var developmentLogin = new DevelopmentLogin(
+            environment.IsDevelopment() ? configuration.GetValue<int?>("VatsimConnect:DevCid") : null);
+        services.AddSingleton(developmentLogin);
 
         services.AddScoped<IAdministratorRepository, AdministratorRepository>();
         services.AddScoped<IPluginTokenRepository, PluginTokenRepository>();
@@ -35,7 +33,7 @@ public static class AuthServiceCollectionExtensions
         // After a restart, the user must log in again.
         services.AddSingleton<IDataProtectionProvider, EphemeralDataProtectionProvider>();
 
-        services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        var authentication = services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
                 options.LoginPath = "/login";
@@ -50,45 +48,13 @@ public static class AuthServiceCollectionExtensions
                 options.ExpireTimeSpan = SessionLifetime;
                 options.SlidingExpiration = true;
             })
-            .AddOAuth(VatsimConnectOptions.AuthenticationScheme, "VATSIM", options =>
-            {
-                options.ClientId = vatsimConnectOptions.ClientId;
-                options.ClientSecret = vatsimConnectOptions.ClientSecret;
-                options.CallbackPath = VatsimConnectOptions.CallbackPath;
-                options.AuthorizationEndpoint = new Uri(vatsimConnectOptions.Authority, "/oauth/authorize").ToString();
-                options.TokenEndpoint = new Uri(vatsimConnectOptions.Authority, "/oauth/token").ToString();
-                options.UserInformationEndpoint = new Uri(vatsimConnectOptions.Authority, "/api/user").ToString();
-                options.UsePkce = true;
-                options.Scope.Add("full_name");
-                options.Scope.Add("vatsim_details");
-
-                // The server uses the VATSIM token only to read the user. It does not keep the token.
-                options.SaveTokens = false;
-
-                options.Events.OnCreatingTicket = async context =>
-                {
-                    using var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
-                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
-                    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-                    using var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
-                    response.EnsureSuccessStatusCode();
-
-                    using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(context.HttpContext.RequestAborted));
-                    var user = VatsimUser.Parse(document.RootElement);
-
-                    context.Principal = new(CurrentUser.CreateIdentity(user.Cid, user.Name, VatsimConnectOptions.AuthenticationScheme));
-
-                    var mediator = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWorkMediator>();
-                    await mediator.Send(new UpdateAdministratorNameCommand(user.Cid, user.Name), context.HttpContext.RequestAborted);
-
-                    var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger>();
-                    logger.Information("{Name} ({Cid}) logged in", user.Name, user.Cid);
-                };
-            })
             .AddScheme<AuthenticationSchemeOptions, PluginTokenAuthenticationHandler>(
                 PluginTokenAuthenticationHandler.AuthenticationScheme,
                 _ => { });
+
+        // With the development login, the server does not need a VATSIM Connect client
+        if (developmentLogin.Cid is null)
+            AddVatsimConnect(authentication, configuration);
 
         services.AddScoped<IAuthorizationHandler, AdministratorRequirementHandler>();
         services.AddAuthorization(options =>
@@ -106,5 +72,54 @@ public static class AuthServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    static void AddVatsimConnect(AuthenticationBuilder authentication, IConfiguration configuration)
+    {
+        var vatsimConnectOptions = new VatsimConnectOptions
+        {
+            ClientId = configuration.GetRequiredValue("VatsimConnect:ClientId"),
+            ClientSecret = configuration.GetRequiredValue("VatsimConnect:ClientSecret"),
+            Authority = configuration["VatsimConnect:Authority"] is { Length: > 0 } authority
+                ? new Uri(authority)
+                : new Uri("https://auth.vatsim.net")
+        };
+
+        authentication.AddOAuth(VatsimConnectOptions.AuthenticationScheme, "VATSIM", options =>
+        {
+            options.ClientId = vatsimConnectOptions.ClientId;
+            options.ClientSecret = vatsimConnectOptions.ClientSecret;
+            options.CallbackPath = VatsimConnectOptions.CallbackPath;
+            options.AuthorizationEndpoint = new Uri(vatsimConnectOptions.Authority, "/oauth/authorize").ToString();
+            options.TokenEndpoint = new Uri(vatsimConnectOptions.Authority, "/oauth/token").ToString();
+            options.UserInformationEndpoint = new Uri(vatsimConnectOptions.Authority, "/api/user").ToString();
+            options.UsePkce = true;
+            options.Scope.Add("full_name");
+            options.Scope.Add("vatsim_details");
+
+            // The server uses the VATSIM token only to read the user. It does not keep the token.
+            options.SaveTokens = false;
+
+            options.Events.OnCreatingTicket = async context =>
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                using var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
+                response.EnsureSuccessStatusCode();
+
+                using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(context.HttpContext.RequestAborted));
+                var user = VatsimUser.Parse(document.RootElement);
+
+                context.Principal = new(CurrentUser.CreateIdentity(user.Cid, user.Name, VatsimConnectOptions.AuthenticationScheme));
+
+                var mediator = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWorkMediator>();
+                await mediator.Send(new UpdateAdministratorNameCommand(user.Cid, user.Name), context.HttpContext.RequestAborted);
+
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger>();
+                logger.Information("{Name} ({Cid}) logged in", user.Name, user.Cid);
+            };
+        });
     }
 }

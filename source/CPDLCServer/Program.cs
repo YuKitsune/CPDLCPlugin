@@ -43,7 +43,7 @@ builder.Services
     .AddPersistence(builder.Configuration, databaseProvider, databasePath)
     .AddSecurity(builder.Configuration)
     .AddSetup()
-    .AddAuth(builder.Configuration)
+    .AddAuth(builder.Configuration, builder.Environment)
     .AddSettings()
     .AddAcarsConnections()
     .AddAirTrafficControllers()
