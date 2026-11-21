@@ -75,6 +75,35 @@
     </div>
 
     <div class="card mt-3">
+        <div class="card-header fw-semibold">Operator</div>
+        <div class="card-body">
+            <p class="form-text mt-0">The <a href="/privacy">privacy policy</a> shows the operator and the contact.</p>
+
+            <div class="row py-2 border-bottom">
+                <div class="col-md-5">
+                    <label asp-for="Settings.OperatorName" class="form-label fw-semibold">Operator name</label>
+                    <div class="form-text">The person or organisation that operates this server, for example a VATSIM division or FIR.</div>
+                </div>
+                <div class="col-md-5">
+                    <input asp-for="Settings.OperatorName" class="form-control" />
+                    <span asp-validation-for="Settings.OperatorName" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="row py-2">
+                <div class="col-md-5">
+                    <label asp-for="Settings.PrivacyContact" class="form-label fw-semibold">Privacy contact</label>
+                    <div class="form-text">An email address or a URL. Users use it to ask questions about their data, or to ask you to delete it.</div>
+                </div>
+                <div class="col-md-5">
+                    <input asp-for="Settings.PrivacyContact" class="form-control" />
+                    <span asp-validation-for="Settings.PrivacyContact" class="text-danger small"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
         <div class="card-header fw-semibold">Connections</div>
         <div class="card-body">
             @if (Model.OneFailedCheckCausesTimeout)

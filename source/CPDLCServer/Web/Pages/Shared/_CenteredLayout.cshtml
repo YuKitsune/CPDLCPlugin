@@ -16,7 +16,8 @@
 </head>
 <body class="bg-body-tertiary">
     <main class="container py-5">
-        <div class="mx-auto" style="max-width: 28rem;">
+        @* A page with much text, for example the privacy policy, sets ViewData["Wide"] *@
+        <div class="mx-auto" style="max-width: @(ViewData["Wide"] is true ? "48rem" : "28rem");">
             <div class="text-center">
                 <partial name="_Branding" model="branding" />
             </div>
@@ -24,6 +25,9 @@
                 <div class="card-body p-4">
                     @RenderBody()
                 </div>
+            </div>
+            <div class="mt-3 text-center">
+                <partial name="_Disclaimer" />
             </div>
         </div>
     </main>

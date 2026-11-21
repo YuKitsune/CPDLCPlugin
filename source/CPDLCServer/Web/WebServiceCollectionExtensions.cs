@@ -16,6 +16,7 @@ public static class WebServiceCollectionExtensions
             options.Conventions.AllowAnonymousToPage("/Account/Login");
             options.Conventions.AllowAnonymousToPage("/Account/Logout");
             options.Conventions.AllowAnonymousToPage("/Setup/Index");
+            options.Conventions.AllowAnonymousToPage("/Privacy");
 
             // Only an administrator can open the Configuration area
             options.Conventions.AuthorizeFolder("/Configuration", AdministratorRequirement.PolicyName);

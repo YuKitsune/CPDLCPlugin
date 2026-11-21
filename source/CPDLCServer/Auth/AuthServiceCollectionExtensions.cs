@@ -13,6 +13,9 @@ namespace CPDLCServer.Auth;
 
 public static class AuthServiceCollectionExtensions
 {
+    // The time without a request before the user must log in again. The privacy policy shows this value.
+    public static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(8);
+
     public static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
     {
         var vatsimConnectOptions = new VatsimConnectOptions
@@ -44,7 +47,7 @@ public static class AuthServiceCollectionExtensions
                 // Lax, not Strict: after the login, VATSIM Connect redirects the browser back to this server.
                 // With Strict, the browser does not send the cookie in that redirect, and the user is not logged in.
                 options.Cookie.SameSite = SameSiteMode.Lax;
-                options.ExpireTimeSpan = TimeSpan.FromHours(8);
+                options.ExpireTimeSpan = SessionLifetime;
                 options.SlidingExpiration = true;
             })
             .AddOAuth(VatsimConnectOptions.AuthenticationScheme, "VATSIM", options =>

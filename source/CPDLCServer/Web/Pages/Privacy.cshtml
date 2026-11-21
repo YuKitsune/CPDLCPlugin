@@ -1,0 +1,193 @@
+@page "/privacy"
+@model PrivacyModel
+@{
+    ViewData["Title"] = "Privacy policy";
+    ViewData["Wide"] = true;
+    Layout = "_CenteredLayout";
+
+    var operatorName = string.IsNullOrWhiteSpace(Model.Settings.OperatorName) ? "the operator of this server" : Model.Settings.OperatorName;
+    var contact = Model.Settings.PrivacyContact;
+
+    string Hours(TimeSpan time) => time.TotalHours == 1 ? "1 hour" : $"{time.TotalHours:0.#} hours";
+    string Days(TimeSpan time) => $"{time.TotalDays:0} days";
+}
+
+<h1 class="h3 mb-3">Privacy policy</h1>
+
+<div class="alert alert-secondary">
+    <strong>@Model.Settings.ServerName is a third-party service.</strong>
+    It is not provided, operated or endorsed by VATSIM.
+</div>
+
+<h2 class="h5 mt-4">About this service</h2>
+<p>
+    This server relays CPDLC and ADS-C messages between air traffic controllers on VATSIM and aircraft on the
+    ACARS network. <strong>@operatorName</strong> operates this server. In this policy, "the operator" is
+    @operatorName.
+</p>
+@if (!string.IsNullOrWhiteSpace(contact))
+{
+    <p>
+        For questions about your data, or to ask the operator to delete your data, use this contact:
+        <a href="@PrivacyContactFormat.ToHref(contact)">@contact</a>.
+    </p>
+}
+<p>
+    The server uses the open source <a href="https://github.com/YuKitsune/CPDLCPlugin">CPDLC Plugin</a> software.
+    The authors of the software do not operate this server, and they cannot see its data.
+</p>
+
+<h2 class="h5 mt-4">The data that the server collects</h2>
+<ul>
+    <li>
+        <strong>Your VATSIM account.</strong> You log in with VATSIM Connect. VATSIM gives the server your CID and
+        your full name. The server also asks VATSIM for your VATSIM details (for example, your rating and division),
+        but it does not use or keep them. The server does not get your email address or your password.
+    </li>
+    <li>
+        <strong>Controllers.</strong> When you connect with the vatSys plugin, the server records your CID, your name,
+        your callsign and your station while you are connected.
+    </li>
+    <li>
+        <strong>Administrators.</strong> The server records the CID and the name of each administrator, and the date
+        when they became an administrator.
+    </li>
+    <li>
+        <strong>Flight data.</strong> The server receives aircraft callsigns, CPDLC messages and ADS-C reports
+        (position, level and time) from the ACARS network.
+        @if (Model.Settings.VatsimStatusEnabled)
+        {
+            <text>It also reads aircraft positions from the public VATSIM status data.</text>
+        }
+        CPDLC messages can contain free text from pilots and controllers.
+    </li>
+    <li>
+        <strong>Logs.</strong> The server log records events, for example logins, plugin connections and messages.
+        A log entry can contain your CID, your name, your callsign and the text of a message.
+    </li>
+    <li>
+        <strong>Cookies.</strong> The server uses only the cookies that are necessary for it to operate: one cookie
+        that keeps you logged in, and short-term cookies that protect the login and the forms. The server does not use
+        cookies for analytics or advertising.
+    </li>
+    <li>
+        <strong>IP addresses.</strong> The server does not record your IP address. The hosting provider of the server
+        can record it (see <a href="#third-parties">Third parties</a>).
+    </li>
+</ul>
+
+<h2 class="h5 mt-4">How the server uses the data</h2>
+<p>The server uses the data only to operate the service:</p>
+<ul>
+    <li>to identify you, and to give administrators access to the configuration,</li>
+    <li>to relay CPDLC and ADS-C messages between controllers and aircraft,</li>
+    <li>to show the connected controllers and aircraft, and the messages,</li>
+    <li>to find and correct problems.</li>
+</ul>
+<p>The operator does not sell the data, and does not use it for advertising or analytics.</p>
+
+<h2 class="h5 mt-4">Who can see the data</h2>
+<ul>
+    <li>
+        Each VATSIM user who logs in to this server can see the CPDLC and ADS-C pages. These pages show the name and
+        the CID of each connected controller, the callsigns of the aircraft, the CPDLC messages and the ADS-C data.
+    </li>
+    <li>Controllers who use the plugin see the CPDLC messages and the ADS-C data of the aircraft.</li>
+    <li>Administrators can also see the server log and the raw messages to and from the ACARS network.</li>
+</ul>
+
+<h2 class="h5 mt-4" id="third-parties">Third parties</h2>
+<ul>
+    <li><strong>VATSIM</strong> operates VATSIM Connect, which identifies you when you log in.</li>
+    <li>
+        <strong>The ACARS network</strong> (for example, <a href="https://www.hoppie.nl/acars/">Hoppie's ACARS</a>)
+        carries the CPDLC and ADS-C messages to and from the aircraft. It receives the station, the callsigns and
+        the messages. It does not receive your CID or your name.
+    </li>
+    <li><strong>The hosting provider</strong> of the server stores the database and can record network data, for example IP addresses.</li>
+    <li>
+        <strong>jsDelivr</strong> (cdn.jsdelivr.net) supplies the styles and scripts of the web pages. Your browser
+        downloads them from jsDelivr, so jsDelivr receives your IP address.
+    </li>
+</ul>
+
+<h2 class="h5 mt-4">How long the server keeps the data</h2>
+<div class="table-responsive">
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Kept</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Login cookie</td>
+                <td>Until you log out, or after @Hours(Model.SessionLifetime) without activity. A restart of the server also logs out all users.</td>
+            </tr>
+            <tr>
+                <td>Plugin authentication (CID, name and token)</td>
+                <td>The token is valid for @Days(Model.PluginTokenLifetime). When you select Log out in the plugin, the server deletes it. The record of an expired token stays in the database.</td>
+            </tr>
+            <tr>
+                <td>Administrators</td>
+                <td>Until an administrator removes them.</td>
+            </tr>
+            <tr>
+                <td>Connected controllers</td>
+                <td>Only in memory, until the controller disconnects.</td>
+            </tr>
+            <tr>
+                <td>Aircraft connections</td>
+                <td>Until the connection ends, or after @Model.Settings.AircraftConnectionTimeoutMinutes minutes without contact from the aircraft.</td>
+            </tr>
+            <tr>
+                <td>CPDLC messages</td>
+                <td>@Model.Settings.DialogueRetentionHours hours from the start of the dialogue.</td>
+            </tr>
+            <tr>
+                <td>ADS-C contracts and reports</td>
+                <td>Until the contract ends, or after @Model.Settings.AdscContractTimeoutMinutes minutes without ADS-C activity. The server keeps only the latest report of each contract.</td>
+            </tr>
+            <tr>
+                <td>ADS-C message log</td>
+                <td>Only in memory, for @Hours(Model.AdscMessageLogRetention), and not more than the last @Model.AdscMessageLogCapacity messages.</td>
+            </tr>
+            <tr>
+                <td>Server log</td>
+                <td>Only in memory, the last @Model.LogCapacity entries. A restart deletes them. The hosting provider can keep a copy of the log output for a period that the operator sets.</td>
+            </tr>
+            <tr>
+                <td>Raw ACARS messages</td>
+                <td>Only in memory, the last @Model.TrafficLogCapacity requests of each ACARS connection. A restart deletes them.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<p>
+    The vatSys plugin keeps your token on your computer, encrypted for your Windows account. The plugin log on your
+    computer is kept for 5 days by default.
+</p>
+
+<h2 class="h5 mt-4">Security</h2>
+<p>
+    The server keeps only a hash of each plugin token. It encrypts the ACARS network codes with a key that is not in
+    the database. Use the server only over HTTPS.
+</p>
+
+<h2 class="h5 mt-4">Your choices</h2>
+<ul>
+    <li>To remove the plugin authentication, select Log out in the SETUP window of the plugin.</li>
+    @if (!string.IsNullOrWhiteSpace(contact))
+    {
+        <li>To ask for a copy of your data, or to ask the operator to delete it, use the contact: <a href="@PrivacyContactFormat.ToHref(contact)">@contact</a>.</li>
+    }
+    else
+    {
+        <li>To ask for a copy of your data, or to ask the operator to delete it, speak to an administrator of this server.</li>
+    }
+    <li>If you do not accept this policy, do not log in to this server and do not connect the plugin to it.</li>
+</ul>
+
+<h2 class="h5 mt-4">Changes to this policy</h2>
+<p class="mb-0">The operator can change this policy. This page always shows the current policy.</p>

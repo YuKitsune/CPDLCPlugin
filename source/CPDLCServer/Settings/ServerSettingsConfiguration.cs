@@ -20,5 +20,7 @@ public class ServerSettingsConfiguration : IEntityTypeConfiguration<ServerSettin
 
         builder.Property(s => s.ServerName).HasMaxLength(ServerSettings.MaxServerNameLength);
         builder.Property(s => s.Motd).HasMaxLength(ServerSettings.MaxMotdLength);
+        builder.Property(s => s.OperatorName).HasMaxLength(ServerSettings.MaxOperatorNameLength);
+        builder.Property(s => s.PrivacyContact).HasMaxLength(ServerSettings.MaxPrivacyContactLength);
     }
 }

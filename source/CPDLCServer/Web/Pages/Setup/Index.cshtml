@@ -6,18 +6,30 @@
 }
 
 <h1 class="h4 mb-3">Set up the server</h1>
-<p class="text-muted">
-    Enter the VATSIM CID of the first administrator. After the setup, that person logs in with VATSIM
-    and can add more administrators. You can do the setup only one time.
-</p>
+<p class="text-muted">You can do the setup only one time. You can change the operator details later in Configuration → Settings.</p>
 
 <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
 <form method="post">
     <div class="mb-3">
-        <label asp-for="Cid" class="form-label fw-semibold"></label>
-        <input asp-for="Cid" class="form-control" inputmode="numeric" autocomplete="off" autofocus />
-        <span asp-validation-for="Cid" class="text-danger small"></span>
+        <label asp-for="Input.Cid" class="form-label fw-semibold"></label>
+        <input asp-for="Input.Cid" class="form-control" inputmode="numeric" autocomplete="off" autofocus />
+        <div class="form-text">The VATSIM CID of the first administrator. That person logs in with VATSIM and can add more administrators.</div>
+        <span asp-validation-for="Input.Cid" class="text-danger small"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Input.OperatorName" class="form-label fw-semibold"></label>
+        <input asp-for="Input.OperatorName" class="form-control" autocomplete="organization" />
+        <div class="form-text">The person or organisation that operates this server, for example a VATSIM division or FIR. The privacy policy shows it.</div>
+        <span asp-validation-for="Input.OperatorName" class="text-danger small"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Input.PrivacyContact" class="form-label fw-semibold"></label>
+        <input asp-for="Input.PrivacyContact" class="form-control" autocomplete="email" />
+        <div class="form-text">An email address or a URL. Users use it to ask questions about their data, or to ask you to delete it.</div>
+        <span asp-validation-for="Input.PrivacyContact" class="text-danger small"></span>
     </div>
 
     <button type="submit" class="btn btn-primary w-100">Complete the setup</button>

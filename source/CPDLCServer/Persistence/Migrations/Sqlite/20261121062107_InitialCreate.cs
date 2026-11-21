@@ -172,6 +172,8 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
+                    OperatorName = table.Column<string>(type: "TEXT", maxLength: 128, nullable: false),
+                    PrivacyContact = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
                     ServerName = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
                     Motd = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
                     BannerImage = table.Column<byte[]>(type: "BLOB", nullable: true),

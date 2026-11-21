@@ -12,6 +12,19 @@ public record ServerSettings
     public const string DefaultServerName = "CPDLC Server";
     public const int MaxServerNameLength = 64;
     public const int MaxMotdLength = 1000;
+    public const int MaxOperatorNameLength = 128;
+    public const int MaxPrivacyContactLength = 256;
+
+    // The person or organisation that operates the server. The privacy policy shows it, and the setup sets it.
+    [Required]
+    [StringLength(MaxOperatorNameLength)]
+    public string OperatorName { get; init; } = string.Empty;
+
+    // An email address or a URL, for questions about the privacy policy and requests to delete data
+    [Required]
+    [StringLength(MaxPrivacyContactLength)]
+    [PrivacyContact]
+    public string PrivacyContact { get; init; } = string.Empty;
 
     // Branding: the dashboard shows the name, the banner and the message of the day at the top of the sidebar and on
     // the login page.

@@ -430,6 +430,16 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("OperatorName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PrivacyContact")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ServerName")
                         .IsRequired()
                         .HasMaxLength(64)

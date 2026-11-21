@@ -27,7 +27,7 @@ You must set the `MasterKey`, `VatsimConnect__ClientId` and `VatsimConnect__Clie
 Make a key with `openssl rand -base64 32`, and keep a copy in a safe place. See [VATSIM Connect](#vatsim-connect) for the client.
 :::
 
-After deployment, open `/setup` on the server, and enter the CID of the first administrator (see [Setup](#setup)). Then log in with VATSIM, and add your ACARS connection in Configuration → ACARS connections (`/configuration/acars`).
+After deployment, open `/setup` on the server, and enter the CID of the first administrator and the operator details (see [Setup](#setup)). Then log in with VATSIM, and add your ACARS connection in Configuration → ACARS connections (`/configuration/acars`).
 
 ## Prerequisites
 
@@ -41,7 +41,15 @@ Before running the CPDLC Server, ensure you have:
 
 When the server starts for the first time, it is not set up. All the pages of the dashboard redirect to the setup page (`/setup`).
 
-On the setup page, enter the VATSIM CID of the first administrator. After the setup, the setup page does not exist. The administrator logs in with VATSIM, and can add more administrators in Configuration → Administrators.
+On the setup page, enter:
+
+- The VATSIM CID of the first administrator.
+- The operator name: the person or organisation that operates the server, for example a VATSIM division or FIR.
+- The privacy contact: an email address or a URL. Users use it to ask questions about their data, or to ask for their data to be deleted.
+
+The privacy policy shows the operator name and the privacy contact. You can change them later in Configuration → Settings.
+
+After the setup, the setup page does not exist. The administrator logs in with VATSIM, and can add more administrators in Configuration → Administrators.
 
 :::warning
 The setup page needs no login. The first person who opens it chooses the administrator. Do the setup immediately after the first start.
@@ -137,6 +145,18 @@ The Traffic button of a connection shows the most recent requests to the ACARS n
 
 :::note
 `Hoppie` is currently the only supported ACARS network type.
+:::
+
+### Privacy Policy
+
+VATSIM Connect needs a privacy policy and a statement that the service is not provided or endorsed by VATSIM. The server has both:
+
+- The privacy policy is at `/privacy`. Everyone can open it, also without a login. It shows the operator, the privacy contact, the data that the server collects, who can see it, the third parties, and how long the server keeps the data. The retention times come from the settings, so the page is correct when you change them.
+- Each page shows this statement, with a link to the privacy policy: "This server is a third-party service. It is not provided, operated or endorsed by VATSIM."
+- The login page tells users that VATSIM gives the server their CID and name, and that they accept the privacy policy when they log in.
+
+:::warning
+The privacy policy describes the software. The operator is responsible for the data on their server. Read the policy, and make sure that it agrees with the laws that apply to you and with the VATSIM policies, before you open the server to users.
 :::
 
 ### Branding

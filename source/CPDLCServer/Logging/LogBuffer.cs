@@ -7,6 +7,8 @@ namespace CPDLCServer.Logging;
 /// </summary>
 public class LogBuffer(int capacity = 1000)
 {
+    public int Capacity { get; } = capacity;
+
     readonly object _lock = new();
     readonly Queue<LogEntry> _entries = new();
     readonly List<Channel<LogEntry>> _subscribers = [];
@@ -19,7 +21,7 @@ public class LogBuffer(int capacity = 1000)
             var sequencedEntry = entry with { Sequence = _nextSequence++ };
 
             _entries.Enqueue(sequencedEntry);
-            if (_entries.Count > capacity)
+            if (_entries.Count > Capacity)
                 _entries.Dequeue();
 
             foreach (var subscriber in _subscribers)
@@ -35,7 +37,7 @@ public class LogBuffer(int capacity = 1000)
     {
         lock (_lock)
         {
-            var channel = Channel.CreateBounded<LogEntry>(new BoundedChannelOptions(capacity)
+            var channel = Channel.CreateBounded<LogEntry>(new BoundedChannelOptions(Capacity)
             {
                 FullMode = BoundedChannelFullMode.DropOldest,
                 SingleReader = true

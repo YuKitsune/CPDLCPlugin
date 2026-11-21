@@ -173,6 +173,8 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    OperatorName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    PrivacyContact = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     ServerName = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     Motd = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     BannerImage = table.Column<byte[]>(type: "bytea", nullable: true),
