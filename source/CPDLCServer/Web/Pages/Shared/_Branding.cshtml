@@ -12,7 +12,4 @@
     }
 </a>
 
-@if (!string.IsNullOrWhiteSpace(Model.Motd))
-{
-    <div class="motd small border rounded bg-body p-2 mb-3">@Model.Motd</div>
-}
+<partial name="_Motd" model="Model.Motd" />

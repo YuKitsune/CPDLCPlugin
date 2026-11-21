@@ -5,27 +5,6 @@
     ViewData["Title"] = "Logs";
 }
 
-<style>
-    .log-output {
-        height: 65vh;
-        overflow-y: auto;
-        background-color: var(--bs-gray-900);
-        white-space: pre-wrap;
-        word-break: break-word;
-    }
-
-    /* The same colours as the console output */
-    .log-verbose { color: var(--bs-gray-600); }
-    .log-debug { color: var(--bs-gray-500); }
-    .log-information { color: var(--bs-gray-100); }
-    .log-warning { color: var(--bs-warning); }
-    .log-error { color: var(--bs-danger); }
-    .log-fatal { color: var(--bs-white); background-color: var(--bs-danger); }
-
-    .log-tag { color: var(--bs-info); }
-    .log-exception { color: var(--bs-danger); margin: 0 0 0 2rem; }
-</style>
-
 <div class="d-flex justify-content-between align-items-center">
     <h1 class="h3 mb-0">Logs</h1>
     <span id="log-status" class="badge text-bg-secondary">Connecting</span>
@@ -78,7 +57,8 @@
     </div>
 </div>
 
-<div id="log-output" class="log-output font-monospace small rounded p-2"></div>
+@* The log has a dark background, the same as the console *@
+<div id="log-output" class="font-monospace small text-break overflow-y-auto bg-body rounded p-2" data-bs-theme="dark" style="height: 65vh;"></div>
 
 @section Scripts {
     <script>
@@ -87,6 +67,16 @@
             const maxLines = 5000;
 
             const levelOrder = { Verbose: 0, Debug: 1, Information: 2, Warning: 3, Error: 4, Fatal: 5 };
+
+            // The same colours as the console output
+            const levelClasses = {
+                Verbose: 'text-body-tertiary',
+                Debug: 'text-body-secondary',
+                Information: 'text-body',
+                Warning: 'text-warning',
+                Error: 'text-danger',
+                Fatal: 'text-bg-danger'
+            };
 
             const output = document.getElementById('log-output');
             const status = document.getElementById('log-status');
@@ -135,7 +125,7 @@
             // Use textContent, not innerHTML. The log entries contain text from pilots and controllers.
             function append(entry) {
                 const line = document.createElement('div');
-                line.className = `log-${entry.level.toLowerCase()}`;
+                line.className = levelClasses[entry.level];
                 line.dataset.level = entry.level;
                 line.dataset.area = entry.area;
                 line.dataset.connection = entry.acarsConnectionId ?? '';
@@ -144,13 +134,13 @@
                 line.append(`[${entry.time} ${entry.levelCode}] `);
 
                 const tag = document.createElement('span');
-                tag.className = 'log-tag';
+                tag.className = 'text-info';
                 tag.textContent = entry.acarsConnectionId ? `${entry.area} ${entry.acarsConnectionId} ` : `${entry.area} `;
                 line.append(tag, entry.message);
 
                 if (entry.exception) {
                     const exception = document.createElement('pre');
-                    exception.className = 'log-exception';
+                    exception.className = 'text-danger ms-4 mb-0';
                     exception.textContent = entry.exception;
                     line.appendChild(exception);
                 }

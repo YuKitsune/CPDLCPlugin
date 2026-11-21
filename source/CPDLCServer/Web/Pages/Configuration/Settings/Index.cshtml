@@ -49,14 +49,12 @@
             <div class="row py-2">
                 <div class="col-md-5">
                     <label for="banner" class="form-label fw-semibold">Banner</label>
-                    <div class="form-text">Optional. PNG, JPEG or WebP, 1 MB or less. The sidebar is 16rem wide, so a wide image is best. The banner changes when you upload it. The Save button does not change it.</div>
+                    <div class="form-text">Optional. PNG, JPEG or WebP, 1 MB or less. The sidebar is narrow, so a wide image is best. The banner changes when you upload it. The Save button does not change it.</div>
                 </div>
                 <div class="col-md-5">
                     @if (Model.Branding.HasBanner)
                     {
-                        <div class="mb-2 p-2 border rounded bg-body-tertiary" style="max-width: 16rem;">
-                            <img src="/branding/banner?v=@Model.Branding.BannerVersion" alt="Current banner" class="img-fluid" />
-                        </div>
+                        <img src="/branding/banner?v=@Model.Branding.BannerVersion" alt="Current banner" class="img-thumbnail mb-2" />
                     }
 
                     @* These controls are in the banner forms below the settings form, because a form cannot contain a form *@

@@ -1,0 +1,12 @@
+@model string?
+
+@* Shows each line of the message of the day on its own line *@
+@if (!string.IsNullOrWhiteSpace(Model))
+{
+    <div class="small border rounded bg-body p-2 mb-3">
+        @foreach (var line in Model.ReplaceLineEndings("\n").Split('\n'))
+        {
+            @line<br />
+        }
+    </div>
+}
