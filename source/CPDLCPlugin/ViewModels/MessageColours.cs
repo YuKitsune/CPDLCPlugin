@@ -1,5 +1,7 @@
 ﻿using System.Windows.Media;
 using CPDLCServer.Contracts;
+using vatsys;
+using vatSysToolbox;
 
 namespace CPDLCPlugin.ViewModels;
 
@@ -7,7 +9,7 @@ public class MessageColours
 {
     public static ColorPair GetMessageColors(CpdlcMessageDto message)
     {
-        var background = Theme.CPDLCBackgroundColor;
+        var background = VatSysColours.GetColour(Colours.Identities.CPDLCMessageBackground);
 
         if (IsUrgent(message))
         {
@@ -59,12 +61,12 @@ public class MessageColours
 
         if (message is DownlinkMessageDto)
         {
-            return new ColorPair(background, Theme.CPDLCDownlinkColor).InvertIf(!message.IsAcknowledged);
+            return new ColorPair(background, VatSysColours.GetColour(Colours.Identities.CPDLCDownlink)).InvertIf(!message.IsAcknowledged);
         }
 
         if (message is UplinkMessageDto)
         {
-            return new ColorPair(background, Theme.CPDLCUplinkColor).InvertIf(!message.IsAcknowledged);
+            return new ColorPair(background, VatSysColours.GetColour(Colours.Identities.CPDLCUplink)).InvertIf(!message.IsAcknowledged);
         }
 
         return new ColorPair(background, Theme.CPDLCClosedColor);

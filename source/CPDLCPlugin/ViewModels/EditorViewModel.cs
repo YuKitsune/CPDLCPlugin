@@ -8,6 +8,8 @@ using CPDLCServer.Contracts;
 using MediatR;
 using Serilog;
 using Serilog.Core;
+using vatSysToolbox;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.ViewModels;
 

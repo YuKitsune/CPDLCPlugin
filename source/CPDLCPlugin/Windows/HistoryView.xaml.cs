@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 using CPDLCPlugin.ViewModels;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.Windows;
 
@@ -16,7 +17,6 @@ public partial class HistoryView : UserControl
         _viewModel = viewModel;
         DataContext = viewModel;
 
-        windowHandle.Closed += (_, _) => _viewModel.Dispose();
         windowHandle.Moved += (_, _) => CollapseExtendedMessage();
         SizeChanged += (_, _) => CollapseExtendedMessage();
     }

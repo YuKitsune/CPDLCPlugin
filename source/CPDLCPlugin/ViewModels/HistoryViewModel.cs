@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CPDLCPlugin.Configuration;
 using CPDLCPlugin.Messages;
+using vatSysToolbox;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.ViewModels;
 

@@ -39,5 +39,8 @@ jobs:
             .fallout/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
-      - name: 'Run: CompilePlugin, Test'
-        run: ./build.cmd CompilePlugin Test
+      - name: 'Run: AddNuGetSource, CompilePlugin, Test'
+        run: ./build.cmd AddNuGetSource CompilePlugin Test
+        env:
+          NuGetUsername: ${{ secrets.NUGET_USERNAME }}
+          NuGetToken: ${{ secrets.NUGET_TOKEN }}

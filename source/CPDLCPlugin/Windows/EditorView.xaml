@@ -3,23 +3,29 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:toolbox="clr-namespace:vatSysToolbox;assembly=vatSysToolbox"
+        xmlns:toolboxControls="clr-namespace:vatSysToolbox.Controls;assembly=vatSysToolbox"
         xmlns:local="clr-namespace:CPDLCPlugin"
         xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
-        xmlns:controls="clr-namespace:CPDLCPlugin.Controls"
-        Background="{x:Static local:Theme.BackgroundColor}"
+        xmlns:converters="clr-namespace:CPDLCPlugin.Converters"
+        Background="{toolbox:VatSysColour WindowBackground}"
         d:DataContext="{d:DesignInstance Type=viewModels:EditorViewModel}"
         mc:Ignorable="d"
         Width="640">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/CPDLCPlugin;component/Styles.xaml" />
+                <ResourceDictionary Source="/vatSysToolbox;component/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <converters:EqualityConverter x:Key="EqualityConverter"/>
+            <converters:IndexInCollectionConverter x:Key="IndexInCollectionConverter"/>
+            <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
 
             <Style TargetType="Button" BasedOn="{StaticResource ButtonBaseStyle}"/>
 
             <Style x:Key="DownlinkMessageBackground" TargetType="Border">
-                <Setter Property="Background" Value="{x:Static local:Theme.InteractiveTextColor}"/>
+                <Setter Property="Background" Value="{toolbox:VatSysColour InteractiveText}"/>
                 <Style.Triggers>
                     <DataTrigger Value="True">
                         <DataTrigger.Binding>
@@ -43,7 +49,7 @@
                                 <Binding Path="DataContext.SelectedDownlinkMessage" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}" Mode="OneWay"/>
                             </MultiBinding>
                         </DataTrigger.Binding>
-                        <Setter Property="Foreground" Value="{x:Static local:Theme.InteractiveTextColor}"/>
+                        <Setter Property="Foreground" Value="{toolbox:VatSysColour InteractiveText}"/>
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
@@ -61,8 +67,8 @@
                             </MultiBinding>
                         </DataTrigger.Binding>
 
-                        <Setter Property="Background" Value="{x:Static local:Theme.InteractiveTextColor}"/>
-                        <Setter Property="Foreground" Value="{x:Static local:Theme.BackgroundColor}"/>
+                        <Setter Property="Background" Value="{toolbox:VatSysColour InteractiveText}"/>
+                        <Setter Property="Foreground" Value="{toolbox:VatSysColour WindowBackground}"/>
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
@@ -75,13 +81,13 @@
 
             <Style x:Key="HotButton" TargetType="Button" BasedOn="{StaticResource Mode2Button}">
                 <Setter Property="Foreground" Value="White"/>
-                <Setter Property="Background" Value="{x:Static local:Theme.CPDLCHotButtonBackgroundColor}"/>
+                <Setter Property="Background" Value="{toolbox:VatSysColour CPDLCSendButton}"/>
             </Style>
 
             <Style x:Key="SendButton" TargetType="Button" BasedOn="{StaticResource ButtonBaseStyle}">
                 <Setter Property="MinWidth" Value="80"/>
                 <Setter Property="Foreground" Value="White"/>
-                <Setter Property="Background" Value="{x:Static local:Theme.CPDLCSendBackgroundColor}"/>
+                <Setter Property="Background" Value="{toolbox:VatSysColour CPDLCSendButton}"/>
             </Style>
 
             <Style x:Key="LineNumberButton" TargetType="Button" BasedOn="{StaticResource ButtonBaseStyle}">
@@ -89,7 +95,7 @@
                 <Setter Property="Height" Value="24"/>
                 <Setter Property="Margin" Value="0,0,4,0"/>
                 <Setter Property="FontSize" Value="10"/>
-                <Setter Property="Foreground" Value="{x:Static local:Theme.InteractiveTextColor}"/>
+                <Setter Property="Foreground" Value="{toolbox:VatSysColour InteractiveText}"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             </Style>
 
@@ -185,7 +191,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <controls:BeveledLine Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Height="{x:Static local:Theme.BeveledLineWidth}" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Height="{x:Static toolboxControls:Bevel.LineWidth}" Flipped="true"/>
 
             <!-- Delay Response section -->
             <Grid Grid.Row="1" Grid.Column="0">
@@ -202,7 +208,7 @@
                 </WrapPanel>
             </Grid>
 
-            <controls:BeveledLine Grid.Row="1" Grid.Column="1" Width="{x:Static local:Theme.BeveledLineWidth}" Orientation="Vertical" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="1" Width="{x:Static toolboxControls:Bevel.LineWidth}" Orientation="Vertical" Flipped="true"/>
 
             <!-- To Editor section -->
             <Grid Grid.Row="1" Grid.Column="2">
@@ -218,7 +224,7 @@
                 </WrapPanel>
             </Grid>
 
-            <controls:BeveledLine Grid.Row="1" Grid.Column="3" Width="{x:Static local:Theme.BeveledLineWidth}" Orientation="Vertical" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="3" Width="{x:Static toolboxControls:Bevel.LineWidth}" Orientation="Vertical" Flipped="true"/>
 
             <!-- Unable section -->
             <Grid Grid.Row="1" Grid.Column="4">
@@ -235,7 +241,7 @@
                 </WrapPanel>
             </Grid>
 
-            <controls:BeveledLine Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Height="{x:Static local:Theme.BeveledLineWidth}" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Height="{x:Static toolboxControls:Bevel.LineWidth}" Flipped="true"/>
         </Grid>
 
         <!-- Class Elements Display Area -->
@@ -288,7 +294,7 @@
                                                     <Binding Path="DataContext.SelectedUplinkMessageElement" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}" Mode="OneWay"/>
                                                 </MultiBinding>
                                             </DataTrigger.Binding>
-                                            <Setter Property="Background" Value="{x:Static local:Theme.InteractiveTextColor}"/>
+                                            <Setter Property="Background" Value="{toolbox:VatSysColour InteractiveText}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -304,7 +310,7 @@
                                                         <Binding Path="DataContext.SelectedUplinkMessageElement" RelativeSource="{RelativeSource Mode=FindAncestor, AncestorType={x:Type UserControl}}" Mode="OneWay"/>
                                                     </MultiBinding>
                                                 </DataTrigger.Binding>
-                                                <Setter Property="Foreground" Value="{x:Static local:Theme.BackgroundColor}"/>
+                                                <Setter Property="Foreground" Value="{toolbox:VatSysColour WindowBackground}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -322,10 +328,10 @@
             </ItemsControl>
 
             <!-- Message Elements -->
-            <controls:BeveledBorder
+            <toolboxControls:BeveledBorder
                 Grid.Column="1"
                 BevelType="Sunken"
-                BorderThickness="{x:Static local:Theme.BeveledBorderThickness}"
+                BorderThickness="{x:Static toolboxControls:Bevel.BorderThickness}"
                 Focusable="False">
                 <ItemsControl
                     ItemsSource="{Binding UplinkMessageElements}"
@@ -412,11 +418,11 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-            </controls:BeveledBorder>
+            </toolboxControls:BeveledBorder>
         </Grid>
 
         <!-- Action Buttons -->
-        <Border Grid.Row="4" BorderThickness="1" BorderBrush="{x:Static local:Theme.GenericTextColor}" Margin="8" Padding="4">
+        <Border Grid.Row="4" BorderThickness="1" BorderBrush="{toolbox:VatSysColour GenericText}" Margin="8" Padding="4">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

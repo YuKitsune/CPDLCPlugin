@@ -3,18 +3,18 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:local="clr-namespace:CPDLCPlugin"
-        xmlns:controls="clr-namespace:CPDLCPlugin.Controls"
+        xmlns:toolbox="clr-namespace:vatSysToolbox;assembly=vatSysToolbox"
+        xmlns:toolboxControls="clr-namespace:vatSysToolbox.Controls;assembly=vatSysToolbox"
         xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=viewModels:HistoryViewModel}"
         d:DesignWidth="467" d:DesignHeight="640"
-        Background="{x:Static local:Theme.BackgroundColor}">
+        Background="{toolbox:VatSysColour WindowBackground}">
 
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/CPDLCPlugin;component/Styles.xaml" />
+                <ResourceDictionary Source="/vatSysToolbox;component/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -52,7 +52,7 @@
             </Grid>
         </Grid>
 
-        <controls:BeveledBorder Grid.Row="1" BorderThickness="{x:Static local:Theme.BeveledBorderThickness}" BevelType="Sunken">
+        <toolboxControls:BeveledBorder Grid.Row="1" BorderThickness="{x:Static toolboxControls:Bevel.BorderThickness}" BevelType="Sunken">
             
             <Grid>
                 
@@ -76,36 +76,36 @@
                             <TextBlock Grid.Column="0"
                                        Text="{Binding CurrentlyExtendedMessage.Prefix}"
                                        Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor}"
-                                       FontFamily="{x:Static local:Theme.FontFamily}"
-                                       FontSize="{x:Static local:Theme.FontSize}"
-                                       FontWeight="{x:Static local:Theme.FontWeight}"
+                                       FontFamily="{x:Static toolbox:VatSysFont.Family}"
+                                       FontSize="{x:Static toolbox:VatSysFont.Size}"
+                                       FontWeight="{x:Static toolbox:VatSysFont.Weight}"
                                        Margin="0,0,8,0"/>
 
                             <!-- Time TextBlock -->
                             <TextBlock Grid.Column="1"
                                        Text="{Binding CurrentlyExtendedMessage.Time}"
                                        Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor}"
-                                       FontFamily="{x:Static local:Theme.FontFamily}"
-                                       FontSize="{x:Static local:Theme.FontSize}"
-                                       FontWeight="{x:Static local:Theme.FontWeight}"
+                                       FontFamily="{x:Static toolbox:VatSysFont.Family}"
+                                       FontSize="{x:Static toolbox:VatSysFont.Size}"
+                                       FontWeight="{x:Static toolbox:VatSysFont.Weight}"
                                        Margin="0,0,8,0"/>
 
                             <!-- Callsign TextBlock (clickable) -->
                             <TextBlock Grid.Column="2"
                                        Text="{Binding CurrentlyExtendedMessage.Callsign}"
                                        Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor}"
-                                       FontFamily="{x:Static local:Theme.FontFamily}"
-                                       FontSize="{x:Static local:Theme.FontSize}"
-                                       FontWeight="{x:Static local:Theme.FontWeight}"
+                                       FontFamily="{x:Static toolbox:VatSysFont.Family}"
+                                       FontSize="{x:Static toolbox:VatSysFont.Size}"
+                                       FontWeight="{x:Static toolbox:VatSysFont.Weight}"
                                        Margin="0,0,8,0"/>
 
                             <!-- Full Content TextBlock (clickable, unlimited length) -->
                             <TextBlock Grid.Column="3"
                                        Text="{Binding CurrentlyExtendedMessage.FullContent}"
                                        Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor}"
-                                       FontFamily="{x:Static local:Theme.FontFamily}"
-                                       FontSize="{x:Static local:Theme.FontSize}"
-                                       FontWeight="{x:Static local:Theme.FontWeight}"
+                                       FontFamily="{x:Static toolbox:VatSysFont.Family}"
+                                       FontSize="{x:Static toolbox:VatSysFont.Size}"
+                                       FontWeight="{x:Static toolbox:VatSysFont.Weight}"
                                        TextWrapping="NoWrap"/>
                             </Grid>
                         </StackPanel>
@@ -144,33 +144,33 @@
                                                             <TextBlock Grid.Column="0"
                                                                        Text="{Binding Prefix}"
                                                                        Foreground="{Binding ForegroundColor}"
-                                                                       FontFamily="{x:Static local:Theme.FontFamily}"
-                                                                       FontSize="{x:Static local:Theme.FontSize}"
-                                                                       FontWeight="{x:Static local:Theme.FontWeight}"
+                                                                       FontFamily="{x:Static toolbox:VatSysFont.Family}"
+                                                                       FontSize="{x:Static toolbox:VatSysFont.Size}"
+                                                                       FontWeight="{x:Static toolbox:VatSysFont.Weight}"
                                                                        Margin="0,0,8,0"/>
 
                                                             <TextBlock Grid.Column="1"
                                                                       Text="{Binding Time}"
                                                                       Foreground="{Binding ForegroundColor}"
-                                                                      FontFamily="{x:Static local:Theme.FontFamily}"
-                                                                      FontSize="{x:Static local:Theme.FontSize}"
-                                                                      FontWeight="{x:Static local:Theme.FontWeight}"
+                                                                      FontFamily="{x:Static toolbox:VatSysFont.Family}"
+                                                                      FontSize="{x:Static toolbox:VatSysFont.Size}"
+                                                                      FontWeight="{x:Static toolbox:VatSysFont.Weight}"
                                                                       Margin="0,0,8,0"/>
 
                                                             <TextBlock Grid.Column="2"
                                                                       Text="{Binding Callsign}"
                                                                       Foreground="{Binding ForegroundColor}"
-                                                                      FontFamily="{x:Static local:Theme.FontFamily}"
-                                                                      FontSize="{x:Static local:Theme.FontSize}"
-                                                                      FontWeight="{x:Static local:Theme.FontWeight}"
+                                                                      FontFamily="{x:Static toolbox:VatSysFont.Family}"
+                                                                      FontSize="{x:Static toolbox:VatSysFont.Size}"
+                                                                      FontWeight="{x:Static toolbox:VatSysFont.Weight}"
                                                                       Margin="0,0,8,0"/>
 
                                                             <TextBlock Grid.Column="3"
                                                                       Text="{Binding Content}"
                                                                       Foreground="{Binding ForegroundColor}"
-                                                                      FontFamily="{x:Static local:Theme.FontFamily}"
-                                                                      FontSize="{x:Static local:Theme.FontSize}"
-                                                                      FontWeight="{x:Static local:Theme.FontWeight}"/>
+                                                                      FontFamily="{x:Static toolbox:VatSysFont.Family}"
+                                                                      FontSize="{x:Static toolbox:VatSysFont.Size}"
+                                                                      FontWeight="{x:Static toolbox:VatSysFont.Weight}"/>
                                                         </Grid>
                                                     </StackPanel>
                                                 </Border>
@@ -183,6 +183,6 @@
                     </ItemsControl>
                 </ScrollViewer>
             </Grid>
-        </controls:BeveledBorder>
+        </toolboxControls:BeveledBorder>
     </Grid>
 </UserControl>

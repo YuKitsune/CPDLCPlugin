@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using CPDLCPlugin.Configuration;
 using CPDLCServer.Contracts;
 using vatsys;
+using vatSysToolbox.Infrastructure;
 
 namespace CPDLCPlugin;
 

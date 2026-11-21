@@ -4,6 +4,7 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CPDLCPlugin.Messages;
 using CPDLCPlugin.ViewModels;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.Windows;
 
@@ -18,7 +19,7 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
         _windowHandle = windowHandle;
 
         WeakReferenceMessenger.Default.Register(this);
-        _windowHandle.Closed += (_, _) => OnClosed();
+        _windowHandle.BeforeClose += (_, _) => OnClosing();
     }
 
     public void Receive(DisconnectedNotification message)
@@ -26,14 +27,10 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
         _windowHandle.Close();
     }
 
-    void OnClosed()
+    // The window disposes the view model when it closes
+    void OnClosing()
     {
         WeakReferenceMessenger.Default.Unregister<DisconnectedNotification>(this);
-
-        if (DataContext is EditorViewModel viewModel)
-        {
-            viewModel.Dispose();
-        }
     }
 
     void MessageClassElement_Click(object sender, MouseButtonEventArgs e)

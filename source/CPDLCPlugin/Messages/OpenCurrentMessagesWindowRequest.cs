@@ -2,8 +2,10 @@ using CommunityToolkit.Mvvm.Messaging;
 using CPDLCPlugin.Configuration;
 using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
-using System.Drawing;
+using System.Windows;
 using MediatR;
+using vatSysToolbox;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.Messages;
 
@@ -25,7 +27,7 @@ public class OpenCurrentMessagesWindowRequestHandler(
         // If the window is already open, tell it how it was opened
         WeakReferenceMessenger.Default.Send(request);
 
-        windowManager.FocusOrCreateWindow(
+        windowManager.OpenOrFocus(
             WindowKeys.CurrentMessages,
             "Current Messages",
             windowHandle =>
@@ -40,13 +42,12 @@ public class OpenCurrentMessagesWindowRequestHandler(
                     jurisdictionChecker,
                     closeWhenEmpty: request.OpenedAutomatically);
 
-                return new CurrentMessagesView(viewModel, windowHandle);
+                return new CurrentMessagesView(viewModel);
             },
-            sizeToContent: false,
-            configureForm: form =>
+            new WindowOptions
             {
-                form.Size = new Size(467, 320);
-                form.MinimumSize = new Size(140, 24);
+                Size = WindowSize.Absolute(467, 320),
+                MinimumSize = new Size(140, 24)
             });
 
         return Task.CompletedTask;

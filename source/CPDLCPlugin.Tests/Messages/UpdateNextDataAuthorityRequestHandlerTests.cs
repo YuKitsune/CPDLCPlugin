@@ -4,6 +4,7 @@ using CPDLCPlugin.Server;
 using CPDLCServer.Contracts;
 using NSubstitute;
 using Serilog.Core;
+using vatSysToolbox;
 
 namespace CPDLCPlugin.Tests.Messages;
 

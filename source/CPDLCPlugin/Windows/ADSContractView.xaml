@@ -3,17 +3,17 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:local="clr-namespace:CPDLCPlugin"
+        xmlns:toolbox="clr-namespace:vatSysToolbox;assembly=vatSysToolbox"
+        xmlns:toolboxControls="clr-namespace:vatSysToolbox.Controls;assembly=vatSysToolbox"
         xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
-        xmlns:controls="clr-namespace:CPDLCPlugin.Controls"
         xmlns:converters="clr-namespace:CPDLCPlugin.Converters"
-        Background="{x:Static local:Theme.BackgroundColor}"
+        Background="{toolbox:VatSysColour WindowBackground}"
         d:DataContext="{d:DesignInstance Type=viewModels:ADSContractViewModel, IsDesignTimeCreatable=True}"
         mc:Ignorable="d">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/CPDLCPlugin;component/Styles.xaml" />
+                <ResourceDictionary Source="/vatSysToolbox;component/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <converters:AdscContractStateToSymbolConverter x:Key="AdscContractStateToSymbolConverter"/>
@@ -38,7 +38,7 @@
 
             <!-- A read-only value in a box -->
             <Style x:Key="ValueBorderStyle" TargetType="Border">
-                <Setter Property="BorderBrush" Value="{x:Static local:Theme.GenericTextColor}"/>
+                <Setter Property="BorderBrush" Value="{toolbox:VatSysColour GenericText}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Height" Value="24"/>
             </Style>
@@ -97,7 +97,7 @@
         </StackPanel>
 
         <!-- Divider -->
-        <controls:BeveledLine Grid.Row="1" Height="{x:Static local:Theme.BeveledLineWidth}" Orientation="Horizontal" Flipped="true"/>
+        <toolboxControls:BeveledLine Grid.Row="1" Height="{x:Static toolboxControls:Bevel.LineWidth}" Orientation="Horizontal" Flipped="true"/>
 
         <!-- Period Details -->
         <Grid Grid.Row="2" Margin="16">
@@ -136,8 +136,8 @@
                    Placement="Bottom"
                    StaysOpen="False"
                    AllowsTransparency="True">
-                <Border Background="{x:Static local:Theme.BackgroundColor}">
-                    <controls:BeveledBorder BorderThickness="{x:Static local:Theme.BeveledBorderThickness}" BevelType="Outline">
+                <Border Background="{toolbox:VatSysColour WindowBackground}">
+                    <toolboxControls:BeveledBorder BorderThickness="{x:Static toolboxControls:Bevel.BorderThickness}" BevelType="Outline">
                         <StackPanel>
                             <Button Content="DEF"
                                     Command="{Binding SelectPeriodCommand}"
@@ -154,12 +154,12 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <controls:TextInput x:Name="CustomPeriodInput"
-                                                MaxCharacters="2"
-                                                DigitsOnly="True"
-                                                KeyDown="CustomPeriodInput_KeyDown"/>
+                            <toolboxControls:TextInput x:Name="CustomPeriodInput"
+                                                       MaxCharacters="2"
+                                                       DigitsOnly="True"
+                                                       KeyDown="CustomPeriodInput_KeyDown"/>
                         </StackPanel>
-                    </controls:BeveledBorder>
+                    </toolboxControls:BeveledBorder>
                 </Border>
             </Popup>
 

@@ -12,15 +12,11 @@ public partial class CurrentMessagesView : UserControl
 {
     CurrentMessageViewModel? _selectedMessage;
     FrameworkElement? _extendedMessageAnchor;
-    readonly CurrentMessagesViewModel _viewModel;
 
-    public CurrentMessagesView(CurrentMessagesViewModel viewModel, IWindowHandle windowHandle)
+    public CurrentMessagesView(CurrentMessagesViewModel viewModel)
     {
         InitializeComponent();
-        _viewModel = viewModel;
         DataContext = viewModel;
-
-        windowHandle.Closed += (_, _) => _viewModel.Dispose();
 
         // Wire up button click events
         StandbyButton.Click += (_, _) => ExecuteCommandAndClosePopup(vm => vm.SendStandbyCommand);

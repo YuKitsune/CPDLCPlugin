@@ -1,9 +1,6 @@
 ﻿using System.ComponentModel.Composition;
 using System.IO;
-using System.Threading.Channels;
-using System.Windows;
 using System.Windows.Forms;
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.Messaging;
 using CPDLCPlugin.Configuration;
 using CPDLCPlugin.Extensions;
@@ -16,6 +13,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using vatsys;
 using vatsys.Plugin;
+using vatSysToolbox;
+using vatSysToolbox.BackgroundWork;
+using vatSysToolbox.MediatR;
+using vatSysToolbox.Messaging;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin;
 
@@ -33,12 +35,16 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
     public const string Name = "CPDLC Plugin";
 #endif
 
-    static readonly Dictionary<string, DateTimeOffset> ErrorMessages = new();
+    /// <summary>
+    /// The name that other plugins use to send messages to this plugin. See <see cref="CpdlcMessages"/>.
+    /// </summary>
+    public const string MailboxName = "dev.eoinmotherway.cpdlc";
 
     readonly CpdlcStatusLabelItemProvider _cpdlcStatusProvider;
     readonly TextStatusLabelItemProvider _textStatusProvider;
     readonly ColourCache _colourCache;
 
+    readonly IErrorReporter _errorReporter;
     readonly WorkQueue _workQueue;
 
     // 1 if a rebuild of the CPDLC status label items is in the work queue, and 0 if not
@@ -46,7 +52,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
     PluginConfiguration? _configuration;
 
-    BackgroundWorker? _ndaRecalculationWorker;
+    BackgroundTask? _ndaRecalculationWorker;
 
     ToolStripMenuItem? _installationMenuItem;
     bool _labelsInstalled;
@@ -62,16 +68,18 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
     public Plugin()
     {
-        DpiAwareness.EnsureDpiAwareness();
-
-        ConfigureTheme();
         _colourCache = CacheLabelColours();
         _cpdlcStatusProvider = new CpdlcStatusLabelItemProvider();
-        _textStatusProvider = new TextStatusLabelItemProvider(_colourCache);
 
         var configuration = ConfigurationLoader.Load();
         _configuration = configuration;
         ConfigureServices(configuration);
+
+        _errorReporter = ServiceProvider.GetRequiredService<IErrorReporter>();
+        _workQueue = ServiceProvider.GetRequiredService<WorkQueue>();
+        _textStatusProvider = new TextStatusLabelItemProvider(_colourCache, _errorReporter);
+
+        EnsureDpiAwareness();
 
         ApplyAdscTrackPatches();
         ApplyFakeAdscReportPatch();
@@ -86,16 +94,16 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         WeakReferenceMessenger.Default.Register<DialogueChangedNotification>(this);
         WeakReferenceMessenger.Default.Register<ConnectedAircraftChanged>(this);
 
-        _workQueue = new WorkQueue(AddError, Log.Logger, new SystemClock());
+        StartPluginMessenger();
 
         // Check the saved token, so that the SETUP window shows the user.
         // The server can be unavailable when vatSys starts, so a failure is not an error.
-        _workQueue.Enqueue(async () =>
+        _workQueue.Enqueue(async cancellationToken =>
         {
             try
             {
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new CheckAuthenticationRequest(configuration.ServerEndpoint));
+                await mediator.Send(new CheckAuthenticationRequest(configuration.ServerEndpoint), cancellationToken);
             }
             catch (Exception ex)
             {
@@ -109,12 +117,14 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         var logger = ConfigureLogger(pluginConfiguration);
 
         ServiceProvider = new ServiceCollection()
+            .AddLogging(builder => builder.AddSerilog(logger))
+            .AddErrorReporter(Name)
+            .AddWindowManager()
+            .AddWorkQueue()
+            .AddPluginMessenger(MailboxName)
             .AddSingleton(logger)
             .AddSingleton(this) // TODO: Ick... Whatever we're relying on this for, move it into a separate service please.
             .AddSingleton(pluginConfiguration)
-            .AddSingleton<IClock>(new SystemClock())
-            .AddSingleton<IGuiInvoker, GuiInvoker>()
-            .AddSingleton<IErrorReporter, ErrorReporter>()
             .AddSingleton<IServerConnection, PluginServerConnection>()
             .AddSingleton<TokenStore>()
             .AddSingleton<PluginAuthenticator>()
@@ -125,9 +135,9 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton<AdscContractStore>()
             .AddSingleton<AdscReportStore>()
             .AddSingleton<AdscTrackDisplay>()
-            .AddSingleton<WindowManager>()
             .AddSingleton<DialogueStore>()
             .AddSingleton<SuspendedMessageStore>()
+            .AddSingleton<WindowEvents>()
             .AddSingleton(_cpdlcStatusProvider)
             .AddSingleton(_colourCache)
             .AddMediatR(c => c.RegisterServicesFromAssemblies(typeof(Plugin).Assembly))
@@ -152,6 +162,34 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         return logger;
     }
 
+    void EnsureDpiAwareness()
+    {
+        try
+        {
+            DpiAwareness.EnsureDpiAwareness();
+        }
+        catch (Exception ex)
+        {
+            _errorReporter.ReportError(ex, "Cannot set the DPI awareness of vatSys");
+        }
+    }
+
+    // Handles the messages from other plugins. See CpdlcMessages.
+    void StartPluginMessenger()
+    {
+        try
+        {
+            var messenger = ServiceProvider.GetRequiredService<IPluginMessenger>();
+            var mediator = ServiceProvider.GetRequiredService<IMediator>();
+            messenger.SubscribeHandlers(typeof(Plugin).Assembly, mediator, new JsonMessageSerializer());
+            messenger.Start();
+        }
+        catch (Exception ex)
+        {
+            _errorReporter.ReportError(ex, "Cannot receive the messages from other plugins");
+        }
+    }
+
     void ApplyAdscTrackPatches()
     {
         try
@@ -160,7 +198,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
         catch (Exception ex)
         {
-            AddError(ex, "Cannot show ADS-C tracks on the ASD");
+            _errorReporter.ReportError(ex, "Cannot show ADS-C tracks on the ASD");
         }
     }
 
@@ -168,11 +206,11 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
     {
         try
         {
-            FakeAdscReportPatch.Apply(SendFakeAdscReport);
+            FakeAdscReportPatch.Apply(SendFakeAdscReport, _errorReporter);
         }
         catch (Exception ex)
         {
-            AddError(ex, "Cannot use fake ADS-C reports");
+            _errorReporter.ReportError(ex, "Cannot use fake ADS-C reports");
         }
     }
 
@@ -203,17 +241,17 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             report.Longitude,
             report.Altitude);
 
-        _workQueue.Enqueue(async () =>
+        _workQueue.Enqueue(async cancellationToken =>
         {
             var mediator = ServiceProvider.GetRequiredService<IMediator>();
-            await mediator.Publish(new AdscReportReceivedNotification(report));
+            await mediator.Publish(new AdscReportReceivedNotification(report), cancellationToken);
         });
     }
 
     void NetworkConnected(object sender, EventArgs e)
     {
         Log.Information("Connected to VATSIM as {Callsign}", Network.Callsign);
-        _workQueue.Enqueue(() =>
+        _workQueue.Enqueue(_ =>
         {
             StartNdaRecalculationWorker();
             return Task.CompletedTask;
@@ -222,11 +260,11 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         if (_configuration is { AutoConnect: true })
         {
             var configuration = _configuration;
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 Log.Information("Connecting to the CPDLC server automatically");
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new ConnectRequest(configuration.ServerEndpoint, configuration.Stations.First()));
+                await mediator.Send(new ConnectRequest(configuration.ServerEndpoint, configuration.Stations.First()), cancellationToken);
             });
         }
     }
@@ -237,20 +275,20 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
         try
         {
-            _workQueue.Enqueue(StopNdaRecalculationWorker);
+            _workQueue.Enqueue(_ => StopNdaRecalculationWorker());
 
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 var mediator =  ServiceProvider.GetService<IMediator>();
                 if (mediator is null)
                     return;
 
-                await mediator.Send(new DisconnectRequest()).ConfigureAwait(false);
+                await mediator.Send(new DisconnectRequest(), cancellationToken).ConfigureAwait(false);
             });
         }
         catch (Exception ex)
         {
-            AddError(ex);
+            _errorReporter.ReportError(ex);
         }
     }
 
@@ -258,7 +296,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
     {
         var interval = TimeSpan.FromMinutes(_configuration?.NdaRecalculationIntervalMinutes ?? 1);
         Log.Information("Starting NDA recalculation worker (interval: {Interval})", interval);
-        _ndaRecalculationWorker = new BackgroundWorker(async cancellationToken =>
+        _ndaRecalculationWorker = new BackgroundTask(async cancellationToken =>
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -273,10 +311,11 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
                 }
                 catch (Exception ex)
                 {
-                    AddError(ex);
+                    _errorReporter.ReportError(ex);
                 }
             }
         });
+        _ndaRecalculationWorker.Start();
     }
 
     async Task StopNdaRecalculationWorker()
@@ -309,61 +348,11 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
     }
 
-    public static void AddError(Exception exception)
-    {
-        Log.Error(exception, "An error has occurred");
-        TryAddErrorInternal(exception);
-    }
-
-    public static void AddError(Exception exception, string message)
-    {
-        Log.Error(exception, message);
-        TryAddErrorInternal(exception);
-    }
-
-    static void TryAddErrorInternal(Exception exception)
-    {
-        lock (ErrorMessages)
-        {
-            // Don't flood the error window with the same message over and over again
-            if (ErrorMessages.TryGetValue(exception.Message, out var lastShown) &&
-                DateTimeOffset.Now - lastShown <= TimeSpan.FromMinutes(1))
-                return;
-
-            Errors.Add(exception, Name);
-            ErrorMessages[exception.Message] = DateTimeOffset.Now;
-        }
-    }
-
-    void ConfigureTheme()
-    {
-        Theme.BackgroundColor = GetColour(Colours.Identities.WindowBackground);
-        Theme.GenericTextColor = GetColour(Colours.Identities.GenericText);
-        Theme.InteractiveTextColor = GetColour(Colours.Identities.InteractiveText);
-        Theme.NonInteractiveTextColor = GetColour(Colours.Identities.NonInteractiveText);
-        Theme.SelectedButtonColor = GetColour(Colours.Identities.WindowButtonSelected);
-
-        Theme.CPDLCBackgroundColor = GetColour(Colours.Identities.CPDLCMessageBackground);
-        Theme.CPDLCUplinkColor = GetColour(Colours.Identities.CPDLCUplink);
-        Theme.CPDLCDownlinkColor = GetColour(Colours.Identities.CPDLCDownlink);
-        Theme.CPDLCSendBackgroundColor = GetColour(Colours.Identities.CPDLCSendButton);
-        Theme.CPDLCHotButtonBackgroundColor = GetColour(Colours.Identities.CPDLCSendButton);
-
-        Theme.FontFamily = new FontFamily(MMI.eurofont_xsml.FontFamily.Name);
-        Theme.FontSize = MMI.eurofont_xsml.Size;
-        Theme.FontWeight = MMI.eurofont_xsml.Bold ? FontWeights.Bold : FontWeights.Regular;
-
-        SolidColorBrush GetColour(Colours.Identities identity)
-        {
-            return new SolidColorBrush(Colours.GetColour(identity).ToWindowsColor());
-        }
-    }
-
     ColourCache CacheLabelColours()
     {
         // Need to cache these for thread-safe access
 
-        var downlinkColor = Theme.CPDLCDownlinkColor.Color;
+        var downlinkColor = VatSysColours.GetColour(Colours.Identities.CPDLCDownlink).Color;
         var customDownlinkColor = new CustomColour(downlinkColor.R, downlinkColor.G, downlinkColor.B);
 
         var unableColor = Theme.CPDLCUnableDownlinkColor.Color;
@@ -390,10 +379,10 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             new ToolStripMenuItem("Setup"));
         setupMenuItem.Item.Click += (_, _) =>
         {
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new OpenSetupWindowRequest());
+                await mediator.Send(new OpenSetupWindowRequest(), cancellationToken);
             });
         };
 
@@ -405,10 +394,10 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             new ToolStripMenuItem("Current Messages"));
         currentMessagesMenuItem.Item.Click += (_, _) =>
         {
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: false));
+                await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: false), cancellationToken);
             });
         };
 
@@ -420,12 +409,12 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             new ToolStripMenuItem("History"));
         historyMenuItem.Item.Click += (_, _) =>
         {
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 var selectedCallsign = MMI.SelectedTrack?.GetFDR()?.Callsign;
 
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new OpenHistoryWindowRequest(selectedCallsign));
+                await mediator.Send(new OpenHistoryWindowRequest(selectedCallsign), cancellationToken);
             });
         };
 
@@ -437,12 +426,12 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             new ToolStripMenuItem("ADS Contract"));
         adsContractMenuItem.Item.Click += (_, _) =>
         {
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 var selectedCallsign = MMI.SelectedTrack?.GetFDR()?.Callsign;
 
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new OpenADSContractWindowRequest(selectedCallsign));
+                await mediator.Send(new OpenADSContractWindowRequest(selectedCallsign), cancellationToken);
             });
         };
 
@@ -455,14 +444,14 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             new ToolStripMenuItem("CPDLC Editor"));
         editorMenuItem.Item.Click += (_, _) =>
         {
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 var selectedCallsign = MMI.SelectedTrack?.GetFDR()?.Callsign;
                 if (selectedCallsign is null)
                     throw new InvalidOperationException("Select a track with a flight plan before you open the CPDLC Editor");
 
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new OpenEditorWindowRequest(selectedCallsign));
+                await mediator.Send(new OpenEditorWindowRequest(selectedCallsign), cancellationToken);
             });
         };
 
@@ -517,12 +506,12 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
             if (!status.IsInstalled)
             {
-                AddError(new InvalidOperationException("CPDLC Label and Strip items must be installed. Please install them from the CPDLC menu."));
+                _errorReporter.ReportError(new InvalidOperationException("CPDLC Label and Strip items must be installed. Please install them from the CPDLC menu."));
             }
         }
         catch (Exception ex)
         {
-            AddError(ex, "Failed to verify Labels.xml/Strips.xml installation");
+            _errorReporter.ReportError(ex, "Failed to verify Labels.xml/Strips.xml installation");
         }
     }
 
@@ -551,7 +540,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
         catch (Exception ex)
         {
-            AddError(ex, "Failed to install label & strip items");
+            _errorReporter.ReportError(ex, "Failed to install label & strip items");
         }
     }
 
@@ -587,7 +576,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
         catch (Exception ex)
         {
-            AddError(ex, "Failed to uninstall label & strip items");
+            _errorReporter.ReportError(ex, "Failed to uninstall label & strip items");
         }
     }
 
@@ -596,7 +585,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         try
         {
             // Record the last known owner of each FDR
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 Log.Verbose(
                     "{Callsign}: IsTracked {IsTracked}; IsTrackedByMe: {IsTrackedByMe}; Controller Tracking: {CurrentController}; Handoff Controller: {HandoffController}",
@@ -623,14 +612,14 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
                 // We were the previous owner, process the handoff
                 Log.Information("{Callsign} handoff to {NextController}", updated.Callsign, record.CurrentOwner);
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Publish(new HandoffCompletedNotification(updated.Callsign, record.CurrentOwner));
+                await mediator.Publish(new HandoffCompletedNotification(updated.Callsign, record.CurrentOwner), cancellationToken);
             });
 
             // Ensure the next data authority is up-to-date
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 var handoffMediator = ServiceProvider.GetRequiredService<IMediator>();
-                await handoffMediator.Send(new UpdateNextDataAuthorityRequest(updated.Callsign, updated.GetSectorEntries()));
+                await handoffMediator.Send(new UpdateNextDataAuthorityRequest(updated.Callsign, updated.GetSectorEntries()), cancellationToken);
             });
 
             // Re-build the CPDLC status label items
@@ -639,27 +628,27 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             // If this flight has any dialogues that we have jurisdiction over, open the current messages window
             // Ensures flights handed off to us open the window so we can see their requests
             // A closed dialogue stays in the window until it is archived (e.g. a downlink that needs no response)
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 var store = ServiceProvider.GetRequiredService<DialogueStore>();
                 var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
 
-                var hasDialoguesToDisplay = (await store.All(CancellationToken.None))
+                var hasDialoguesToDisplay = (await store.All(cancellationToken))
                     .Where(d => d.AircraftCallsign == updated.Callsign)
                     .Any(d => !d.IsArchived && jurisdictionChecker.ShouldDisplayDialogue(d));
 
                 // vatSys updates the FDRs often. If the window is open, do not post to the UI thread to open it again.
                 var windowManager = ServiceProvider.GetRequiredService<WindowManager>();
-                if (hasDialoguesToDisplay && !windowManager.IsWindowOpen(WindowKeys.CurrentMessages))
+                if (hasDialoguesToDisplay && !windowManager.IsOpen(WindowKeys.CurrentMessages))
                 {
                     var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                    await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: true));
+                    await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: true), cancellationToken);
                 }
             });
         }
         catch (Exception ex)
         {
-            AddError(ex);
+            _errorReporter.ReportError(ex);
         }
     }
 
@@ -681,7 +670,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
         catch (Exception ex)
         {
-            AddError(ex, "Failed to generate custom label item");
+            _errorReporter.ReportError(ex, "Failed to generate custom label item");
         }
 
         return null;
@@ -703,7 +692,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
         catch (Exception ex)
         {
-            AddError(ex, "Failed to generate custom strip item");
+            _errorReporter.ReportError(ex, "Failed to generate custom strip item");
         }
 
         return null;
@@ -720,11 +709,11 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         if (Interlocked.Exchange(ref _isLabelRebuildQueued, 1) == 1)
             return;
 
-        _workQueue.Enqueue(() =>
+        _workQueue.Enqueue(cancellationToken =>
         {
             // Clear the flag before the rebuild reads the state. Then a change during the rebuild queues a new rebuild.
             Interlocked.Exchange(ref _isLabelRebuildQueued, 0);
-            return RebuildCpdlcStatusLabelItems();
+            return RebuildCpdlcStatusLabelItems(cancellationToken);
         });
     }
 
@@ -737,7 +726,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
         catch (Exception ex)
         {
-            AddError(ex);
+            _errorReporter.ReportError(ex);
         }
     }
 
@@ -749,7 +738,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         }
         catch (Exception ex)
         {
-            AddError(ex);
+            _errorReporter.ReportError(ex);
         }
     }
 
@@ -761,7 +750,7 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             // opens.
             QueueLabelRebuild();
 
-            _workQueue.Enqueue(async () =>
+            _workQueue.Enqueue(async cancellationToken =>
             {
                 // Try to open the Current Messages Window if this dialogue is relevant to the controller
                 var jurisdictionChecker = ServiceProvider.GetRequiredService<IJurisdictionChecker>();
@@ -773,16 +762,16 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
 
                 // If the window is open, do not post to the UI thread to open and activate it again
                 var windowManager = ServiceProvider.GetRequiredService<WindowManager>();
-                if (windowManager.IsWindowOpen(WindowKeys.CurrentMessages))
+                if (windowManager.IsOpen(WindowKeys.CurrentMessages))
                     return;
 
                 var mediator = ServiceProvider.GetRequiredService<IMediator>();
-                await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: true));
+                await mediator.Send(new OpenCurrentMessagesWindowRequest(OpenedAutomatically: true), cancellationToken);
             });
         }
         catch (Exception ex)
         {
-            AddError(ex);
+            _errorReporter.ReportError(ex);
         }
     }
 }

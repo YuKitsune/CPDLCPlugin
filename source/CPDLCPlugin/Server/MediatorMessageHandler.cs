@@ -1,10 +1,11 @@
 ﻿using CPDLCPlugin.Messages;
 using CPDLCServer.Contracts;
 using MediatR;
+using vatSysToolbox;
 
 namespace CPDLCPlugin.Server;
 
-public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelegate
+public class MediatorMessageHandler(IMediator mediator, IErrorReporter errorReporter) : IDownlinkHandlerDelegate
 {
     int _isDisconnecting;
 
@@ -20,7 +21,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle DialogueChanged notification");
+            errorReporter.ReportError(ex, "Failed to handle DialogueChanged notification");
         }
     }
 
@@ -36,7 +37,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle AircraftConnectionUpdated notification");
+            errorReporter.ReportError(ex, "Failed to handle AircraftConnectionUpdated notification");
         }
     }
 
@@ -52,7 +53,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle AircraftConnectionRemoved notification");
+            errorReporter.ReportError(ex, "Failed to handle AircraftConnectionRemoved notification");
         }
     }
 
@@ -68,7 +69,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle AcarsStationsUpdated notification");
+            errorReporter.ReportError(ex, "Failed to handle AcarsStationsUpdated notification");
         }
     }
 
@@ -84,7 +85,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle AdscContractUpdated notification");
+            errorReporter.ReportError(ex, "Failed to handle AdscContractUpdated notification");
         }
     }
 
@@ -100,7 +101,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle AdscContractRemoved notification");
+            errorReporter.ReportError(ex, "Failed to handle AdscContractRemoved notification");
         }
     }
 
@@ -116,7 +117,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle AdscReportReceived notification");
+            errorReporter.ReportError(ex, "Failed to handle AdscReportReceived notification");
         }
     }
 
@@ -132,13 +133,13 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to handle AdscReportExpired notification");
+            errorReporter.ReportError(ex, "Failed to handle AdscReportExpired notification");
         }
     }
 
     public void Error(Exception error)
     {
-        Plugin.AddError(error, "Error from SignalR connection");
+        errorReporter.ReportError(error, "Error from SignalR connection");
         if (Interlocked.CompareExchange(ref _isDisconnecting, 1, 0) == 0)
         {
             _ = DisconnectAsync();
@@ -153,7 +154,7 @@ public class MediatorMessageHandler(IMediator mediator) : IDownlinkHandlerDelega
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Failed to disconnect after SignalR error");
+            errorReporter.ReportError(ex, "Failed to disconnect after SignalR error");
         }
         finally
         {

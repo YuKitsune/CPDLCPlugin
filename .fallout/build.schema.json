@@ -25,6 +25,7 @@
       "type": "string",
       "enum": [
         "AddMigration",
+        "AddNuGetSource",
         "CheckVersion",
         "CompilePlugin",
         "CompileServer",
@@ -139,6 +140,15 @@
         "MigrationName": {
           "type": "string",
           "description": "Name of the migration to add"
+        },
+        "NuGetToken": {
+          "type": "string",
+          "description": "GitHub personal access token (classic) with the read:packages scope, for the NuGet feed",
+          "default": "Secrets must be entered via 'fallout :secrets [profile]'"
+        },
+        "NuGetUsername": {
+          "type": "string",
+          "description": "GitHub username for the NuGet feed"
         },
         "ProfileName": {
           "type": "string"

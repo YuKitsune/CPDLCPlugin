@@ -2,6 +2,8 @@ using CPDLCPlugin.Configuration;
 using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
 using MediatR;
+using vatSysToolbox;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.Messages;
 
@@ -18,9 +20,9 @@ public class OpenConnectionRequestWindowRequestHandler(
     public Task Handle(OpenConnectionRequestWindowRequest request, CancellationToken cancellationToken)
     {
         // Each window is specific to a callsign, so we always want a fresh window
-        windowManager.TryRemoveWindow(WindowKeys.ConnectionRequest);
+        windowManager.Close(WindowKeys.ConnectionRequest);
 
-        windowManager.FocusOrCreateWindow(
+        windowManager.OpenOrFocus(
             WindowKeys.ConnectionRequest,
             "CPDLC Connection Request",
             windowHandle =>
@@ -37,12 +39,7 @@ public class OpenConnectionRequestWindowRequestHandler(
                 var control = new ConnectionRequestView(viewModel);
                 return control;
             },
-            configureForm: form =>
-            {
-                form.HasMinimizeButton = false;
-                form.MinimizeBox = false;
-                form.HasSendBackButton = false;
-            });
+            new WindowOptions { CanMinimise = false, CanSendToBack = false });
 
         return Task.CompletedTask;
     }

@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Messaging;
 using CPDLCPlugin.Messages;
 using CPDLCServer.Contracts;
 using MediatR;
+using vatSysToolbox;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.ViewModels;
 

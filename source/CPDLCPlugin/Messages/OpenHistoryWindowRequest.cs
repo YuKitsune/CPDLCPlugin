@@ -1,9 +1,11 @@
 using CPDLCPlugin.Configuration;
 using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
-using System.Drawing;
+using System.Windows;
 using System.Windows.Forms;
 using MediatR;
+using vatSysToolbox;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.Messages;
 
@@ -14,16 +16,19 @@ public class OpenHistoryWindowRequestHandler(
     PluginConfiguration pluginConfiguration,
     DialogueStore dialogueStore,
     IErrorReporter errorReporter,
-    IGuiInvoker guiInvoker)
+    IGuiInvoker guiInvoker,
+    WindowEvents windowEvents)
     : IRequestHandler<OpenHistoryWindowRequest>
 {
     public Task Handle(OpenHistoryWindowRequest request, CancellationToken cancellationToken)
     {
-        windowManager.FocusOrCreateWindow(
+        windowManager.OpenOrFocus(
             WindowKeys.History,
             "CPDLC History",
             windowHandle =>
             {
+                windowEvents.Broadcast(windowHandle, CpdlcMessages.HistoryWindowOpened, CpdlcMessages.HistoryWindowClosed);
+
                 var viewModel = new HistoryViewModel(
                     pluginConfiguration,
                     dialogueStore,
@@ -33,13 +38,12 @@ public class OpenHistoryWindowRequestHandler(
 
                 return new HistoryView(viewModel, windowHandle);
             },
-            sizeToContent: false,
-            configureForm: form =>
+            new WindowOptions
             {
                 // Only the height can change
-                form.Size = new Size(467, 320);
-                form.MinimumSize = new Size(467, 24);
-                form.MaximumSize = new Size(467, SystemInformation.VirtualScreen.Height);
+                Size = WindowSize.Absolute(467, 320),
+                MinimumSize = new Size(467, 24),
+                MaximumSize = new Size(467, SystemInformation.VirtualScreen.Height)
             });
 
         return Task.CompletedTask;

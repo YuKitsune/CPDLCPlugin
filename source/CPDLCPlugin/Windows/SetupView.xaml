@@ -3,17 +3,17 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:cpdlcPlugin="clr-namespace:CPDLCPlugin"
+        xmlns:toolbox="clr-namespace:vatSysToolbox;assembly=vatSysToolbox"
         xmlns:converters="clr-namespace:CPDLCPlugin.Converters"
         xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
-        Background="{x:Static cpdlcPlugin:Theme.BackgroundColor}"
+        Background="{toolbox:VatSysColour WindowBackground}"
         d:DataContext="{d:DesignInstance Type=viewModels:SetupViewModel}"
         mc:Ignorable="d"
         Width="400">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/CPDLCPlugin;component/Styles.xaml" />
+                <ResourceDictionary Source="/vatSysToolbox;component/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <converters:BoolInversionConverter x:Key="BoolInversionConverter" />

@@ -2,12 +2,13 @@
 using MediatR;
 using Serilog;
 using vatsys;
+using vatSysToolbox;
 
 namespace CPDLCPlugin.Messages;
 
 public record ConnectRequest(string ServerEndpoint, string StationId) : IRequest;
 
-public class ConnectRequestHandler(Plugin plugin, IMediator mediator, ILogger logger) : IRequestHandler<ConnectRequest>
+public class ConnectRequestHandler(Plugin plugin, IMediator mediator, IErrorReporter errorReporter, ILogger logger) : IRequestHandler<ConnectRequest>
 {
     public async Task Handle(ConnectRequest request, CancellationToken cancellationToken)
     {
@@ -49,7 +50,7 @@ public class ConnectRequestHandler(Plugin plugin, IMediator mediator, ILogger lo
         }
 
         logger.Verbose("Creating SignalR connection");
-        var downlinkHandler = new MediatorMessageHandler(mediator);
+        var downlinkHandler = new MediatorMessageHandler(mediator, errorReporter);
         plugin.ConnectionManager = new SignalRConnectionManager(
             request.ServerEndpoint,
             token,

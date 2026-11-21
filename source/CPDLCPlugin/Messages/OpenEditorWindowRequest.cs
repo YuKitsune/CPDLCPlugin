@@ -3,6 +3,8 @@ using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
 using MediatR;
 using Serilog;
+using vatSysToolbox;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.Messages;
 
@@ -23,9 +25,9 @@ public class OpenEditorWindowRequestHandler(
     {
         // Close any existing editor window before opening a new one
         // Each editor is specific to a callsign, so we always want a fresh window
-        windowManager.TryRemoveWindow(WindowKeys.Editor);
+        windowManager.Close(WindowKeys.Editor);
 
-        windowManager.FocusOrCreateWindow(
+        windowManager.OpenOrFocus(
             WindowKeys.Editor,
             request.Callsign,
             windowHandle =>

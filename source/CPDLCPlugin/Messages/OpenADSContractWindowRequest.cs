@@ -2,6 +2,8 @@ using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
 using MediatR;
 using Serilog;
+using vatSysToolbox;
+using vatSysToolbox.Windows;
 
 namespace CPDLCPlugin.Messages;
 
@@ -15,6 +17,7 @@ public class OpenADSContractWindowRequestHandler(
     IMediator mediator,
     IGuiInvoker guiInvoker,
     IErrorReporter errorReporter,
+    WindowEvents windowEvents,
     ILogger logger)
     : IRequestHandler<OpenADSContractWindowRequest>
 {
@@ -27,11 +30,13 @@ public class OpenADSContractWindowRequestHandler(
             throw new Exception("Cannot open the ADS Contract window: not connected to the CPDLC server");
         }
 
-        windowManager.FocusOrCreateWindow(
+        windowManager.OpenOrFocus(
             WindowKeys.ADSContract,
             "ADS Contract",
             windowHandle =>
             {
+                windowEvents.Broadcast(windowHandle, CpdlcMessages.AdsContractWindowOpened, CpdlcMessages.AdsContractWindowClosed);
+
                 var viewModel = new ADSContractViewModel(
                     plugin,
                     adscContractStore,
@@ -41,13 +46,9 @@ public class OpenADSContractWindowRequestHandler(
                     errorReporter,
                     request.Callsign);
 
-                return new ADSContractView(viewModel, windowHandle);
+                return new ADSContractView(viewModel);
             },
-            configureForm: form =>
-            {
-                form.HasMinimizeButton = false;
-                form.MinimizeBox = false;
-            });
+            new WindowOptions { CanMinimise = false });
 
         return Task.CompletedTask;
     }

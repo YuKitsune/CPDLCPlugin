@@ -1,9 +1,10 @@
 using vatsys;
 using vatsys.Plugin;
+using vatSysToolbox;
 
 namespace CPDLCPlugin.LabelItems;
 
-public class TextStatusLabelItemProvider(ColourCache colourCache)
+public class TextStatusLabelItemProvider(ColourCache colourCache, IErrorReporter errorReporter)
 {
     public CustomLabelItem? GetLabelItem(string itemType, FDP2.FDR? fdr)
     {
@@ -82,7 +83,7 @@ public class TextStatusLabelItemProvider(ColourCache colourCache)
             }
             catch (Exception ex)
             {
-                Plugin.AddError(ex, "Failed to handle label item click");
+                errorReporter.ReportError(ex, "Failed to handle label item click");
             }
         };
 
@@ -143,7 +144,7 @@ public class TextStatusLabelItemProvider(ColourCache colourCache)
             }
             catch (Exception ex)
             {
-                Plugin.AddError(ex, "Failed to handle strip item click");
+                errorReporter.ReportError(ex, "Failed to handle strip item click");
             }
         };
 

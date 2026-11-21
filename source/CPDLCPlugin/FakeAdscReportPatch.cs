@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using HarmonyLib;
 using vatsys;
+using vatSysToolbox;
 
 namespace CPDLCPlugin;
 
@@ -14,11 +15,13 @@ public static class FakeAdscReportPatch
     const string HarmonyId = "CPDLCPlugin.FakeAdscReport";
 
     static Action<Coordinate>? _onClick;
+    static IErrorReporter? _errorReporter;
     static volatile bool _armed;
 
-    public static void Apply(Action<Coordinate> onClick)
+    public static void Apply(Action<Coordinate> onClick, IErrorReporter errorReporter)
     {
         _onClick = onClick;
+        _errorReporter = errorReporter;
 
         var method = AccessTools.Method("vatsys.ASDControlDX:ASD_MouseDown")
             ?? throw new MissingMethodException("Cannot find the vatSys method vatsys.ASDControlDX:ASD_MouseDown");
@@ -48,7 +51,7 @@ public static class FakeAdscReportPatch
         }
         catch (Exception ex)
         {
-            Plugin.AddError(ex, "Cannot send a fake ADS-C report");
+            _errorReporter?.ReportError(ex, "Cannot send a fake ADS-C report");
         }
 
         return false;

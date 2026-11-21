@@ -4,6 +4,7 @@ using CPDLCServer.Contracts;
 using MediatR;
 using Newtonsoft.Json;
 using Serilog;
+using vatSysToolbox;
 
 namespace CPDLCPlugin.Messages;
 
