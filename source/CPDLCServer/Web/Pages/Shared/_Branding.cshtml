@@ -1,0 +1,18 @@
+@model CPDLCServer.Settings.BrandingInfo
+
+@* The banner or the server name, then the message of the day. The sidebar and the login page show it. *@
+<a href="/" class="d-block text-decoration-none text-body mb-3">
+    @if (Model.HasBanner)
+    {
+        <img src="/branding/banner?v=@Model.BannerVersion" alt="@Model.ServerName" class="img-fluid" />
+    }
+    else
+    {
+        <span class="fs-5 fw-semibold">@Model.ServerName</span>
+    }
+</a>
+
+@if (!string.IsNullOrWhiteSpace(Model.Motd))
+{
+    <div class="motd small border rounded bg-body p-2 mb-3">@Model.Motd</div>
+}

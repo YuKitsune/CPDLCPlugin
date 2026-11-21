@@ -17,5 +17,8 @@ public class ServerSettingsConfiguration : IEntityTypeConfiguration<ServerSettin
         builder.HasKey(IdProperty);
 
         builder.Property(s => s.VatsimStatusUrl).HasConversion<string>();
+
+        builder.Property(s => s.ServerName).HasMaxLength(ServerSettings.MaxServerNameLength);
+        builder.Property(s => s.Motd).HasMaxLength(ServerSettings.MaxMotdLength);
     }
 }

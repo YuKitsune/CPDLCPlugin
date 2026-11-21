@@ -37,6 +37,7 @@
         <Reference Include="PresentationFramework" />
         <Reference Include="System.ComponentModel.Composition" />
         <Reference Include="System.Drawing" />
+        <Reference Include="System.Security" />
         <Reference Include="vatSys">
             <HintPath>$(VatSysPath)\bin\vatSys.exe</HintPath>
             <Private>False</Private>

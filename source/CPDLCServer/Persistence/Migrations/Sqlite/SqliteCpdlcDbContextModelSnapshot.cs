@@ -37,6 +37,13 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Motd")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MotdDelaySeconds")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
@@ -182,32 +189,56 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.ToTable("AdscReports", (string)null);
                 });
 
-            modelBuilder.Entity("CPDLCServer.Auth.Users.User", b =>
+            modelBuilder.Entity("CPDLCServer.Auth.Administrators.Administrator", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("Created")
+                    b.Property<int>("Cid")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<long>("Added")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<string>("Username")
-                        .IsRequired()
+                    b.Property<string>("Name")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
+                    b.HasKey("Cid");
+
+                    b.ToTable("Administrators", (string)null);
+                });
+
+            modelBuilder.Entity("CPDLCServer.Auth.PluginTokens.PluginToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Cid")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Created")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("Expires")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Username")
+                    b.HasIndex("Cid");
+
+                    b.HasIndex("TokenHash")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("PluginTokens", (string)null);
                 });
 
             modelBuilder.Entity("CPDLCServer.Cpdlc.Connections.AircraftConnection", b =>
@@ -377,6 +408,15 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<int>("AircraftConnectionTimeoutMinutes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("BannerContentType")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("BannerImage")
+                        .HasColumnType("BLOB");
+
+                    b.Property<int>("BannerVersion")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("ConnectivityCheckIntervalMinutes")
                         .HasColumnType("INTEGER");
 
@@ -385,6 +425,15 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
 
                     b.Property<int>("HandoffNotificationLeadTimeMinutes")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Motd")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ServerName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("VatsimStatusAllowNonEquippedAircraft")
                         .HasColumnType("INTEGER");

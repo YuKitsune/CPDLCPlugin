@@ -1,7 +1,8 @@
 using CPDLCServer.AcarsConnections.ConnectionSettings;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.Reports;
-using CPDLCServer.Auth.Users;
+using CPDLCServer.Auth.Administrators;
+using CPDLCServer.Auth.PluginTokens;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
@@ -27,7 +28,8 @@ public class CpdlcDbContext(DbContextOptions options) : DbContext(options)
     public DbSet<MessageIdSequence> MessageIdSequences => Set<MessageIdSequence>();
     public DbSet<ServerSettings> ServerSettings => Set<ServerSettings>();
     public DbSet<AcarsConnectionSettings> AcarsConnections => Set<AcarsConnectionSettings>();
-    public DbSet<User> Users => Set<User>();
+    public DbSet<Administrator> Administrators => Set<Administrator>();
+    public DbSet<PluginToken> PluginTokens => Set<PluginToken>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -57,7 +59,8 @@ public class CpdlcDbContext(DbContextOptions options) : DbContext(options)
         modelBuilder.ApplyConfiguration(new MessageIdSequenceConfiguration());
         modelBuilder.ApplyConfiguration(new ServerSettingsConfiguration());
         modelBuilder.ApplyConfiguration(new AcarsConnectionSettingsConfiguration());
-        modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new AdministratorConfiguration());
+        modelBuilder.ApplyConfiguration(new PluginTokenConfiguration());
 
         // The messages have no version. A change to a message is a change to its dialogue (see SaveChangesAsync).
         Type[] versionedEntityTypes =
@@ -69,7 +72,7 @@ public class CpdlcDbContext(DbContextOptions options) : DbContext(options)
             typeof(MessageIdSequence),
             typeof(ServerSettings),
             typeof(AcarsConnectionSettings),
-            typeof(User)
+            typeof(Administrator)
         ];
 
         foreach (var entityType in versionedEntityTypes)

@@ -18,7 +18,7 @@ public record MessageRowViewModel(
     bool IsClosed)
 {
     public static MessageRowViewModel From(
-        Cpdlc.Dialogues.Dialogue dialogue,
+        CPDLCServer.Cpdlc.Dialogues.Dialogue dialogue,
         CpdlcMessage message,
         Dictionary<string, AircraftConnection> aircraftLookup)
     {

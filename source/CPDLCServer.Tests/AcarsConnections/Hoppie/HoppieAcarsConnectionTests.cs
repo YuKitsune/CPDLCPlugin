@@ -1,6 +1,7 @@
 using System.Net;
 using CPDLCServer.AcarsConnections;
 using CPDLCServer.AcarsConnections.Hoppie;
+using CPDLCServer.AcarsConnections.Traffic;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.MessageLog;
 using CPDLCServer.Cpdlc.Dialogues;
@@ -23,6 +24,7 @@ public class HoppieAcarsConnectionTests : IDisposable
 
     private readonly List<HoppieAcarsConnection> _connections = new();
     private readonly TestAdscMessageLogRepository _adscMessageLogRepository = new();
+    private readonly AcarsTrafficLog _trafficLog = new();
 
     public void Dispose()
     {
@@ -51,6 +53,7 @@ public class HoppieAcarsConnectionTests : IDisposable
             httpClient,
             clock ?? new TestClock(),
             _adscMessageLogRepository,
+            _trafficLog,
             Logger.None);
         _connections.Add(connection);
         return connection;

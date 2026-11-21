@@ -146,3 +146,8 @@ public class DownlinkMessageDto : CpdlcMessageDto
 }
 
 
+
+// Plugin authentication DTOs
+public record PluginTokenResponse(string AccessToken, DateTimeOffset Expires, int Cid, string Name);
+
+public record PluginUserDto(int Cid, string Name, DateTimeOffset Expires);

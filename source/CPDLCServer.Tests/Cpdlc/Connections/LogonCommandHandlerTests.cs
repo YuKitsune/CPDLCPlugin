@@ -106,7 +106,9 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS");
+            "BN-TSN_FSS",
+            1234567,
+            "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);
@@ -139,7 +141,9 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS");
+            "BN-TSN_FSS",
+            1234567,
+            "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);
@@ -173,7 +177,9 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS");
+            "BN-TSN_FSS",
+            1234567,
+            "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);
@@ -215,7 +221,9 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS");
+            "BN-TSN_FSS",
+            1234567,
+            "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
     }
 
@@ -342,7 +350,9 @@ public class LogonCommandHandlerTests
             Guid.NewGuid(),
             "Connection-1",
             "YBBB",
-            "BN-TSN_FSS");
+            "BN-TSN_FSS",
+            1234567,
+            "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);

@@ -1,5 +1,6 @@
 {
   "ServerEndpoint": "https://vatpac-cpdlc.eoinmotherway.dev/hubs/controller",
+  "AutoConnect": false,
   "Stations": ["YBBB", "YMMM", "NFFF", "AYPM"],
   "LogLevel": "Verbose",
   "MaxCurrentMessages": 50,

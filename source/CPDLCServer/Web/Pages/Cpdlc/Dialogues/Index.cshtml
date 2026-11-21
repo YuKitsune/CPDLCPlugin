@@ -1,0 +1,46 @@
+@page "/cpdlc/dialogues/{id:guid}"
+@model IndexModel
+@{
+    ViewData["Title"] = $"Dialogue {Model.Dialogue?.Id.ToString()[..8]}";
+}
+
+<div class="d-flex align-items-center gap-2 mb-4">
+    <h1 class="h3 mb-0">Dialogue</h1>
+    <span class="badge @(Model.Dialogue?.IsClosed == true ? "text-bg-secondary" : "text-bg-success")">
+        @(Model.Dialogue?.IsClosed == true ? "Closed" : "Open")
+    </span>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">ID</dt>
+            <dd class="col-sm-9"><code>@Model.Dialogue?.Id</code></dd>
+
+            <dt class="col-sm-3">Aircraft</dt>
+            <dd class="col-sm-9"><a href="/cpdlc/aircraft/@Model.Dialogue?.AircraftCallsign">@Model.Dialogue?.AircraftCallsign</a></dd>
+
+            <dt class="col-sm-3">Station</dt>
+            <dd class="col-sm-9"><a href="/cpdlc/stations/@Model.StationId">@Model.StationId</a></dd>
+
+            <dt class="col-sm-3">ACARS connection</dt>
+            <dd class="col-sm-9">@Model.AcarsNetwork</dd>
+
+            <dt class="col-sm-3">Opened</dt>
+            <dd class="col-sm-9">@Model.Dialogue?.Opened.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+
+            @if (Model.Dialogue?.IsClosed == true)
+            {
+                <dt class="col-sm-3">Closed</dt>
+                <dd class="col-sm-9">@Model.Dialogue?.Closed?.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+            }
+        </dl>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header fw-semibold">Messages</div>
+    <div class="card-body">
+        <partial name="_MessageTable" model="Model.Messages" />
+    </div>
+</div>

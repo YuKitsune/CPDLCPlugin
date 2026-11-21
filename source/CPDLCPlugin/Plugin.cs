@@ -87,6 +87,21 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
         WeakReferenceMessenger.Default.Register<ConnectedAircraftChanged>(this);
 
         _workQueue = new WorkQueue(AddError, Log.Logger, new SystemClock());
+
+        // Check the saved token, so that the SETUP window shows the user.
+        // The server can be unavailable when vatSys starts, so a failure is not an error.
+        _workQueue.Enqueue(async () =>
+        {
+            try
+            {
+                var mediator = ServiceProvider.GetRequiredService<IMediator>();
+                await mediator.Send(new CheckAuthenticationRequest(configuration.ServerEndpoint));
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to check the authentication with the CPDLC server");
+            }
+        });
     }
 
     void ConfigureServices(PluginConfiguration pluginConfiguration)
@@ -101,6 +116,9 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton<IGuiInvoker, GuiInvoker>()
             .AddSingleton<IErrorReporter, ErrorReporter>()
             .AddSingleton<IServerConnection, PluginServerConnection>()
+            .AddSingleton<TokenStore>()
+            .AddSingleton<PluginAuthenticator>()
+            .AddSingleton<AuthenticationState>()
             .AddSingleton<IJurisdictionChecker, JurisdictionChecker>()
             .AddSingleton<AircraftConnectionStore>()
             .AddSingleton<AcarsStationStore>()
@@ -201,7 +219,16 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             return Task.CompletedTask;
         });
 
-        // TODO: Connect if auto-connect enabled
+        if (_configuration is { AutoConnect: true })
+        {
+            var configuration = _configuration;
+            _workQueue.Enqueue(async () =>
+            {
+                Log.Information("Connecting to the CPDLC server automatically");
+                var mediator = ServiceProvider.GetRequiredService<IMediator>();
+                await mediator.Send(new ConnectRequest(configuration.ServerEndpoint, configuration.Stations.First()));
+            });
+        }
     }
 
     void NetworkDisconnected(object sender, EventArgs e)

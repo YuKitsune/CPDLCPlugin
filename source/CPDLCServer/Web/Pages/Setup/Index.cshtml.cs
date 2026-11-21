@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using CPDLCServer.Auth.Login;
-using CPDLCServer.Auth.Users;
+using CPDLCServer.Auth.Administrators;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Setup;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CPDLCServer.Web.Pages.Setup;
 
-// The setup: create the first user
+// The setup adds the first administrator. After the setup, the page does not exist.
 public class IndexModel : PageModel
 {
     private readonly SetupState _setupState;
@@ -25,70 +24,39 @@ public class IndexModel : PageModel
         _logger = logger;
     }
 
-    // The token from the setup URL in the server log
-    [BindProperty(SupportsGet = true)]
-    public string? Token { get; set; }
-
     [BindProperty]
-    public CreateAdminInput Input { get; set; } = new();
-
-    public bool IsTokenValid { get; private set; }
+    [Required]
+    [Range(1, int.MaxValue, ErrorMessage = "Enter a valid CID.")]
+    [Display(Name = "Administrator CID")]
+    public int? Cid { get; set; }
 
     public IActionResult OnGet()
     {
         if (_setupState.IsConfigured)
-            return Redirect("/");
+            return NotFound();
 
-        IsTokenValid = _setupState.IsValidSetupToken(Token);
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
         if (_setupState.IsConfigured)
-            return Redirect("/");
-
-        IsTokenValid = _setupState.IsValidSetupToken(Token);
-        if (!IsTokenValid)
-            return Page();
+            return NotFound();
 
         if (!ModelState.IsValid)
             return Page();
 
-        Guid userId;
         try
         {
-            userId = await _mediator.Send(new CreateUserCommand(Input.Username, Input.Password), cancellationToken);
+            await _mediator.Send(new CreateFirstAdministratorCommand(Cid!.Value), cancellationToken);
         }
         catch (InvalidOperationException ex)
         {
-            // Another person completed this step first
-            _logger.Warning(ex, "Failed to create the administrator");
-            return RedirectToPage("/Account/Login");
+            // Another person completed the setup first
+            _logger.Warning(ex, "Failed to add the first administrator");
+            return NotFound();
         }
 
-        await AdminAuthentication.SignIn(HttpContext, userId, Input.Username.Trim());
-
-        return Redirect("/");
-    }
-
-    public class CreateAdminInput
-    {
-        [Required]
-        [StringLength(64)]
-        [Display(Name = "Username")]
-        public string Username { get; set; } = string.Empty;
-
-        [Required]
-        [StringLength(200, MinimumLength = 12, ErrorMessage = "Use a password of 12 characters or more.")]
-        [DataType(DataType.Password)]
-        [Display(Name = "Password")]
-        public string Password { get; set; } = string.Empty;
-
-        [Required]
-        [Compare(nameof(Password), ErrorMessage = "The passwords are not the same.")]
-        [DataType(DataType.Password)]
-        [Display(Name = "Confirm password")]
-        public string ConfirmPassword { get; set; } = string.Empty;
+        return Redirect("/login");
     }
 }

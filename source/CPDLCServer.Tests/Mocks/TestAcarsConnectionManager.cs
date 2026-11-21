@@ -29,7 +29,8 @@ public class TestAcarsConnectionManager : IAcarsConnectionManager
     public static HoppiesConfiguration CreateConfiguration(
         string stationId,
         int defaultAdscReportingInterval,
-        int selectedAdscContractDuration = 60)
+        int selectedAdscContractDuration = 60,
+        string? motd = null)
     {
         return new HoppiesConfiguration
         {
@@ -38,7 +39,8 @@ public class TestAcarsConnectionManager : IAcarsConnectionManager
             FlightSimulationNetwork = "VATSIM",
             StationIdentifier = stationId,
             DefaultAdscReportingInterval = defaultAdscReportingInterval,
-            SelectedAdscContractDuration = selectedAdscContractDuration
+            SelectedAdscContractDuration = selectedAdscContractDuration,
+            Motd = motd
         };
     }
 

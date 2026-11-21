@@ -1,0 +1,45 @@
+@page "/cpdlc/aircraft/{callsign}"
+@model IndexModel
+@{
+    ViewData["Title"] = Model.Callsign;
+}
+
+<h1 class="h3 mb-4">@Model.Callsign</h1>
+
+@if (Model.Aircraft != null)
+{
+    <div class="card mb-4">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Callsign</dt>
+                <dd class="col-sm-9">@Model.Aircraft.Callsign</dd>
+
+                <dt class="col-sm-3">Station</dt>
+                <dd class="col-sm-9"><a href="/cpdlc/stations/@Model.Aircraft.StationId">@Model.Aircraft.StationId</a></dd>
+
+                <dt class="col-sm-3">ACARS connection</dt>
+                <dd class="col-sm-9">@Model.Aircraft.AcarsConnectionId</dd>
+
+                <dt class="col-sm-3">Data authority</dt>
+                <dd class="col-sm-9">@Model.Aircraft.DataAuthorityState</dd>
+
+                <dt class="col-sm-3">Connection state</dt>
+                <dd class="col-sm-9">@Model.Aircraft.ConnectionState</dd>
+
+                <dt class="col-sm-3">Last seen</dt>
+                <dd class="col-sm-9">@Model.Aircraft.LastSeen.ToString("yyyy-MM-dd HH:mm:ss")</dd>
+            </dl>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-secondary">@Model.Callsign is not connected.</div>
+}
+
+<div class="card">
+    <div class="card-header fw-semibold">Messages</div>
+    <div class="card-body">
+        <partial name="_MessageTable" model="Model.Messages" />
+    </div>
+</div>

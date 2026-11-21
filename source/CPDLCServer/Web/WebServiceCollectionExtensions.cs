@@ -1,3 +1,5 @@
+using CPDLCServer.Auth;
+
 namespace CPDLCServer.Web;
 
 public static class WebServiceCollectionExtensions
@@ -9,9 +11,14 @@ public static class WebServiceCollectionExtensions
         {
             options.RootDirectory = "/Web/Pages";
 
-            // Only a user that is logged in can open these pages
-            options.Conventions.AuthorizeFolder("/Settings");
-            options.Conventions.AuthorizeFolder("/Logs");
+            // Any VATSIM user that is logged in can open the pages
+            options.Conventions.AuthorizeFolder("/");
+            options.Conventions.AllowAnonymousToPage("/Account/Login");
+            options.Conventions.AllowAnonymousToPage("/Account/Logout");
+            options.Conventions.AllowAnonymousToPage("/Setup/Index");
+
+            // Only an administrator can open the Configuration area
+            options.Conventions.AuthorizeFolder("/Configuration", AdministratorRequirement.PolicyName);
         });
 
         return services;

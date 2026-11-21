@@ -42,6 +42,13 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Motd")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("MotdDelaySeconds")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
@@ -191,32 +198,56 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.ToTable("AdscReports", (string)null);
                 });
 
-            modelBuilder.Entity("CPDLCServer.Auth.Users.User", b =>
+            modelBuilder.Entity("CPDLCServer.Auth.Administrators.Administrator", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
+                    b.Property<int>("Cid")
+                        .HasColumnType("integer");
 
-                    b.Property<long>("Created")
+                    b.Property<long>("Added")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
+                    b.Property<string>("Name")
                         .HasColumnType("text");
 
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("integer");
 
+                    b.HasKey("Cid");
+
+                    b.ToTable("Administrators", (string)null);
+                });
+
+            modelBuilder.Entity("CPDLCServer.Auth.PluginTokens.PluginToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Cid")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("Created")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Expires")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Username")
+                    b.HasIndex("Cid");
+
+                    b.HasIndex("TokenHash")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("PluginTokens", (string)null);
                 });
 
             modelBuilder.Entity("CPDLCServer.Cpdlc.Connections.AircraftConnection", b =>
@@ -392,6 +423,15 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<int>("AircraftConnectionTimeoutMinutes")
                         .HasColumnType("integer");
 
+                    b.Property<string>("BannerContentType")
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("BannerImage")
+                        .HasColumnType("bytea");
+
+                    b.Property<int>("BannerVersion")
+                        .HasColumnType("integer");
+
                     b.Property<int>("ConnectivityCheckIntervalMinutes")
                         .HasColumnType("integer");
 
@@ -400,6 +440,15 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
 
                     b.Property<int>("HandoffNotificationLeadTimeMinutes")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Motd")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("ServerName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<bool>("VatsimStatusAllowNonEquippedAircraft")
                         .HasColumnType("boolean");

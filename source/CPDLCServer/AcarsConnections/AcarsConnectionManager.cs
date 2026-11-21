@@ -1,13 +1,16 @@
 using System.Collections.Concurrent;
 using CPDLCServer.AcarsConnections.ConnectionSettings;
 using CPDLCServer.AcarsConnections.Hoppie;
+using CPDLCServer.AcarsConnections.Traffic;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.MessageLog;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Infrastructure;
+using CPDLCServer.Logging;
 using CPDLCServer.Persistence;
 using CPDLCServer.Security;
 using Microsoft.EntityFrameworkCore;
+using Serilog.Context;
 
 namespace CPDLCServer.AcarsConnections;
 
@@ -35,12 +38,15 @@ public class AcarsConnectionManager(
     IUnitOfWorkMediator mediator,
     IClock clock,
     IAdscMessageLogRepository adscMessageLogRepository,
+    AcarsTrafficLog trafficLog,
     ILogger logger)
     : BackgroundService, IAcarsConnectionManager
 {
     readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     readonly ConcurrentDictionary<string, AcarsConnectionHandle> _connections = [];
-    readonly ILogger _logger = logger.ForContext<AcarsConnectionManager>();
+    readonly ILogger _logger = logger
+        .ForContext<AcarsConnectionManager>()
+        .ForContext(LogArea.PropertyName, LogArea.Acars);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -205,7 +211,9 @@ public class AcarsConnectionManager(
                 FlightSimulationNetwork = settings.FlightSimulationNetwork,
                 StationIdentifier = settings.StationIdentifier,
                 DefaultAdscReportingInterval = settings.DefaultAdscReportingInterval,
-                SelectedAdscContractDuration = settings.SelectedAdscContractDuration
+                SelectedAdscContractDuration = settings.SelectedAdscContractDuration,
+                Motd = settings.Motd,
+                MotdDelay = TimeSpan.FromSeconds(settings.MotdDelaySeconds)
             },
             _ => throw new NotSupportedException($"ACARS network type {settings.Type} is not supported")
         };
@@ -265,12 +273,13 @@ public class AcarsConnectionManager(
             httpClient,
             clock,
             adscMessageLogRepository,
+            trafficLog,
             _logger.ForContext<HoppieAcarsConnection>());
     }
 
     async Task Subscribe(string acarsConnectionId, string stationId, IAcarsConnection acarsConnection, IUnitOfWorkMediator mediator, CancellationToken cancellationToken)
     {
-        var subscriptionLogger = _logger.ForContext("AcarsConnectionId", acarsConnectionId);
+        var subscriptionLogger = _logger.ForContext(LogArea.AcarsConnectionIdPropertyName, acarsConnectionId);
 
         try
         {
@@ -280,6 +289,9 @@ public class AcarsConnectionManager(
                 // Linked to the subscription, so that a stopped connection does not wait for the timeout
                 using var publishTimeoutCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 publishTimeoutCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(10));
+
+                // The handlers of the message write the ACARS connection ID in their log entries
+                using var _ = LogContext.PushProperty(LogArea.AcarsConnectionIdPropertyName, acarsConnectionId);
 
                 try
                 {
@@ -313,7 +325,7 @@ public class AcarsConnectionManager(
 
     async Task SubscribeAdsc(string acarsConnectionId, string stationId, IAcarsConnection acarsConnection, IUnitOfWorkMediator mediator, CancellationToken cancellationToken)
     {
-        var subscriptionLogger = _logger.ForContext("AcarsConnectionId", acarsConnectionId);
+        var subscriptionLogger = _logger.ForContext(LogArea.AcarsConnectionIdPropertyName, acarsConnectionId);
 
         try
         {
@@ -323,6 +335,9 @@ public class AcarsConnectionManager(
                 // Linked to the subscription, so that a stopped connection does not wait for the timeout
                 using var publishTimeoutCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 publishTimeoutCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(10));
+
+                // The handlers of the message write the ACARS connection ID in their log entries
+                using var _ = LogContext.PushProperty(LogArea.AcarsConnectionIdPropertyName, acarsConnectionId);
 
                 try
                 {

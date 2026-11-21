@@ -69,12 +69,16 @@ public class AircraftConnectionLostNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YBBB",
-            "BN-TSN_FSS");
+            "BN-TSN_FSS",
+            1234567,
+            "Test Controller");
         var controller2 = new ControllerInfo(
             Guid.NewGuid(),
             "ConnectionId-2",
             "YBBB",
-            "BN-OCN_CTR");
+            "BN-OCN_CTR",
+            1234567,
+            "Test Controller");
         await controllerManager.Add(controller1, CancellationToken.None);
         await controllerManager.Add(controller2, CancellationToken.None);
 
@@ -254,7 +258,9 @@ public class AircraftConnectionLostNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YBBB",
-            "BN-TSN_FSS");
+            "BN-TSN_FSS",
+            1234567,
+            "Test Controller");
         await controllerManager.Add(controller, CancellationToken.None);
 
         var dialogueRepository = new TestDialogueRepository();
@@ -325,7 +331,9 @@ public class AircraftConnectionLostNotificationHandlerTests
             Guid.NewGuid(),
             "ConnectionId-1",
             "YBBB",
-            "BN-TSN_FSS");
+            "BN-TSN_FSS",
+            1234567,
+            "Test Controller");
         await controllerManager.Add(controller, CancellationToken.None);
 
         var dialogueRepository = new TestDialogueRepository();

@@ -26,6 +26,8 @@ public class UpdateAcarsConnectionCommandHandler(
         settings.Url = changes.Url;
         settings.DefaultAdscReportingInterval = changes.DefaultAdscReportingInterval;
         settings.SelectedAdscContractDuration = changes.SelectedAdscContractDuration;
+        settings.Motd = AcarsConnectionSettings.NormalizeMotd(changes.Motd);
+        settings.MotdDelaySeconds = changes.MotdDelaySeconds;
         settings.Notes = changes.Notes;
 
         if (!string.IsNullOrWhiteSpace(request.AuthenticationCode))

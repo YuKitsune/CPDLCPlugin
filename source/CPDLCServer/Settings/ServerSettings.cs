@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace CPDLCServer.Settings;
 
@@ -7,6 +9,34 @@ namespace CPDLCServer.Settings;
 /// </summary>
 public record ServerSettings
 {
+    public const string DefaultServerName = "CPDLC Server";
+    public const int MaxServerNameLength = 64;
+    public const int MaxMotdLength = 1000;
+
+    // Branding: the dashboard shows the name, the banner and the message of the day at the top of the sidebar and on
+    // the login page.
+    [Required]
+    [StringLength(MaxServerNameLength)]
+    public string ServerName { get; init; } = DefaultServerName;
+
+    // Plain text. The dashboard keeps the line breaks.
+    [StringLength(MaxMotdLength)]
+    public string? Motd { get; init; }
+
+    // The banner is changed with SetBannerImageCommand, not with the settings form
+    [BindNever]
+    [ValidateNever]
+    public byte[]? BannerImage { get; set; }
+
+    [BindNever]
+    [ValidateNever]
+    public string? BannerContentType { get; set; }
+
+    // Increases each time that the banner changes, so that the browser does not show an old banner from its cache
+    [BindNever]
+    [ValidateNever]
+    public int BannerVersion { get; set; }
+
     [Range(1, int.MaxValue)]
     public int ConnectivityCheckIntervalMinutes { get; init; } = 15;
 

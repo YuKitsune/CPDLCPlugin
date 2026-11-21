@@ -1,6 +1,7 @@
 using CPDLCServer.AcarsConnections;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.Auth;
+using CPDLCServer.Auth.PluginTokens;
 using CPDLCServer.Controllers;
 using CPDLCServer.Cpdlc;
 using CPDLCServer.Infrastructure;
@@ -12,8 +13,7 @@ using CPDLCServer.Setup;
 using CPDLCServer.VatsimStatus;
 using CPDLCServer.Web;
 using DotNetEnv;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
@@ -23,7 +23,6 @@ using Serilog.Events;
 // - Aggregate controller connections for multiple FIRs
 // - Introduce a Contracts project
 // - Value types for IDs
-// - Re-do dashboard
 
 TryLoadEnvFile();
 
@@ -44,7 +43,7 @@ builder.Services
     .AddPersistence(builder.Configuration, databaseProvider, databasePath)
     .AddSecurity(builder.Configuration)
     .AddSetup()
-    .AddAuth()
+    .AddAuth(builder.Configuration)
     .AddSettings()
     .AddAcarsConnections()
     .AddAirTrafficControllers()
@@ -60,7 +59,15 @@ await SeedServerSettings(app);
 
 var setupState = app.Services.GetRequiredService<SetupState>();
 await setupState.Load(CancellationToken.None);
-app.Lifetime.ApplicationStarted.Register(() => TryLogSetupUrl(app, setupState));
+if (!setupState.IsConfigured)
+    Log.Warning("The server is not set up. Open /setup on this server to set it up");
+
+// Behind a proxy that ends TLS, the request comes with http. VATSIM Connect needs the https redirect URL, so use the
+// scheme that the proxy received.
+var forwardedHeadersOptions = new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedProto };
+forwardedHeadersOptions.KnownIPNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedHeadersOptions);
 
 app.UseHttpsRedirection();
 app.UseRouting();
@@ -68,13 +75,14 @@ app.UseRouting();
 app.UseMiddleware<RedirectToSetupMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
 
 app.MapRazorPages();
 app.MapHub<ControllerHub>("/hubs/controller");
+app.MapPluginEndpoints();
 
-app.MapGet("/logs/stream", LogStreamEndpoint.Handle).RequireAuthorization();
+app.MapGet("/logs/stream", LogStreamEndpoint.Handle).RequireAuthorization(AdministratorRequirement.PolicyName);
 app.MapGet("/health", () => Results.Ok());
+app.MapGet("/branding/banner", BannerEndpoint.Handle);
 
 app.Run();
 return;
@@ -145,34 +153,6 @@ string? FindRepositoryRoot()
     return null;
 }
 
-void TryLogSetupUrl(WebApplication app, SetupState setupState)
-{
-    if (setupState.IsConfigured)
-        return;
-
-    var setupPath = $"/setup?token={setupState.SetupToken}";
-
-    var addresses = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()?.Addresses ?? [];
-    if (addresses.Count == 0)
-    {
-        Log.Warning("The server is not set up. Open {SetupPath} on this server to set it up", setupPath);
-        return;
-    }
-
-    foreach (var address in addresses)
-    {
-        // The server can listen on all addresses, for example in Docker. Show an address that a browser can open.
-        var browserAddress = address
-            .Replace("://[::]", "://localhost")
-            .Replace("://0.0.0.0", "://localhost")
-            .Replace("://+", "://localhost")
-            .Replace("://*", "://localhost")
-            .TrimEnd('/');
-
-        Log.Warning("The server is not set up. Open {SetupUrl} to set it up", browserAddress + setupPath);
-    }
-}
-
 async Task MigrateDatabase(WebApplication app, DatabaseProvider provider, string databasePath)
 {
     await using var scope = app.Services.CreateAsyncScope();
@@ -213,7 +193,7 @@ void ConfigureSerilog(WebApplicationBuilder builder)
     }
 
     // Keeps the recent log entries for the Logs page
-    var logBuffer = new LogBuffer();
+    var logBuffer = new LogBuffer(capacity: 5000);
 
     Log.Logger = new LoggerConfiguration()
         .MinimumLevel.Is(logLevel)

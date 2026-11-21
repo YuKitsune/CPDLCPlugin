@@ -15,7 +15,8 @@ public class SaveServerSettingsCommandHandler(
 
         unitOfWork.AfterCommit(_ =>
         {
-            logger.Information("Server settings changed: {@Settings}", request.Settings);
+            // Without the banner, so that the image bytes are not in the log
+            logger.Information("Server settings changed: {@Settings}", request.Settings with { BannerImage = null });
             return Task.CompletedTask;
         });
     }

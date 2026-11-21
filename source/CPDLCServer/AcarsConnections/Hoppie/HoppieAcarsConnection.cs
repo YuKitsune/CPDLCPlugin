@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading.Channels;
+using CPDLCServer.AcarsConnections.Traffic;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.MessageLog;
 using CPDLCServer.AdscContracts.Reports;
@@ -7,6 +9,7 @@ using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
+using CPDLCServer.Logging;
 
 namespace CPDLCServer.AcarsConnections.Hoppie;
 
@@ -23,6 +26,7 @@ public class HoppieAcarsConnection : IAcarsConnection
     readonly HttpClient _httpClient;
     readonly IClock _clock;
     readonly IAdscMessageLogRepository _adscMessageLogRepository;
+    readonly AcarsTrafficLog _trafficLog;
     readonly ILogger _logger;
 
     readonly Channel<ReceivedDownlink> _messageChannel = Channel.CreateUnbounded<ReceivedDownlink>();
@@ -39,14 +43,23 @@ public class HoppieAcarsConnection : IAcarsConnection
     public ChannelReader<ReceivedAdscMessage> AdscMessageReader => _adscMessageChannel.Reader;
     public string StationId => _configuration.StationIdentifier;
 
-    public HoppieAcarsConnection(HoppiesConfiguration configuration, HttpClient httpClient, IClock clock, IAdscMessageLogRepository adscMessageLogRepository, ILogger logger)
+    public HoppieAcarsConnection(
+        HoppiesConfiguration configuration,
+        HttpClient httpClient,
+        IClock clock,
+        IAdscMessageLogRepository adscMessageLogRepository,
+        AcarsTrafficLog trafficLog,
+        ILogger logger)
     {
         _configuration = configuration;
         _httpClient = httpClient;
         _httpClient.Timeout = TimeSpan.FromSeconds(15);
         _clock = clock;
         _adscMessageLogRepository = adscMessageLogRepository;
-        _logger = logger.ForContext("AcarsConnectionId", _configuration.AcarsConnectionId);
+        _trafficLog = trafficLog;
+        _logger = logger
+            .ForContext(LogArea.PropertyName, LogArea.Acars)
+            .ForContext(LogArea.AcarsConnectionIdPropertyName, _configuration.AcarsConnectionId);
     }
 
     public Task Connect(CancellationToken cancellationToken)
@@ -132,15 +145,10 @@ public class HoppieAcarsConnection : IAcarsConnection
         if (!string.IsNullOrEmpty(packet))
             parameters["packet"] = packet;
 
-        var content = new FormUrlEncodedContent(parameters);
-
         try
         {
             _logger.Verbose("Sending {MessageType} to {Recipient} with packet {Packet}", messageType, to, packet);
-            var response = await _httpClient.PostAsync(_configuration.Url, content, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+            var responseText = await Post(parameters, cancellationToken);
             _logger.Verbose("Send response: {Response}", responseText);
 
             _lastSendTime = _clock.UtcNow();
@@ -153,6 +161,45 @@ public class HoppieAcarsConnection : IAcarsConnection
         catch (TaskCanceledException ex) when (ex.CancellationToken != cancellationToken)
         {
             _logger.Warning("Send request timed out, skipping");
+        }
+    }
+
+    // Sends a request to the ACARS network, and keeps the request and the response in the traffic log
+    async Task<string> Post(Dictionary<string, string> parameters, CancellationToken cancellationToken)
+    {
+        var time = _clock.UtcNow();
+        var stopwatch = Stopwatch.StartNew();
+        int? statusCode = null;
+        string? responseText = null;
+        string? error = null;
+
+        try
+        {
+            var content = new FormUrlEncodedContent(parameters);
+            var response = await _httpClient.PostAsync(_configuration.Url, content, cancellationToken);
+            statusCode = (int)response.StatusCode;
+            responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+            return responseText;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            throw;
+        }
+        finally
+        {
+            _trafficLog.Add(
+                _configuration.AcarsConnectionId,
+                new AcarsTrafficEntry(
+                    time,
+                    parameters["type"],
+                    AcarsTrafficLog.FormatRequest(parameters),
+                    statusCode,
+                    responseText,
+                    stopwatch.Elapsed,
+                    error));
         }
     }
 
@@ -170,15 +217,10 @@ public class HoppieAcarsConnection : IAcarsConnection
             ["packet"] = "ALL-CALLSIGNS"
         };
 
-        var content = new FormUrlEncodedContent(parameters);
-
         try
         {
             _logger.Verbose("Listing connections");
-            var response = await _httpClient.PostAsync(_configuration.Url, content, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+            var responseText = await Post(parameters, cancellationToken);
             _logger.Verbose("ListConnections response: {Response}", responseText);
 
             // Parse the response to extract callsigns
@@ -256,11 +298,7 @@ public class HoppieAcarsConnection : IAcarsConnection
                         ["type"] = "poll"
                     };
 
-                    var content = new FormUrlEncodedContent(parameters);
-                    var response = await _httpClient.PostAsync(_configuration.Url, content, cancellationToken);
-                    response.EnsureSuccessStatusCode();
-
-                    var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
+                    var responseText = await Post(parameters, cancellationToken);
 
                     _logger.Verbose("Poll response: {Response}", responseText);
 

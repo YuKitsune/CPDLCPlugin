@@ -12,6 +12,7 @@ namespace CPDLCPlugin.Server;
 /// </summary>
 public class SignalRConnectionManager(
     string serverEndpoint,
+    string accessToken,
     IDownlinkHandlerDelegate downlinkHandlerDelegate,
     ILogger logger)
     : IDisposable
@@ -50,6 +51,9 @@ public class SignalRConnectionManager(
         var hubConnectionBuilder = new HubConnectionBuilder()
             .WithUrl(url, options =>
             {
+                // The server accepts only an authenticated plugin
+                options.AccessTokenProvider = () => Task.FromResult<string?>(accessToken);
+
 #if DEBUG
                 // In DEBUG mode, bypass SSL certificate validation for local development
                 options.HttpMessageHandlerFactory = _ =>

@@ -1,6 +1,8 @@
+using CPDLCServer.Logging;
 using CPDLCServer.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Serilog.Context;
 
 namespace CPDLCServer.Infrastructure;
 
@@ -27,6 +29,7 @@ public class UnitOfWorkMediator(IServiceScopeFactory serviceScopeFactory, ILogge
     public async Task Send(IRequest request, CancellationToken cancellationToken = default)
     {
         await Run(
+            request.GetType(),
             async mediator =>
             {
                 await mediator.Send(request, cancellationToken);
@@ -37,12 +40,13 @@ public class UnitOfWorkMediator(IServiceScopeFactory serviceScopeFactory, ILogge
 
     public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        return await Run(mediator => mediator.Send(request, cancellationToken), cancellationToken);
+        return await Run(request.GetType(), mediator => mediator.Send(request, cancellationToken), cancellationToken);
     }
 
     public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
     {
         await Run(
+            notification.GetType(),
             async mediator =>
             {
                 await mediator.Publish(notification, cancellationToken);
@@ -51,8 +55,11 @@ public class UnitOfWorkMediator(IServiceScopeFactory serviceScopeFactory, ILogge
             cancellationToken);
     }
 
-    async Task<TResult> Run<TResult>(Func<IMediator, Task<TResult>> action, CancellationToken cancellationToken)
+    // The log entries of the unit of work get the area of the message. The nested messages are in the same area.
+    async Task<TResult> Run<TResult>(Type messageType, Func<IMediator, Task<TResult>> action, CancellationToken cancellationToken)
     {
+        using var _ = LogContext.PushProperty(LogArea.PropertyName, LogArea.ForType(messageType));
+
         for (var attempt = 1; ; attempt++)
         {
             await using var scope = serviceScopeFactory.CreateAsyncScope();

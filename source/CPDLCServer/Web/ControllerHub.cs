@@ -1,5 +1,7 @@
 using CPDLCServer.Contracts;
 using CPDLCServer.AcarsConnections.Stations;
+using CPDLCServer.Auth;
+using CPDLCServer.Auth.PluginTokens;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.Reports;
 using CPDLCServer.Controllers;
@@ -8,11 +10,14 @@ using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using CpdlcUplinkResponseType = CPDLCServer.Contracts.CpdlcUplinkResponseType;
 
 namespace CPDLCServer.Web;
 
+// Only a plugin with a valid token can connect
+[Authorize(Policy = PluginTokenAuthenticationHandler.PolicyName)]
 public class ControllerHub(
     IControllerRepository controllerRepository,
     IDialogueRepository dialogueRepository,
@@ -45,25 +50,21 @@ public class ControllerHub(
             throw new HubException("callsign must be provided");
         }
 
-        // TODO: Validate API key
-        // var validationResult = await _apiKeyValidator.ValidateAsync(apiKey);
-        // if (validationResult is null)
-        // {
-        //     _logger.Warning("Invalid API key attempt from {ConnectionId}", Context.ConnectionId);
-        //     throw new HubException("Invalid API key");
-        // }
-
+        // The policy accepted the plugin token, so the user has a CID
+        var user = Context.User!;
         var controller = new ControllerInfo(
             Guid.NewGuid(),
             Context.ConnectionId,
             stationId,
-            callsign);
+            callsign,
+            user.GetCid()!.Value,
+            user.GetName());
 
         await controllerRepository.Add(controller, Context.GetHttpContext()?.RequestAborted ?? CancellationToken.None);
 
         _logger.Information(
-            "Controller connected: {Callsign}. ConnectionId: {ConnectionId}",
-            callsign, Context.ConnectionId);
+            "Controller connected: {Callsign} ({Name}, {Cid}). ConnectionId: {ConnectionId}",
+            callsign, controller.Name, controller.Cid, Context.ConnectionId);
 
         await mediator.Publish(
             new ControllerConnectedNotification(

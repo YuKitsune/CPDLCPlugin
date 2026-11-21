@@ -13,6 +13,12 @@ public abstract class AcarsConfiguration
 
     // The time in minutes from the request of a selected ADS-C contract to its end. After this time, the default contract is requested again.
     public int SelectedAdscContractDuration { get; init; } = 60;
+
+    // A CPDLC free text message that is sent to each aircraft after it logs on. Null when there is no message.
+    public string? Motd { get; init; }
+
+    // The time from the logon to the message of the day
+    public TimeSpan MotdDelay { get; init; } = TimeSpan.FromSeconds(30);
 }
 
 public class HoppiesConfiguration : AcarsConfiguration

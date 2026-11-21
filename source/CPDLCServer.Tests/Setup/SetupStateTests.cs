@@ -1,4 +1,4 @@
-using CPDLCServer.Auth.Users;
+using CPDLCServer.Auth.Administrators;
 using CPDLCServer.Setup;
 using CPDLCServer.Tests.Mocks;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,10 +7,10 @@ namespace CPDLCServer.Tests.Setup;
 
 public class SetupStateTests
 {
-    readonly TestUserRepository _userRepository = new();
+    readonly TestAdministratorRepository _administratorRepository = new();
 
     [Fact]
-    public async Task Load_WhenNoUser_IsNotConfigured()
+    public async Task Load_WhenNoAdministrator_IsNotConfigured()
     {
         // Arrange
         var setupState = CreateSetupState();
@@ -23,10 +23,10 @@ public class SetupStateTests
     }
 
     [Fact]
-    public async Task Load_WhenUserExists_IsConfigured()
+    public async Task Load_WhenAdministratorExists_IsConfigured()
     {
         // Arrange
-        await _userRepository.Add(new User { Id = Guid.NewGuid(), Username = "admin" }, CancellationToken.None);
+        await _administratorRepository.Add(new Administrator { Cid = 1234567 }, CancellationToken.None);
         var setupState = CreateSetupState();
 
         // Act
@@ -37,36 +37,23 @@ public class SetupStateTests
     }
 
     [Fact]
-    public async Task MarkAdminCreated_CompletesTheSetup()
+    public async Task MarkConfigured_CompletesTheSetup()
     {
         // Arrange
         var setupState = CreateSetupState();
         await setupState.Load(CancellationToken.None);
 
         // Act
-        setupState.MarkAdminCreated();
+        setupState.MarkConfigured();
 
         // Assert
         Assert.True(setupState.IsConfigured);
-    }
-
-    [Fact]
-    public void IsValidSetupToken_AcceptsOnlyTheSetupToken()
-    {
-        // Arrange
-        var setupState = CreateSetupState();
-
-        // Act & Assert
-        Assert.True(setupState.IsValidSetupToken(setupState.SetupToken));
-        Assert.False(setupState.IsValidSetupToken("wrong-token"));
-        Assert.False(setupState.IsValidSetupToken(null));
-        Assert.False(setupState.IsValidSetupToken(string.Empty));
     }
 
     SetupState CreateSetupState()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IUserRepository>(_userRepository);
+        services.AddSingleton<IAdministratorRepository>(_administratorRepository);
         var serviceProvider = services.BuildServiceProvider();
 
         return new SetupState(serviceProvider.GetRequiredService<IServiceScopeFactory>());

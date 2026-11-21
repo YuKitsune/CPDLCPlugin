@@ -22,8 +22,17 @@ public class InMemoryLogBufferSink(LogBuffer logBuffer) : ILogEventSink
             Time: logEvent.Timestamp.ToString("HH:mm:ss"),
             Level: logEvent.Level.ToString(),
             LevelCode: LevelCode(logEvent.Level),
+            Area: StringProperty(logEvent, LogArea.PropertyName) ?? LogArea.System,
+            AcarsConnectionId: StringProperty(logEvent, LogArea.AcarsConnectionIdPropertyName),
             Message: writer.ToString(),
             Exception: logEvent.Exception?.ToString()));
+    }
+
+    static string? StringProperty(LogEvent logEvent, string name)
+    {
+        return logEvent.Properties.TryGetValue(name, out var value) && value is ScalarValue { Value: string text }
+            ? text
+            : null;
     }
 
     // The same codes as {Level:u3} in the console output

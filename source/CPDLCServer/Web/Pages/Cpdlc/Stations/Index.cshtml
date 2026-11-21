@@ -1,0 +1,46 @@
+@page "/cpdlc/stations/{stationId}"
+@model IndexModel
+@{
+    ViewData["Title"] = Model.StationId;
+}
+
+<h1 class="h3 mb-4">@Model.StationId</h1>
+
+@if (Model.Controllers.Length > 0)
+{
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">Controllers</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Callsign</th>
+                            <th>Controller</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var controller in Model.Controllers)
+                        {
+                            <tr>
+                                <td>@controller.Callsign</td>
+                                <td>@controller.Name <span class="text-muted small">(@controller.Cid)</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-secondary mb-4">No controllers are connected to @Model.StationId.</div>
+}
+
+<div class="card">
+    <div class="card-header fw-semibold">Messages</div>
+    <div class="card-body">
+        <partial name="_MessageTable" model="Model.Messages" />
+    </div>
+</div>

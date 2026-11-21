@@ -5,7 +5,7 @@ namespace CPDLCServer.Setup;
 /// </summary>
 public class RedirectToSetupMiddleware(RequestDelegate next, SetupState setupState)
 {
-    static readonly string[] AllowedPaths = ["/setup", "/login", "/logout", "/health", "/hubs"];
+    static readonly string[] AllowedPaths = ["/setup", "/health", "/hubs", "/branding"];
 
     public async Task InvokeAsync(HttpContext context)
     {

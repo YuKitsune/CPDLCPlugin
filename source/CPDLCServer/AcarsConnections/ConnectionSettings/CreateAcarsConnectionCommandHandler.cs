@@ -19,6 +19,7 @@ public class CreateAcarsConnectionCommandHandler(
 
         var settings = request.Settings;
         settings.StationIdentifier = settings.StationIdentifier.ToUpperInvariant();
+        settings.Motd = AcarsConnectionSettings.NormalizeMotd(settings.Motd);
         settings.EncryptedAuthenticationCode = masterKeyEncryption.Encrypt(request.AuthenticationCode);
 
         dbContext.AcarsConnections.Add(settings);

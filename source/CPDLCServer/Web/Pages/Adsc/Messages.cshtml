@@ -1,0 +1,49 @@
+@page "/adsc/messages"
+@using CPDLCServer.AdscContracts.MessageLog
+@model MessagesModel
+@{
+    ViewData["Title"] = "ADS-C message log";
+}
+
+<h1 class="h3 mb-4">ADS-C message log</h1>
+
+<div class="card">
+    <div class="card-body">
+        @if (Model.LogEntries.Length == 0)
+        {
+            <p class="text-muted mb-0">No ADS-C messages.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th></th>
+                            <th>Callsign</th>
+                            <th>Station</th>
+                            <th>Packet</th>
+                            <th>ACARS connection</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in Model.LogEntries)
+                        {
+                            <tr>
+                                <td class="text-nowrap">@entry.Time.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                <td title="@entry.Direction">@(entry.Direction == AdscMessageDirection.Uplink ? "↑" : "↓")</td>
+                                <td><a href="/cpdlc/aircraft/@entry.Callsign">@entry.Callsign</a></td>
+                                <td>@entry.StationId</td>
+                                <td class="font-monospace small text-break">@entry.Packet</td>
+                                <td class="small">@entry.AcarsConnectionId</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <partial name="_Pagination" model="Model.Pagination" />
+    </div>
+</div>

@@ -1,0 +1,29 @@
+@model CPDLCServer.AcarsConnections.Traffic.AcarsTrafficEntry[]
+
+@if (Model.Length == 0)
+{
+    <tr><td colspan="5" class="text-muted">No traffic.</td></tr>
+}
+
+@foreach (var entry in Model)
+{
+    <tr class="@(entry.Error is not null ? "table-danger" : "")">
+        <td class="text-nowrap small">
+            @entry.Time.ToString("HH:mm:ss")
+            <div class="text-muted">@entry.Duration.TotalMilliseconds.ToString("0") ms</div>
+        </td>
+        <td>@entry.Type</td>
+        <td>@(entry.StatusCode?.ToString() ?? "-")</td>
+        <td><pre class="small mb-0 text-wrap text-break">@entry.Request</pre></td>
+        <td>
+            @if (entry.Response is not null)
+            {
+                <pre class="small mb-0 text-wrap text-break">@entry.Response</pre>
+            }
+            @if (entry.Error is not null)
+            {
+                <div class="small text-danger">@entry.Error</div>
+            }
+        </td>
+    </tr>
+}

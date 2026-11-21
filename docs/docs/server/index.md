@@ -22,12 +22,12 @@ Deploy your own CPDLC Server instance to DigitalOcean:
 Since App Platform doesn't offer persistent disks, the template makes a PostgreSQL development database for the server data.
 
 :::warning
-You must set the `MasterKey` environment variable before you deploy. If `MasterKey` is not set, the server does not start.
+You must set the `MasterKey`, `VatsimConnect__ClientId` and `VatsimConnect__ClientSecret` environment variables before you deploy. If one of them is not set, the server does not start.
 
-Make a key with `openssl rand -base64 32`, and keep a copy in a safe place.
+Make a key with `openssl rand -base64 32`, and keep a copy in a safe place. See [VATSIM Connect](#vatsim-connect) for the client.
 :::
 
-After deployment, open the setup URL from the server log (see [Setup](#setup)). Then add your ACARS connection in Settings → ACARS on the server dashboard (`/settings/acars`).
+After deployment, open `/setup` on the server, and enter the CID of the first administrator (see [Setup](#setup)). Then log in with VATSIM, and add your ACARS connection in Configuration → ACARS connections (`/configuration/acars`).
 
 ## Prerequisites
 
@@ -39,11 +39,29 @@ Before running the CPDLC Server, ensure you have:
 
 ## Setup
 
-When the server starts for the first time, it is not set up. All the pages of the dashboard will redirect to the setup page. The server will write the setup URL to the log:
+When the server starts for the first time, it is not set up. All the pages of the dashboard redirect to the setup page (`/setup`).
 
-```
-[12:00:00 WRN] The server is not set up. Open http://localhost:8080/setup?token=... to set it up
-```
+On the setup page, enter the VATSIM CID of the first administrator. After the setup, the setup page does not exist. The administrator logs in with VATSIM, and can add more administrators in Configuration → Administrators.
+
+:::warning
+The setup page needs no login. The first person who opens it chooses the administrator. Do the setup immediately after the first start.
+:::
+
+### VATSIM Connect
+
+All users log in with [VATSIM Connect](https://vatsim.dev/services/connect). Make an OAuth client for the server at [auth.vatsim.net](https://auth.vatsim.net) (or [auth-dev.vatsim.net](https://auth-dev.vatsim.net) for development), with the redirect URL `https://<server>/signin-vatsim`. Then set these environment variables:
+
+- `VatsimConnect__ClientId`: the ID of the client.
+- `VatsimConnect__ClientSecret`: the secret of the client.
+- `VatsimConnect__Authority` (optional): the VATSIM Connect server. The default is `https://auth.vatsim.net`.
+
+Any VATSIM user can log in, open the CPDLC and ADS-C areas, and connect with the plugin. Only an administrator can open the Configuration area.
+
+Behind a proxy that ends TLS, the server uses the `X-Forwarded-Proto` header, so that the redirect URL uses `https`.
+
+### Plugin Authentication
+
+The plugin must authenticate before it can connect to the server. In the SETUP window of the plugin, select **Authenticate**. The browser opens the server, the user logs in with VATSIM, and selects **Allow**. Then the plugin gets a token. The token is valid for 30 days. The plugin keeps it encrypted for the Windows account of the user.
 
 ### Master Key
 
@@ -55,7 +73,7 @@ If the key is lost, the server cannot decrypt the secrets.
 
 ## Configuration
 
-The logging level, the master key, the data directory and the database are configured with environment variables. Only `MasterKey` is required.
+The logging level, the master key, VATSIM Connect, the data directory and the database are configured with environment variables. `MasterKey`, `VatsimConnect__ClientId` and `VatsimConnect__ClientSecret` are required.
 For local development, copy `example.env` to `.env` and update with your settings:
 
 ```bash
@@ -65,6 +83,10 @@ Logging__Level=Information
 # Master Key (required)
 # Encrypts the secrets in the database. Make a key with: openssl rand -base64 32
 MasterKey=your-master-key
+
+# VATSIM Connect (required)
+VatsimConnect__ClientId=your-client-id
+VatsimConnect__ClientSecret=your-client-secret
 
 # Data Directory
 # The directory of the SQLite database (cpdlc.db) (default: /data)
@@ -100,7 +122,7 @@ The server processes the requests from controllers, the ACARS connections and th
 
 ### ACARS Connections
 
-The ACARS connections connect the server to the upstream ACARS networks. Add, change and delete them in Settings → ACARS on the dashboard (`/settings/acars`).
+The ACARS connections connect the server to the upstream ACARS networks. Add, change and delete them in Configuration → ACARS connections on the dashboard (`/configuration/acars`).
 
 - When you add a connection, the server connects to the ACARS network.
 - When you change a connection, the server will reconnect to the upstream ACARS network with the new settings.
@@ -109,15 +131,23 @@ You can add more than one connection, for example when the server serves more th
 
 The server keeps the authentication code of each connection encrypted with the master key (`MasterKey`). The dashboard does not show the code. If the master key changes, the server cannot decrypt the codes, and you must enter them again.
 
+Each connection can have a message of the day. The server sends it to each aircraft as a CPDLC free text message, after the aircraft logs on and after the delay of the connection. The aircraft does not reply. The message shows in the dialogues, the same as the other uplinks.
+
+The Traffic button of a connection shows the most recent requests to the ACARS network and their responses, as raw text. The server keeps the last 500 requests of each connection in memory. The authentication code is not shown. The Logs button shows the log of the connection.
+
 :::note
 `Hoppie` is currently the only supported ACARS network type.
 :::
 
+### Branding
+
+In the Branding section of Configuration → Settings, you can change the name of the server, add a banner image (PNG, JPEG or WebP, 1 MB or less), and add a message of the day. They show at the top of the sidebar and on the login page. The banner changes when you upload or remove it. The Save button saves the name and the message of the day.
+
 ### Logs
 
-The Logs page of the dashboard (`/logs`) shows the live log of the server, with the same text and level colours as the console output.
+The Logs page of the dashboard (`/configuration/logs`) shows the live log of the server, with the same text and level colours as the console output.
 
-You can show only the entries at or above a level, pause the log, and clear the page. The logging level of the server (`Logging__Level`) sets which entries the server writes.
+You can show only the entries at or above a level, of one area (CPDLC, ADS-C, ACARS or System), of one ACARS connection, or with a text. You can also pause the log and clear the page. The filters are in the URL, so you can share a link to a filtered log. The logging level of the server (`Logging__Level`) sets which entries the server writes.
 
 ### ADS-C
 
@@ -137,7 +167,7 @@ The server keeps one report for each contract. A new report replaces the previou
 
 A report expires when the next two periodic reports do not arrive. The expiry time is two reporting intervals plus three minutes, from the time in the report. A contract with only a demand request uses the default reporting interval. When a report expires, or when its contract is removed, the server deletes the report and the plugin shows the flight plan track again.
 
-The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, and a log of all the ADS-C messages that the server sent and received.
+The ADS-C area of the dashboard shows all the contracts and their states (`/adsc`), and a log of all the ADS-C messages that the server sent and received (`/adsc/messages`).
 
 ### ADS-C from VATSIM Status Data
 

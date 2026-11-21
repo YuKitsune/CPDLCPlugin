@@ -13,6 +13,8 @@ public enum AcarsNetworkType
 // The settings page binds its form to this type, so the form cannot set the ID or the encrypted authentication code.
 public class AcarsConnectionSettings
 {
+    public const int MaxMotdLength = 200;
+
     [BindNever]
     public Guid Id { get; init; } = Guid.NewGuid();
 
@@ -42,7 +44,33 @@ public class AcarsConnectionSettings
     [Range(1, int.MaxValue)]
     public int SelectedAdscContractDuration { get; set; } = 60;
 
+    // A CPDLC free text message that is sent to each aircraft after it logs on. "/" is not accepted, because the
+    // Hoppie packet uses it as a separator.
+    [StringLength(MaxMotdLength)]
+    [RegularExpression(@"^[A-Za-z0-9 .,:?'()+\-\r\n]*$", ErrorMessage = "Use only letters, digits, spaces and . , : ? ' ( ) + -")]
+    public string? Motd { get; set; }
+
+    [Range(0, 3600)]
+    public int MotdDelaySeconds { get; set; } = 30;
+
     // Free text for the users. The server does not use it.
     [StringLength(2000)]
     public string? Notes { get; set; }
+
+    // The ID of the running connection. The log entries and the traffic log use it.
+    public string AcarsConnectionId => Type switch
+    {
+        AcarsNetworkType.Hoppie => $"Hoppies/{StationIdentifier.ToUpperInvariant()}",
+        _ => throw new NotSupportedException($"ACARS network type {Type} is not supported")
+    };
+
+    // CPDLC free text is upper case on one line. An empty message is no message.
+    public static string? NormalizeMotd(string? motd)
+    {
+        if (string.IsNullOrWhiteSpace(motd))
+            return null;
+
+        var words = motd.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        return string.Join(' ', words).ToUpperInvariant();
+    }
 }

@@ -7,5 +7,7 @@ public record LogEntry(
     string Time,
     string Level,
     string LevelCode,
+    string Area,
+    string? AcarsConnectionId,
     string Message,
     string? Exception);

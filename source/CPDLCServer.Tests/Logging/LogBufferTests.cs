@@ -98,8 +98,36 @@ public class LogBufferTests
         Assert.Contains("Send failed", error.Exception);
     }
 
+    [Fact]
+    public void Sink_ReadsTheAreaAndTheAcarsConnection()
+    {
+        // Arrange
+        var logBuffer = new LogBuffer();
+        using var logger = new LoggerConfiguration()
+            .MinimumLevel.Verbose()
+            .WriteTo.Sink(new InMemoryLogBufferSink(logBuffer))
+            .CreateLogger();
+
+        // Act
+        logger
+            .ForContext(LogArea.PropertyName, LogArea.Acars)
+            .ForContext(LogArea.AcarsConnectionIdPropertyName, "Hoppies/YBBB")
+            .Information("Polling for messages");
+        logger.Information("No area");
+
+        // Assert
+        using var subscription = logBuffer.Subscribe();
+        var acarsEntry = subscription.RecentEntries[0];
+        Assert.Equal(LogArea.Acars, acarsEntry.Area);
+        Assert.Equal("Hoppies/YBBB", acarsEntry.AcarsConnectionId);
+
+        var systemEntry = subscription.RecentEntries[1];
+        Assert.Equal(LogArea.System, systemEntry.Area);
+        Assert.Null(systemEntry.AcarsConnectionId);
+    }
+
     static LogEntry CreateEntry(string message)
     {
-        return new LogEntry(0, "12:00:00", "Information", "INF", message, null);
+        return new LogEntry(0, "12:00:00", "Information", "INF", LogArea.System, null, message, null);
     }
 }

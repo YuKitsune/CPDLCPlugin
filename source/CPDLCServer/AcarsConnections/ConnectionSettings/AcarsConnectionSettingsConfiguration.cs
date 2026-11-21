@@ -15,6 +15,9 @@ public class AcarsConnectionSettingsConfiguration : IEntityTypeConfiguration<Aca
         builder.Property(c => c.Type).HasConversion<string>();
         builder.Property(c => c.Url).HasConversion<string>();
 
+        // Calculated from the type and the station identifier
+        builder.Ignore(c => c.AcarsConnectionId);
+
         // The ACARS connection ID comes from the station identifier, so only one connection can use a station identifier
         builder.HasIndex(c => c.StationIdentifier).IsUnique();
     }
