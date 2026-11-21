@@ -7,7 +7,7 @@ namespace CPDLCServer.AdscContracts;
 /// The aircraft has only one periodic contract. A new periodic request replaces the previous one.
 /// <list type="bullet">
 /// <item>The default contract uses the default reporting interval of the ATSU.</item>
-/// <item>A controller can select a different reporting interval. The selected contract ends at a fixed time, then the default contract is requested again.</item>
+/// <item>A controller can select a different reporting interval. The selected contract stays until a controller requests the default contract.</item>
 /// <item>A demand request asks for one report.</item>
 /// </list>
 /// </summary>
@@ -34,8 +34,6 @@ public class AdscContract(string callsign, string stationId, TimeSpan defaultRep
     public TimeSpan? SelectedReportingInterval { get; private set; }
     public AdscContractState? SelectedContractState { get; private set; }
 
-    // Null when no selected contract is in use
-    public DateTimeOffset? SelectedContractEnds { get; private set; }
     public AdscContractState? DemandContractState { get; private set; }
 
     // The latest time that a request was sent, or that a message was received from the aircraft
@@ -79,15 +77,13 @@ public class AdscContract(string callsign, string stationId, TimeSpan defaultRep
 
         SelectedReportingInterval = null;
         SelectedContractState = null;
-        SelectedContractEnds = null;
     }
 
-    public void RequestSelectedContract(TimeSpan reportingInterval, DateTimeOffset ends)
+    public void RequestSelectedContract(TimeSpan reportingInterval)
     {
         ReportingInterval = reportingInterval;
         SelectedReportingInterval = reportingInterval;
         SelectedContractState = AdscContractState.Sent;
-        SelectedContractEnds = ends;
     }
 
     public void RequestDemandReport()
@@ -142,7 +138,6 @@ public class AdscContract(string callsign, string stationId, TimeSpan defaultRep
         if (SelectedContractState is AdscContractState.Sent or AdscContractState.Accepted)
         {
             SelectedContractState = AdscContractState.Rejected;
-            SelectedContractEnds = null;
             selectedContractRejected = true;
         }
         else if (DefaultContractState is AdscContractState.Sent or AdscContractState.Accepted)

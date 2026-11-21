@@ -17,6 +17,9 @@ namespace CPDLCServer.AcarsConnections.Hoppie;
 
 public class HoppieAcarsConnection : IAcarsConnection
 {
+    // The server is only for VATSIM
+    const string FlightSimulationNetwork = "VATSIM";
+
     readonly Dictionary<string, string> _uplinkMessageTranslations = new()
     {
         { "END SERVICE", "LOGOFF" }
@@ -136,7 +139,7 @@ public class HoppieAcarsConnection : IAcarsConnection
         var parameters = new Dictionary<string, string>
         {
             ["logon"] = _configuration.AuthenticationCode,
-            ["network"] = _configuration.FlightSimulationNetwork,
+            ["network"] = FlightSimulationNetwork,
             ["from"] = _configuration.StationIdentifier,
             ["to"] = to,
             ["type"] = messageType

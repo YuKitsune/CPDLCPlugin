@@ -71,7 +71,6 @@ public partial class ADSContractViewModel : ObservableObject,
 
         SelectedPeriod = 5;
         SelectedPeriodTransmissionState = AdscContractState.Sent;
-        SelectedPeriodEndTime = DateTimeOffset.UtcNow.AddMinutes(60);
 
         DemandContractTransmissionState = AdscContractState.Rejected;
     }
@@ -99,7 +98,6 @@ public partial class ADSContractViewModel : ObservableObject,
     public int[] PeriodOptions { get; } = [3, 5, 10, 15, 20, 24, 30, 60];
 
     [ObservableProperty] AdscContractState? _selectedPeriodTransmissionState;
-    [ObservableProperty] DateTimeOffset? _selectedPeriodEndTime;
 
     [ObservableProperty] AdscContractState? _demandContractTransmissionState;
 
@@ -140,7 +138,6 @@ public partial class ADSContractViewModel : ObservableObject,
 
         SelectedPeriod = (int?)contract?.SelectedReportingInterval?.TotalMinutes;
         SelectedPeriodTransmissionState = contract?.SelectedContractState;
-        SelectedPeriodEndTime = contract?.SelectedContractEnds;
 
         DemandContractTransmissionState = contract?.DemandContractState;
     }

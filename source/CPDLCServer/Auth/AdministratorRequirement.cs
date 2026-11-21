@@ -19,7 +19,7 @@ public class AdministratorRequirementHandler(IAdministratorRepository administra
         if (cid is null)
             return;
 
-        if (await administratorRepository.FindByCid(cid.Value, CancellationToken.None) is not null)
+        if (await administratorRepository.FindByCid(cid, CancellationToken.None) is not null)
             context.Succeed(requirement);
     }
 }

@@ -48,7 +48,6 @@ public enum AdscContractState
 
 // ReportingInterval is the interval of the latest periodic request. It is null when no periodic contract was requested.
 // DefaultReportingInterval is the default reporting interval of the ATSU.
-// SelectedContractEnds is null when no selected contract is in use.
 public record AdscContractDto(
     string Callsign,
     string StationId,
@@ -57,7 +56,6 @@ public record AdscContractDto(
     AdscContractState? DefaultContractState,
     TimeSpan? SelectedReportingInterval,
     AdscContractState? SelectedContractState,
-    DateTimeOffset? SelectedContractEnds,
     AdscContractState? DemandContractState);
 
 public enum AdscReportSource
@@ -148,6 +146,6 @@ public class DownlinkMessageDto : CpdlcMessageDto
 
 
 // Plugin authentication DTOs
-public record PluginTokenResponse(string AccessToken, DateTimeOffset Expires, int Cid, string Name);
+public record PluginTokenResponse(string AccessToken, DateTimeOffset Expires, string Cid, string Name);
 
-public record PluginUserDto(int Cid, string Name, DateTimeOffset Expires);
+public record PluginUserDto(string Cid, string Name, DateTimeOffset Expires);

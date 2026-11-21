@@ -6,7 +6,7 @@ public class PluginToken
     public static readonly TimeSpan Lifetime = TimeSpan.FromDays(30);
 
     public Guid Id { get; init; }
-    public int Cid { get; init; }
+    public required string Cid { get; init; }
     public string Name { get; init; } = string.Empty;
     public string TokenHash { get; init; } = string.Empty;
     public DateTimeOffset Created { get; init; }

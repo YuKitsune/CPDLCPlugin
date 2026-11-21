@@ -151,7 +151,7 @@ public class AdscMessageReceivedNotificationHandlerTests
         // Arrange
         var contractRepository = new TestAdscContractRepository();
         var contract = await AddContract(contractRepository, "YBBB");
-        contract.RequestSelectedContract(SelectedInterval, DateTimeOffset.UtcNow.AddHours(1));
+        contract.RequestSelectedContract(SelectedInterval);
 
         var mediator = Substitute.For<IMediator>();
         var handler = new AdscMessageReceivedNotificationHandler(new TestAcarsConnectionManager(), contractRepository, mediator, Logger.None);

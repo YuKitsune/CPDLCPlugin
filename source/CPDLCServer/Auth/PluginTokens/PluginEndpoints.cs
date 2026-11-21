@@ -49,7 +49,7 @@ public static class PluginEndpoints
     static IResult GetUser(ClaimsPrincipal user)
     {
         var expires = DateTimeOffset.Parse(user.FindFirstValue(PluginTokenAuthenticationHandler.ExpiresClaimType)!);
-        return Results.Ok(new PluginUserDto(user.GetCid()!.Value, user.GetName(), expires));
+        return Results.Ok(new PluginUserDto(user.GetCid()!, user.GetName(), expires));
     }
 
     static async Task<IResult> Logout(HttpRequest request, IUnitOfWorkMediator mediator, CancellationToken cancellationToken)

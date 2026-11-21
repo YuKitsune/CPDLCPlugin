@@ -22,7 +22,10 @@ public static class AuthServiceCollectionExtensions
         IHostEnvironment environment)
     {
         var developmentLogin = new DevelopmentLogin(
-            environment.IsDevelopment() ? configuration.GetValue<int?>("VatsimConnect:DevCid") : null);
+            environment.IsDevelopment() && configuration["VatsimConnect:DevCid"] is { Length: > 0 } devCid ? devCid : null);
+        if (developmentLogin.Cid is not null && !VatsimCid.IsValid(developmentLogin.Cid))
+            throw new InvalidOperationException("VatsimConnect:DevCid must contain only digits");
+
         services.AddSingleton(developmentLogin);
 
         services.AddScoped<IAdministratorRepository, AdministratorRepository>();

@@ -43,7 +43,7 @@ public class AuthorizeModel : PageModel
         if (!IsValidRequest)
             return Page();
 
-        var code = _authorizationCodes.Create(User.GetCid()!.Value, User.GetName(), RedirectUri!, CodeChallenge!);
+        var code = _authorizationCodes.Create(User.GetCid()!, User.GetName(), RedirectUri!, CodeChallenge!);
 
         var redirectUri = $"{RedirectUri}?code={Uri.EscapeDataString(code)}&state={Uri.EscapeDataString(State!)}";
         return Redirect(redirectUri);

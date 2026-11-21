@@ -104,7 +104,6 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="32"/>
                 <RowDefinition Height="32"/>
-                <RowDefinition Height="32"/>
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
@@ -164,15 +163,8 @@
                 </Border>
             </Popup>
 
-            <!-- Selected Period End -->
-            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource PeriodLabelStyle}" Text="Selected Period End"/>
-            <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource ValueBorderStyle}">
-                <TextBlock Style="{StaticResource ValueTextStyle}"
-                           Text="{Binding SelectedPeriodEndTime, Converter={StaticResource TimeConverter}}"/>
-            </Border>
-
             <!-- Demand Contract -->
-            <Grid Grid.Row="0" Grid.Column="3" Grid.RowSpan="3" Margin="16,0">
+            <Grid Grid.Row="0" Grid.Column="3" Grid.RowSpan="2" Margin="16,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="48"/>
                     <ColumnDefinition Width="*"/>

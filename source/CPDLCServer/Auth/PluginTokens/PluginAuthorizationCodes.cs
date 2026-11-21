@@ -16,7 +16,7 @@ public class PluginAuthorizationCodes(IClock clock)
 
     readonly ConcurrentDictionary<string, PendingCode> _codes = new();
 
-    public string Create(int cid, string name, string redirectUri, string codeChallenge)
+    public string Create(string cid, string name, string redirectUri, string codeChallenge)
     {
         RemoveExpired();
 
@@ -67,7 +67,7 @@ public class PluginAuthorizationCodes(IClock clock)
         }
     }
 
-    record PendingCode(int Cid, string Name, string RedirectUri, string CodeChallenge, DateTimeOffset Expires);
+    record PendingCode(string Cid, string Name, string RedirectUri, string CodeChallenge, DateTimeOffset Expires);
 }
 
-public record PluginUser(int Cid, string Name);
+public record PluginUser(string Cid, string Name);

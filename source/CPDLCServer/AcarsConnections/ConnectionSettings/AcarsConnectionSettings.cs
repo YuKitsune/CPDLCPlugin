@@ -28,9 +28,6 @@ public class AcarsConnectionSettings
     public string StationIdentifier { get; set; } = string.Empty;
 
     [Required]
-    public string FlightSimulationNetwork { get; set; } = "VATSIM";
-
-    [Required]
     public Uri Url { get; set; } = new("http://www.hoppie.nl/acars/system/connect.html");
 
     // Encrypted with the master key. Use MasterKeyEncryption to decrypt it. The plain code is not kept.
@@ -40,9 +37,6 @@ public class AcarsConnectionSettings
 
     [Range(1, int.MaxValue)]
     public int DefaultAdscReportingInterval { get; set; } = 10;
-
-    [Range(1, int.MaxValue)]
-    public int SelectedAdscContractDuration { get; set; } = 60;
 
     // A CPDLC free text message that is sent to each aircraft after it logs on. "/" is not accepted, because the
     // Hoppie packet uses it as a separator.

@@ -13,7 +13,7 @@
 <form method="post">
     <div class="mb-3">
         <label asp-for="Input.Cid" class="form-label fw-semibold"></label>
-        <input asp-for="Input.Cid" class="form-control" inputmode="numeric" autocomplete="off" autofocus />
+        <input asp-for="Input.Cid" type="text" class="form-control" inputmode="numeric" pattern="[0-9]+" autocomplete="off" autofocus />
         <div class="form-text">The VATSIM CID of the first administrator. That person logs in with VATSIM and can add more administrators.</div>
         <span asp-validation-for="Input.Cid" class="text-danger small"></span>
     </div>

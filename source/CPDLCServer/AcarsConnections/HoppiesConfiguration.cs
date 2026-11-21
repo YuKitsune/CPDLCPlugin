@@ -11,9 +11,6 @@ public abstract class AcarsConfiguration
     // The reporting interval in minutes for the ADS-C contract that is requested when an aircraft logs on with CPDLC
     public int DefaultAdscReportingInterval { get; init; } = 10;
 
-    // The time in minutes from the request of a selected ADS-C contract to its end. After this time, the default contract is requested again.
-    public int SelectedAdscContractDuration { get; init; } = 60;
-
     // A CPDLC free text message that is sent to each aircraft after it logs on. Null when there is no message.
     public string? Motd { get; init; }
 
@@ -27,6 +24,5 @@ public class HoppiesConfiguration : AcarsConfiguration
 
     public required Uri Url { get; init; }
     public required string AuthenticationCode { get; init; }
-    public required string FlightSimulationNetwork { get; init; }
     public required string StationIdentifier { get; init; }
 }

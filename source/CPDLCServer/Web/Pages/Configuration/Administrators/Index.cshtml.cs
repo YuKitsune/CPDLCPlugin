@@ -22,9 +22,10 @@ public class IndexModel : PageModel
 
     [BindProperty]
     [Required(ErrorMessage = "Enter a CID.")]
-    [Range(1, int.MaxValue, ErrorMessage = "Enter a valid CID.")]
+    [StringLength(VatsimCid.MaxLength)]
+    [RegularExpression(VatsimCid.Pattern, ErrorMessage = VatsimCid.ErrorMessage)]
     [Display(Name = "CID")]
-    public int? Cid { get; set; }
+    public string? Cid { get; set; }
 
     [TempData]
     public string? StatusMessage { get; set; }
@@ -49,7 +50,7 @@ public class IndexModel : PageModel
 
         try
         {
-            await _mediator.Send(new AddAdministratorCommand(Cid!.Value), cancellationToken);
+            await _mediator.Send(new AddAdministratorCommand(Cid!), cancellationToken);
             StatusMessage = $"{Cid} is now an administrator.";
         }
         catch (InvalidOperationException ex)
@@ -60,7 +61,7 @@ public class IndexModel : PageModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostRemoveAsync(int cid, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostRemoveAsync(string cid, CancellationToken cancellationToken)
     {
         var currentUserCid = User.GetCid();
         if (currentUserCid is null)
@@ -68,7 +69,7 @@ public class IndexModel : PageModel
 
         try
         {
-            await _mediator.Send(new RemoveAdministratorCommand(cid, currentUserCid.Value), cancellationToken);
+            await _mediator.Send(new RemoveAdministratorCommand(cid, currentUserCid), cancellationToken);
             StatusMessage = $"{cid} is no longer an administrator.";
         }
         catch (InvalidOperationException ex)

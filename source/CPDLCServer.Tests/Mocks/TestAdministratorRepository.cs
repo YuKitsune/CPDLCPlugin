@@ -18,14 +18,14 @@ public class TestAdministratorRepository : IAdministratorRepository
         return Task.CompletedTask;
     }
 
-    public Task<Administrator?> FindByCid(int cid, CancellationToken cancellationToken)
+    public Task<Administrator?> FindByCid(string cid, CancellationToken cancellationToken)
     {
         return Task.FromResult(_administrators.FirstOrDefault(a => a.Cid == cid));
     }
 
     public Task<Administrator[]> All(CancellationToken cancellationToken)
     {
-        return Task.FromResult(_administrators.OrderBy(a => a.Cid).ToArray());
+        return Task.FromResult(_administrators.OrderBy(a => a.Cid, StringComparer.Ordinal).ToArray());
     }
 
     public Task<bool> Any(CancellationToken cancellationToken)

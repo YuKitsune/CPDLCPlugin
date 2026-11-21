@@ -22,10 +22,8 @@ public class UpdateAcarsConnectionCommandHandler(
         settings.Type = changes.Type;
         settings.Enabled = changes.Enabled;
         settings.StationIdentifier = changes.StationIdentifier.ToUpperInvariant();
-        settings.FlightSimulationNetwork = changes.FlightSimulationNetwork;
         settings.Url = changes.Url;
         settings.DefaultAdscReportingInterval = changes.DefaultAdscReportingInterval;
-        settings.SelectedAdscContractDuration = changes.SelectedAdscContractDuration;
         settings.Motd = AcarsConnectionSettings.NormalizeMotd(changes.Motd);
         settings.MotdDelaySeconds = changes.MotdDelaySeconds;
         settings.Notes = changes.Notes;

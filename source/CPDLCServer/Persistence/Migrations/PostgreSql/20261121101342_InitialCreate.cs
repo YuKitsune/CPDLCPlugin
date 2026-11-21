@@ -20,11 +20,9 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     Type = table.Column<string>(type: "text", nullable: false),
                     Enabled = table.Column<bool>(type: "boolean", nullable: false),
                     StationIdentifier = table.Column<string>(type: "text", nullable: false),
-                    FlightSimulationNetwork = table.Column<string>(type: "text", nullable: false),
                     Url = table.Column<string>(type: "text", nullable: false),
                     EncryptedAuthenticationCode = table.Column<string>(type: "text", nullable: false),
                     DefaultAdscReportingInterval = table.Column<int>(type: "integer", nullable: false),
-                    SelectedAdscContractDuration = table.Column<int>(type: "integer", nullable: false),
                     Motd = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     MotdDelaySeconds = table.Column<int>(type: "integer", nullable: false),
                     Notes = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
@@ -39,7 +37,7 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 name: "Administrators",
                 columns: table => new
                 {
-                    Cid = table.Column<int>(type: "integer", nullable: false),
+                    Cid = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     Name = table.Column<string>(type: "text", nullable: true),
                     Added = table.Column<long>(type: "bigint", nullable: false),
                     Version = table.Column<int>(type: "integer", nullable: false)
@@ -63,7 +61,6 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     DefaultContractState = table.Column<string>(type: "text", nullable: true),
                     SelectedReportingInterval = table.Column<long>(type: "bigint", nullable: true),
                     SelectedContractState = table.Column<string>(type: "text", nullable: true),
-                    SelectedContractEnds = table.Column<long>(type: "bigint", nullable: true),
                     DemandContractState = table.Column<string>(type: "text", nullable: true),
                     LastActivity = table.Column<long>(type: "bigint", nullable: false),
                     LastReportReceived = table.Column<long>(type: "bigint", nullable: true),
@@ -156,7 +153,7 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Cid = table.Column<int>(type: "integer", nullable: false),
+                    Cid = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     TokenHash = table.Column<string>(type: "text", nullable: false),
                     Created = table.Column<long>(type: "bigint", nullable: false),

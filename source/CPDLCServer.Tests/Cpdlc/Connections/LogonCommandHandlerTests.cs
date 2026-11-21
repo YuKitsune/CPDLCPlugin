@@ -107,7 +107,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            1234567,
+            "1234567",
             "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
 
@@ -142,7 +142,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            1234567,
+            "1234567",
             "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
 
@@ -178,7 +178,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            1234567,
+            "1234567",
             "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
 
@@ -222,7 +222,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            1234567,
+            "1234567",
             "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
     }
@@ -351,7 +351,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            1234567,
+            "1234567",
             "Test Controller");
         await controllerRepository.Add(controller, CancellationToken.None);
 

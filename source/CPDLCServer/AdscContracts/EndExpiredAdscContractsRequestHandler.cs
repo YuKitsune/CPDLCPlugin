@@ -29,49 +29,19 @@ public class EndExpiredAdscContractsRequestHandler(
 
         foreach (var contract in contracts)
         {
-            if (canApplyContractTimeout && now - contract.LastActivity > contractTimeout)
-            {
-                // A failure for one aircraft must not stop the other aircraft
-                try
-                {
-                    await CancelInactiveContract(contract, cancellationToken);
-                }
-                catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-                {
-                    logger.Error(
-                        ex,
-                        "Failed to remove inactive ADS-C contract with {Callsign} for {StationId}",
-                        contract.Callsign,
-                        contract.StationId);
-                }
-
+            if (!canApplyContractTimeout || now - contract.LastActivity <= contractTimeout)
                 continue;
-            }
-
-            if (contract.SelectedContractEnds is null || contract.SelectedContractEnds > now)
-                continue;
-
-            logger.Information(
-                "Selected ADS-C contract with {Callsign} from {StationId} has ended",
-                contract.Callsign,
-                contract.StationId);
 
             // A failure for one aircraft must not stop the other aircraft
             try
             {
-                var configuration = await acarsConnectionManager.GetConfigurationForStation(contract.StationId, cancellationToken);
-                await mediator.Send(
-                    new RequestPeriodicAdscContractCommand(
-                        contract.StationId,
-                        contract.Callsign,
-                        TimeSpan.FromMinutes(configuration.DefaultAdscReportingInterval)),
-                    cancellationToken);
+                await CancelInactiveContract(contract, cancellationToken);
             }
             catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
                 logger.Error(
                     ex,
-                    "Failed to request default ADS-C contract with {Callsign} for {StationId}",
+                    "Failed to remove inactive ADS-C contract with {Callsign} for {StationId}",
                     contract.Callsign,
                     contract.StationId);
             }

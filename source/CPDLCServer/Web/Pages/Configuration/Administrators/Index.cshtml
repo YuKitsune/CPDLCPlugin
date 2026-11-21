@@ -5,7 +5,6 @@
 }
 
 <h1 class="h3">Administrators</h1>
-<p class="text-muted mb-4">Administrators can open the Configuration area. Each person logs in with VATSIM. The name shows after the first login.</p>
 
 @if (Model.StatusMessage is not null)
 {
@@ -23,7 +22,7 @@
         <form method="post" asp-page-handler="Add" class="row g-2 align-items-start">
             <div class="col-sm-6 col-lg-4">
                 <label asp-for="Cid" class="visually-hidden"></label>
-                <input asp-for="Cid" class="form-control" inputmode="numeric" placeholder="VATSIM CID" autocomplete="off" />
+                <input asp-for="Cid" type="text" class="form-control" inputmode="numeric" pattern="[0-9]+" placeholder="VATSIM CID" autocomplete="off" />
                 <span asp-validation-for="Cid" class="text-danger small"></span>
             </div>
             <div class="col-auto">

@@ -26,7 +26,7 @@ public class SetupStateTests
     public async Task Load_WhenAdministratorExists_IsConfigured()
     {
         // Arrange
-        await _administratorRepository.Add(new Administrator { Cid = 1234567 }, CancellationToken.None);
+        await _administratorRepository.Add(new Administrator { Cid = "1234567" }, CancellationToken.None);
         var setupState = CreateSetupState();
 
         // Act

@@ -180,7 +180,7 @@ In real operations, ADS-C does not depend on CPDLC, and an ATSU usually keeps it
 
 Each ATSU has its own default reporting interval, set on its ACARS connection. Controllers can read this value.
 
-A controller can select a different reporting interval for an aircraft. The selected contract ends after the selected ADS-C contract duration of the ACARS connection. Then the server requests the default contract again. A controller can also go back to the default contract at any time.
+A controller can select a different reporting interval for an aircraft. The selected contract stays until a controller goes back to the default contract.
 
 The aircraft does not acknowledge a request. The first report after a request accepts it. If the aircraft rejects a selected contract, the server requests the default contract again. If the aircraft rejects the default contract, the server does not send it again.
 

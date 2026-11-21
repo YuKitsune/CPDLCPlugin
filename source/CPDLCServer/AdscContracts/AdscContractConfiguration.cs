@@ -23,7 +23,6 @@ public class AdscContractConfiguration : IEntityTypeConfiguration<AdscContract>
         builder.Property(c => c.DefaultContractState);
         builder.Property(c => c.SelectedReportingInterval);
         builder.Property(c => c.SelectedContractState);
-        builder.Property(c => c.SelectedContractEnds);
         builder.Property(c => c.DemandContractState);
         builder.Property(c => c.LastActivity);
         builder.Property(c => c.LastReportReceived);

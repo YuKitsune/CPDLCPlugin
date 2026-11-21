@@ -7,13 +7,13 @@ public class ControllerInfo(
     string connectionId,
     string stationId,
     string callsign,
-    int cid,
+    string cid,
     string name)
 {
     public Guid UserId { get; } = userId;
     public string ConnectionId { get; } = connectionId;
     public string StationId { get; } = stationId;
     public string Callsign { get; } = callsign;
-    public int Cid { get; } = cid;
+    public string Cid { get; } = cid;
     public string Name { get; } = name;
 }

@@ -2,4 +2,4 @@ using MediatR;
 
 namespace CPDLCServer.Auth.Administrators;
 
-public record AddAdministratorCommand(int Cid) : IRequest;
+public record AddAdministratorCommand(string Cid) : IRequest;

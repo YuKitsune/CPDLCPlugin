@@ -218,7 +218,6 @@ The window shows:
 - **Last Report:** The time of the latest report from the aircraft
 - **Default Period:** The default reporting interval of your ATSU, in minutes
 - **Selected Period:** The reporting interval that a controller selected, in minutes. `DEF` shows that the default period is selected.
-- **Selected Period End:** The time when the selected contract ends. Then the server requests the default contract again.
 - **Source:** The source of the latest report. `Hoppie` is a report from the aircraft through ACARS. `VATSIM` is a server-generated report using VATSIM data when there is no report from ACARS.
 
 A symbol next to each contract shows the state of the request:
@@ -233,9 +232,9 @@ A symbol next to each contract shows the state of the request:
 2. Click a period in the list, or type a period (in minutes) in the box at the bottom of the list, then press Enter.
 
 The server sends the request to the aircraft immediately.
-The selected contract ends after a time that the server sets (60 minutes by default).
+The selected contract stays until a controller changes it.
 
-To go back to the default contract before the selected contract ends, click `DEF` in the list.
+To go back to the default contract, click `DEF` in the list.
 
 #### Requesting a Demand Report
 

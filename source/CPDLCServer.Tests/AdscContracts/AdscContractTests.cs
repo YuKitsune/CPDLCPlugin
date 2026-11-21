@@ -7,8 +7,7 @@ public class AdscContractTests
 {
     static readonly TimeSpan DefaultInterval = TimeSpan.FromMinutes(10);
     static readonly TimeSpan SelectedInterval = TimeSpan.FromMinutes(2);
-    static readonly DateTimeOffset Ends = new(2026, 1, 1, 1, 0, 0, TimeSpan.Zero);
-    static readonly AdscReport Report = new(Ends.AddHours(-1), -33.9461, 151.1772, 37000, AdscReportSource.Hoppie);
+    static readonly AdscReport Report = new(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), -33.9461, 151.1772, 37000, AdscReportSource.Hoppie);
 
     [Fact]
     public void RequestDefaultContract_SendsDefaultContract()
@@ -44,7 +43,7 @@ public class AdscContractTests
     {
         // Arrange
         var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
-        contract.RequestSelectedContract(SelectedInterval, Ends);
+        contract.RequestSelectedContract(SelectedInterval);
         contract.ReportReceived(Report);
 
         // Act
@@ -55,7 +54,6 @@ public class AdscContractTests
         Assert.Equal(AdscContractState.Sent, contract.DefaultContractState);
         Assert.Null(contract.SelectedReportingInterval);
         Assert.Null(contract.SelectedContractState);
-        Assert.Null(contract.SelectedContractEnds);
     }
 
     [Fact]
@@ -63,7 +61,7 @@ public class AdscContractTests
     {
         // Arrange
         var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
-        contract.RequestSelectedContract(SelectedInterval, Ends);
+        contract.RequestSelectedContract(SelectedInterval);
         contract.Reject();
 
         // Act
@@ -84,13 +82,12 @@ public class AdscContractTests
         contract.ReportReceived(Report);
 
         // Act
-        contract.RequestSelectedContract(SelectedInterval, Ends);
+        contract.RequestSelectedContract(SelectedInterval);
 
         // Assert
         Assert.Equal(SelectedInterval, contract.ReportingInterval);
         Assert.Equal(SelectedInterval, contract.SelectedReportingInterval);
         Assert.Equal(AdscContractState.Sent, contract.SelectedContractState);
-        Assert.Equal(Ends, contract.SelectedContractEnds);
         Assert.Equal(AdscContractState.Accepted, contract.DefaultContractState);
     }
 
@@ -114,7 +111,7 @@ public class AdscContractTests
         // Arrange
         var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestDefaultContract(DefaultInterval);
-        contract.RequestSelectedContract(SelectedInterval, Ends);
+        contract.RequestSelectedContract(SelectedInterval);
 
         // Act
         contract.ReportReceived(Report);
@@ -180,7 +177,7 @@ public class AdscContractTests
         var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
         contract.RequestDefaultContract(DefaultInterval);
         contract.ReportReceived(Report);
-        contract.RequestSelectedContract(SelectedInterval, Ends);
+        contract.RequestSelectedContract(SelectedInterval);
 
         // Act
         var selectedContractRejected = contract.Reject();
@@ -188,7 +185,6 @@ public class AdscContractTests
         // Assert
         Assert.True(selectedContractRejected);
         Assert.Equal(AdscContractState.Rejected, contract.SelectedContractState);
-        Assert.Null(contract.SelectedContractEnds);
         Assert.Equal(AdscContractState.Accepted, contract.DefaultContractState);
     }
 
@@ -197,7 +193,7 @@ public class AdscContractTests
     {
         // Arrange
         var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(10), DateTimeOffset.MinValue);
-        contract.RequestSelectedContract(SelectedInterval, Ends);
+        contract.RequestSelectedContract(SelectedInterval);
         contract.ReportReceived(Report);
 
         // Act

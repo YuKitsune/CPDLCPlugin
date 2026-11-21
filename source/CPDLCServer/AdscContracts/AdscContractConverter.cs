@@ -15,7 +15,6 @@ public static class AdscContractConverter
             ToDto(contract.DefaultContractState),
             contract.SelectedReportingInterval,
             ToDto(contract.SelectedContractState),
-            contract.SelectedContractEnds,
             ToDto(contract.DemandContractState));
     }
 

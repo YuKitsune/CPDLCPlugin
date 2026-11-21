@@ -5,7 +5,6 @@
 }
 
 <h1 class="h3">Settings</h1>
-<p class="text-muted mb-4">The server applies the changes immediately. A restart is not necessary.</p>
 
 @if (Model.StatusMessage is not null)
 {
@@ -18,12 +17,10 @@
     <div class="card mt-3">
         <div class="card-header fw-semibold">Branding</div>
         <div class="card-body">
-            <p class="form-text mt-0">The name, banner and message of the day show at the top of the sidebar and on the login page.</p>
-
             <div class="row py-2 border-bottom">
                 <div class="col-md-5">
                     <label asp-for="Settings.ServerName" class="form-label fw-semibold">Server name</label>
-                    <div class="form-text">Shows in the browser tab, and in the sidebar when there is no banner.</div>
+                    <div class="form-text">Shows in the browser tab, and in the sidebar.</div>
                 </div>
                 <div class="col-md-5">
                     <div class="input-group">
@@ -38,7 +35,6 @@
             <div class="row py-2 border-bottom">
                 <div class="col-md-5">
                     <label asp-for="Settings.Motd" class="form-label fw-semibold">Message of the day</label>
-                    <div class="form-text">Optional. Plain text. The line breaks are kept.</div>
                 </div>
                 <div class="col-md-5">
                     <textarea asp-for="Settings.Motd" class="form-control" rows="3"></textarea>
@@ -49,7 +45,7 @@
             <div class="row py-2">
                 <div class="col-md-5">
                     <label for="banner" class="form-label fw-semibold">Banner</label>
-                    <div class="form-text">Optional. PNG, JPEG or WebP, 1 MB or less. The sidebar is narrow, so a wide image is best. The banner changes when you upload it. The Save button does not change it.</div>
+                    <div class="form-text">Optional. PNG, JPEG or WebP, 1 MB or less.</div>
                 </div>
                 <div class="col-md-5">
                     @if (Model.Branding.HasBanner)
@@ -80,7 +76,7 @@
             <div class="row py-2 border-bottom">
                 <div class="col-md-5">
                     <label asp-for="Settings.OperatorName" class="form-label fw-semibold">Operator name</label>
-                    <div class="form-text">The person or organisation that operates this server, for example a VATSIM division or FIR.</div>
+                    <div class="form-text">The person or organisation that operates this server, for example a VATSIM division.</div>
                 </div>
                 <div class="col-md-5">
                     <input asp-for="Settings.OperatorName" class="form-control" />
@@ -91,7 +87,7 @@
             <div class="row py-2">
                 <div class="col-md-5">
                     <label asp-for="Settings.PrivacyContact" class="form-label fw-semibold">Privacy contact</label>
-                    <div class="form-text">An email address or a URL. Users use it to ask questions about their data, or to ask you to delete it.</div>
+                    <div class="form-text">An email address or a URL. Users can use it to ask questions about their data, or to ask you to delete it.</div>
                 </div>
                 <div class="col-md-5">
                     <input asp-for="Settings.PrivacyContact" class="form-control" />
@@ -151,7 +147,7 @@
             <div class="row py-2">
                 <div class="col-md-5">
                     <label asp-for="Settings.DialogueRetentionHours" class="form-label fw-semibold">Dialogue retention</label>
-                    <div class="form-text">The time from when a dialogue opens until the server deletes it. The server keeps the dialogues after the aircraft disconnects.</div>
+                    <div class="form-text">The time from when a dialogue opens until the server deletes it.</div>
                 </div>
                 <div class="col-md-5">
                     <div class="input-group">
@@ -214,7 +210,7 @@
             <div class="row py-2 border-bottom">
                 <div class="col-md-5">
                     <label asp-for="Settings.VatsimStatusEnabled" class="form-label fw-semibold">Enabled</label>
-                    <div class="form-text">Make ADS-C reports from the VATSIM status data for aircraft that do not support ADS-C over Hoppie.</div>
+                    <div class="form-text">Generate ADS-C reports from the VATSIM API for aircraft that do not support ADS-C over ACARS.</div>
                 </div>
                 <div class="col-md-5 d-flex align-items-center">
                     <div class="form-check form-switch mb-0">
@@ -258,7 +254,7 @@
             <div class="row py-2 border-bottom">
                 <div class="col-md-5">
                     <label asp-for="Settings.VatsimStatusReportDelayMinutes" class="form-label fw-semibold">Report delay</label>
-                    <div class="form-text">The time after a new ADS-C contract before VATSIM reports are made. During this time, the aircraft can send its first report through Hoppie.</div>
+                    <div class="form-text">The time after a new ADS-C contract before VATSIM reports are used. During this time, the aircraft can send its first report through ACARS.</div>
                 </div>
                 <div class="col-md-5">
                     <div class="input-group">

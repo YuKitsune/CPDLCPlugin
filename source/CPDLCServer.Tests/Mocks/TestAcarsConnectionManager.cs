@@ -29,17 +29,14 @@ public class TestAcarsConnectionManager : IAcarsConnectionManager
     public static HoppiesConfiguration CreateConfiguration(
         string stationId,
         int defaultAdscReportingInterval,
-        int selectedAdscContractDuration = 60,
         string? motd = null)
     {
         return new HoppiesConfiguration
         {
             Url = new Uri("http://test.hoppie.nl/acars"),
             AuthenticationCode = "TEST123",
-            FlightSimulationNetwork = "VATSIM",
             StationIdentifier = stationId,
             DefaultAdscReportingInterval = defaultAdscReportingInterval,
-            SelectedAdscContractDuration = selectedAdscContractDuration,
             Motd = motd
         };
     }

@@ -34,7 +34,7 @@ public class LoginModel(DevelopmentLogin developmentLogin, IUnitOfWorkMediator m
             VatsimConnectOptions.AuthenticationScheme);
     }
 
-    async Task<IActionResult> DevelopmentSignIn(int cid, CancellationToken cancellationToken)
+    async Task<IActionResult> DevelopmentSignIn(string cid, CancellationToken cancellationToken)
     {
         var identity = CurrentUser.CreateIdentity(cid, DevelopmentLogin.Name, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new(identity));

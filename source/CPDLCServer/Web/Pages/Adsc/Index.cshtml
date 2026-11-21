@@ -35,7 +35,6 @@
                             <th>Default</th>
                             <th>Selected interval</th>
                             <th>Selected</th>
-                            <th>Selected ends</th>
                             <th>Demand</th>
                             <th>Report source</th>
                         </tr>
@@ -50,7 +49,6 @@
                                 <td><span class="badge @GetStateBadgeClass(contract.DefaultContractState)">@(contract.DefaultContractState?.ToString() ?? "-")</span></td>
                                 <td>@FormatInterval(contract.SelectedReportingInterval)</td>
                                 <td><span class="badge @GetStateBadgeClass(contract.SelectedContractState)">@(contract.SelectedContractState?.ToString() ?? "-")</span></td>
-                                <td class="text-nowrap">@(contract.SelectedContractEnds?.ToString("HH:mm:ss") ?? "-")</td>
                                 <td><span class="badge @GetStateBadgeClass(contract.DemandContractState)">@(contract.DemandContractState?.ToString() ?? "-")</span></td>
                                 <td>@(Model.ReportSources.TryGetValue(contract.Callsign, out var source) ? source.ToString() : "-")</td>
                             </tr>

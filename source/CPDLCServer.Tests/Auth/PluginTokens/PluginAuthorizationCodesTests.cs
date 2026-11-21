@@ -25,13 +25,13 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create(1234567, "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
 
         // Act
         var user = codes.Redeem(code, RedirectUri, CodeVerifier);
 
         // Assert
-        Assert.Equal(new PluginUser(1234567, "Test Controller"), user);
+        Assert.Equal(new PluginUser("1234567", "Test Controller"), user);
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create(1234567, "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
 
         // Act
         var user = codes.Redeem(code, RedirectUri, "wrong-verifier");
@@ -53,7 +53,7 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create(1234567, "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
 
         // Act
         var user = codes.Redeem(code, "http://127.0.0.1:50001/callback", CodeVerifier);
@@ -67,7 +67,7 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create(1234567, "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
         _clock.SetUtcNow(_clock.UtcNow() + PluginAuthorizationCodes.CodeLifetime);
 
         // Act
@@ -82,7 +82,7 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create(1234567, "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
         codes.Redeem(code, RedirectUri, CodeVerifier);
 
         // Act
@@ -97,7 +97,7 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create(1234567, "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
         codes.Redeem(code, RedirectUri, "wrong-verifier");
 
         // Act

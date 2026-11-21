@@ -57,7 +57,7 @@ public class ControllerHub(
             Context.ConnectionId,
             stationId,
             callsign,
-            user.GetCid()!.Value,
+            user.GetCid()!,
             user.GetName());
 
         await controllerRepository.Add(controller, Context.GetHttpContext()?.RequestAborted ?? CancellationToken.None);

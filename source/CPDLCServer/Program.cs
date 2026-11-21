@@ -19,7 +19,6 @@ using Serilog;
 using Serilog.Events;
 
 // TODO:
-// - Remove FlightSimulationNetwork variable
 // - Aggregate controller connections for multiple FIRs
 // - Introduce a Contracts project
 // - Value types for IDs

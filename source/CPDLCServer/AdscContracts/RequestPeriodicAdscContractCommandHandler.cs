@@ -51,9 +51,7 @@ public class RequestPeriodicAdscContractCommandHandler(
         }
         else
         {
-            // The selected contract ends at a fixed time after the request is sent
-            var ends = now + TimeSpan.FromMinutes(configuration.SelectedAdscContractDuration);
-            contract.RequestSelectedContract(request.ReportingInterval, ends);
+            contract.RequestSelectedContract(request.ReportingInterval);
         }
 
         contract.LogActivity(now);

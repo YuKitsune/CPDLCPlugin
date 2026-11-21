@@ -5,10 +5,9 @@ namespace CPDLCServer.Auth;
 // Reads the VATSIM user from the claims of a logged in user
 public static class CurrentUser
 {
-    public static int? GetCid(this ClaimsPrincipal principal)
+    public static string? GetCid(this ClaimsPrincipal principal)
     {
-        var value = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-        return int.TryParse(value, out var cid) ? cid : null;
+        return principal.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
     public static string GetName(this ClaimsPrincipal principal)
@@ -16,11 +15,11 @@ public static class CurrentUser
         return principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
     }
 
-    public static ClaimsIdentity CreateIdentity(int cid, string name, string authenticationType)
+    public static ClaimsIdentity CreateIdentity(string cid, string name, string authenticationType)
     {
         return new ClaimsIdentity(
             [
-                new Claim(ClaimTypes.NameIdentifier, cid.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, cid),
                 new Claim(ClaimTypes.Name, name)
             ],
             authenticationType);

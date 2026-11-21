@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CPDLCServer.Persistence.Migrations.PostgreSql
 {
     [DbContext(typeof(PostgreSqlCpdlcDbContext))]
-    [Migration("20261121062110_InitialCreate")]
+    [Migration("20261121101342_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -41,10 +41,6 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("FlightSimulationNetwork")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Motd")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
@@ -55,9 +51,6 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
-
-                    b.Property<int>("SelectedAdscContractDuration")
-                        .HasColumnType("integer");
 
                     b.Property<string>("StationIdentifier")
                         .IsRequired()
@@ -118,9 +111,6 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
 
                     b.Property<string>("ReportingSource")
                         .HasColumnType("text");
-
-                    b.Property<long?>("SelectedContractEnds")
-                        .HasColumnType("bigint");
 
                     b.Property<string>("SelectedContractState")
                         .HasColumnType("text");
@@ -203,8 +193,9 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
 
             modelBuilder.Entity("CPDLCServer.Auth.Administrators.Administrator", b =>
                 {
-                    b.Property<int>("Cid")
-                        .HasColumnType("integer");
+                    b.Property<string>("Cid")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<long>("Added")
                         .HasColumnType("bigint");
@@ -226,8 +217,10 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Cid")
-                        .HasColumnType("integer");
+                    b.Property<string>("Cid")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<long>("Created")
                         .HasColumnType("bigint");

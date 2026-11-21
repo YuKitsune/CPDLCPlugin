@@ -10,6 +10,6 @@ public class AdministratorConfiguration : IEntityTypeConfiguration<Administrator
         builder.ToTable("Administrators");
 
         builder.HasKey(a => a.Cid);
-        builder.Property(a => a.Cid).ValueGeneratedNever();
+        builder.Property(a => a.Cid).HasMaxLength(VatsimCid.MaxLength).ValueGeneratedNever();
     }
 }

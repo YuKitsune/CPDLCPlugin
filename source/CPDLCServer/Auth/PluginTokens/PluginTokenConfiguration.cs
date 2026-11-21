@@ -12,6 +12,8 @@ public class PluginTokenConfiguration : IEntityTypeConfiguration<PluginToken>
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).ValueGeneratedNever();
 
+        builder.Property(t => t.Cid).HasMaxLength(VatsimCid.MaxLength);
+
         builder.HasIndex(t => t.TokenHash).IsUnique();
         builder.HasIndex(t => t.Cid);
     }

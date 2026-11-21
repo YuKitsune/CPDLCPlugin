@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CPDLCServer.Auth;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Settings;
 using CPDLCServer.Setup;
@@ -46,7 +47,7 @@ public class IndexModel : PageModel
         try
         {
             await _mediator.Send(
-                new CompleteSetupCommand(Input.Cid!.Value, Input.OperatorName, Input.PrivacyContact),
+                new CompleteSetupCommand(Input.Cid!, Input.OperatorName, Input.PrivacyContact),
                 cancellationToken);
         }
         catch (InvalidOperationException ex)
@@ -62,9 +63,10 @@ public class IndexModel : PageModel
     public class SetupInput
     {
         [Required(ErrorMessage = "Enter a CID.")]
-        [Range(1, int.MaxValue, ErrorMessage = "Enter a valid CID.")]
+        [StringLength(VatsimCid.MaxLength)]
+        [RegularExpression(VatsimCid.Pattern, ErrorMessage = VatsimCid.ErrorMessage)]
         [Display(Name = "Administrator CID")]
-        public int? Cid { get; set; }
+        public string? Cid { get; set; }
 
         [Required(ErrorMessage = "Enter the operator name.")]
         [StringLength(ServerSettings.MaxOperatorNameLength)]

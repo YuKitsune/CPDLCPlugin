@@ -8,7 +8,6 @@
     <h1 class="h3 mb-0">ACARS connections</h1>
     <a asp-page="Edit" class="btn btn-primary">Add ACARS connection</a>
 </div>
-<p class="text-muted mt-2 mb-4">The server connects to the upstream ACARS network with each enabled connection. A change takes effect immediately. A restart is not necessary.</p>
 
 @if (Model.StatusMessage is not null)
 {
@@ -34,7 +33,6 @@
                         <tr>
                             <th>Station</th>
                             <th>Type</th>
-                            <th>Network</th>
                             <th>URL</th>
                             <th>Status</th>
                             <th></th>
@@ -52,7 +50,6 @@
                                     }
                                 </td>
                                 <td>@connection.Type</td>
-                                <td>@connection.FlightSimulationNetwork</td>
                                 <td class="text-break"><code>@connection.Url</code></td>
                                 <td>
                                     @if (!connection.Enabled)

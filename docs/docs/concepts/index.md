@@ -280,7 +280,7 @@ Each ATSU has a **default reporting interval**.
 When an aircraft logs on with CPDLC, the server automatically requests a periodic contract with the default reporting interval. This is the **default contract**.
 
 A controller can select a different reporting interval for an aircraft, for example, a shorter interval near a conflict. This is the **selected contract**.
-A selected contract ends after a fixed time. Then the server requests the default contract again.
+The selected contract stays until a controller goes back to the default contract.
 
 ```mermaid
 sequenceDiagram
@@ -295,7 +295,7 @@ sequenceDiagram
     ATSU->>Pilot: Periodic contract (selected interval)
     Pilot->>ATSU: Report
     Note over ATSU,Pilot: Selected contract accepted
-    Note over ATSU,Pilot: Selected contract ends
+    Note over ATSU,Pilot: Controller selects DEF
     ATSU->>Pilot: Periodic contract (default interval)
 ```
 

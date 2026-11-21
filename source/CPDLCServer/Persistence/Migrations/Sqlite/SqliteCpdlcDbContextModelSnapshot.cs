@@ -33,10 +33,6 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("FlightSimulationNetwork")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Motd")
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
@@ -47,9 +43,6 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("SelectedAdscContractDuration")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("StationIdentifier")
                         .IsRequired()
@@ -108,9 +101,6 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
 
                     b.Property<string>("ReportingSource")
                         .HasColumnType("TEXT");
-
-                    b.Property<long?>("SelectedContractEnds")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SelectedContractState")
                         .HasColumnType("TEXT");
@@ -191,8 +181,9 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
 
             modelBuilder.Entity("CPDLCServer.Auth.Administrators.Administrator", b =>
                 {
-                    b.Property<int>("Cid")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Cid")
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("Added")
                         .HasColumnType("INTEGER");
@@ -214,8 +205,10 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("Cid")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("Cid")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("Created")
                         .HasColumnType("INTEGER");

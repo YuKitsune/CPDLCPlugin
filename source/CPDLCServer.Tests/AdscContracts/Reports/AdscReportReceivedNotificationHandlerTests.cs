@@ -17,10 +17,10 @@ public class AdscReportReceivedNotificationHandlerTests
         // Arrange
         var controllerRepository = new TestControllerRepository();
         await controllerRepository.Add(
-            new ControllerInfo(Guid.NewGuid(), "ConnectionId-1", "YBBB", "BN-TSN_FSS", 1234567, "Test Controller"),
+            new ControllerInfo(Guid.NewGuid(), "ConnectionId-1", "YBBB", "BN-TSN_FSS", "1234567", "Test Controller"),
             CancellationToken.None);
         await controllerRepository.Add(
-            new ControllerInfo(Guid.NewGuid(), "ConnectionId-2", "YMMM", "ML-ASP_CTR", 1234567, "Test Controller"),
+            new ControllerInfo(Guid.NewGuid(), "ConnectionId-2", "YMMM", "ML-ASP_CTR", "1234567", "Test Controller"),
             CancellationToken.None);
 
         var hubContext = Substitute.For<IHubContext<ControllerHub>>();

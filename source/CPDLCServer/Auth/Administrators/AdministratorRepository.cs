@@ -20,7 +20,7 @@ public class AdministratorRepository(CpdlcDbContext dbContext) : IAdministratorR
         return Task.CompletedTask;
     }
 
-    public async Task<Administrator?> FindByCid(int cid, CancellationToken cancellationToken)
+    public async Task<Administrator?> FindByCid(string cid, CancellationToken cancellationToken)
     {
         return await dbContext.Administrators.FindAsync([cid], cancellationToken);
     }
@@ -28,7 +28,7 @@ public class AdministratorRepository(CpdlcDbContext dbContext) : IAdministratorR
     public async Task<Administrator[]> All(CancellationToken cancellationToken)
     {
         await dbContext.Administrators.LoadAsync(cancellationToken);
-        return dbContext.Administrators.Local.OrderBy(a => a.Cid).ToArray();
+        return dbContext.Administrators.Local.OrderBy(a => a.Cid, StringComparer.Ordinal).ToArray();
     }
 
     public async Task<bool> Any(CancellationToken cancellationToken)

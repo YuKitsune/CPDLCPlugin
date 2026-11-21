@@ -208,10 +208,8 @@ public class AcarsConnectionManager(
             {
                 Url = settings.Url,
                 AuthenticationCode = masterKeyEncryption.Decrypt(settings.EncryptedAuthenticationCode),
-                FlightSimulationNetwork = settings.FlightSimulationNetwork,
                 StationIdentifier = settings.StationIdentifier,
                 DefaultAdscReportingInterval = settings.DefaultAdscReportingInterval,
-                SelectedAdscContractDuration = settings.SelectedAdscContractDuration,
                 Motd = settings.Motd,
                 MotdDelay = TimeSpan.FromSeconds(settings.MotdDelaySeconds)
             },

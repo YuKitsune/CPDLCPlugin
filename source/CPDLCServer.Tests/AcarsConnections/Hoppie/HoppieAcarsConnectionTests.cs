@@ -18,7 +18,6 @@ public class HoppieAcarsConnectionTests : IDisposable
     {
         Url = new Uri("http://test.hoppie.nl/acars"),
         AuthenticationCode = "TEST123",
-        FlightSimulationNetwork = "VATSIM",
         StationIdentifier = "YBBB"
     };
 

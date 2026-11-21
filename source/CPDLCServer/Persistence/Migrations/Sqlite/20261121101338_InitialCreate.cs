@@ -19,11 +19,9 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     Type = table.Column<string>(type: "TEXT", nullable: false),
                     Enabled = table.Column<bool>(type: "INTEGER", nullable: false),
                     StationIdentifier = table.Column<string>(type: "TEXT", nullable: false),
-                    FlightSimulationNetwork = table.Column<string>(type: "TEXT", nullable: false),
                     Url = table.Column<string>(type: "TEXT", nullable: false),
                     EncryptedAuthenticationCode = table.Column<string>(type: "TEXT", nullable: false),
                     DefaultAdscReportingInterval = table.Column<int>(type: "INTEGER", nullable: false),
-                    SelectedAdscContractDuration = table.Column<int>(type: "INTEGER", nullable: false),
                     Motd = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
                     MotdDelaySeconds = table.Column<int>(type: "INTEGER", nullable: false),
                     Notes = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
@@ -38,7 +36,7 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 name: "Administrators",
                 columns: table => new
                 {
-                    Cid = table.Column<int>(type: "INTEGER", nullable: false),
+                    Cid = table.Column<string>(type: "TEXT", maxLength: 16, nullable: false),
                     Name = table.Column<string>(type: "TEXT", nullable: true),
                     Added = table.Column<long>(type: "INTEGER", nullable: false),
                     Version = table.Column<int>(type: "INTEGER", nullable: false)
@@ -62,7 +60,6 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     DefaultContractState = table.Column<string>(type: "TEXT", nullable: true),
                     SelectedReportingInterval = table.Column<long>(type: "INTEGER", nullable: true),
                     SelectedContractState = table.Column<string>(type: "TEXT", nullable: true),
-                    SelectedContractEnds = table.Column<long>(type: "INTEGER", nullable: true),
                     DemandContractState = table.Column<string>(type: "TEXT", nullable: true),
                     LastActivity = table.Column<long>(type: "INTEGER", nullable: false),
                     LastReportReceived = table.Column<long>(type: "INTEGER", nullable: true),
@@ -155,7 +152,7 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Cid = table.Column<int>(type: "INTEGER", nullable: false),
+                    Cid = table.Column<string>(type: "TEXT", maxLength: 16, nullable: false),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     TokenHash = table.Column<string>(type: "TEXT", nullable: false),
                     Created = table.Column<long>(type: "INTEGER", nullable: false),

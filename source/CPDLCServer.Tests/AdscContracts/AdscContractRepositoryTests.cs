@@ -16,7 +16,7 @@ public class AdscContractRepositoryTests
         var contract = new AdscContract("UAL123", "YBBB", TimeSpan.FromMinutes(15), Start.AddMinutes(-10));
         contract.RequestDefaultContract(TimeSpan.FromMinutes(10));
         contract.ReportReceived(new AdscReport(Start.AddMinutes(-5), -33.9461, 151.1772, 37000, AdscReportSource.VATSIM));
-        contract.RequestSelectedContract(TimeSpan.FromMinutes(2), Start.AddHours(1));
+        contract.RequestSelectedContract(TimeSpan.FromMinutes(2));
         contract.RequestDemandReport();
         contract.LogActivity(Start);
 
@@ -37,7 +37,6 @@ public class AdscContractRepositoryTests
         Assert.Equal(AdscContractState.Accepted, saved.DefaultContractState);
         Assert.Equal(TimeSpan.FromMinutes(2), saved.SelectedReportingInterval);
         Assert.Equal(AdscContractState.Sent, saved.SelectedContractState);
-        Assert.Equal(Start.AddHours(1), saved.SelectedContractEnds);
         Assert.Equal(AdscContractState.Sent, saved.DemandContractState);
         Assert.Equal(Start.AddMinutes(-10), saved.Created);
         Assert.Equal(Start, saved.LastActivity);

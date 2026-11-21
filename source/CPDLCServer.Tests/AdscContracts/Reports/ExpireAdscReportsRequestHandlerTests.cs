@@ -92,7 +92,7 @@ public class ExpireAdscReportsRequestHandlerTests
         var contractRepository = new TestAdscContractRepository();
         var contract = await AddContract(contractRepository);
         contract.RequestDefaultContract(ReportingInterval);
-        contract.RequestSelectedContract(TimeSpan.FromMinutes(2), clock.UtcNow().AddHours(1));
+        contract.RequestSelectedContract(TimeSpan.FromMinutes(2));
 
         // Two selected intervals and the delivery tolerance is 7 minutes
         var reportRepository = new TestAdscReportRepository();
