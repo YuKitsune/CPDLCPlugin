@@ -5,6 +5,10 @@ namespace CPDLCPlugin.Configuration;
 public class PluginConfiguration
 {
     public required string ServerEndpoint { get; init; }
+
+    // When true, the plugin connects to the CPDLC server when vatSys connects to VATSIM.
+    // It uses the first station in Stations.
+    public bool AutoConnect { get; init; }
     public required string[] Stations { get; init; }
     public int MaxCurrentMessages { get; init; } = 50;
     public int MaxArchivedMessages { get; init; } = 50;

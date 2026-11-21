@@ -1,0 +1,30 @@
+@page "/plugin/authorize"
+@model AuthorizeModel
+@{
+    ViewData["Title"] = "Connect the plugin";
+    Layout = "_CenteredLayout";
+}
+
+@if (!Model.IsValidRequest)
+{
+    <h1 class="h4 mb-3">The request is not valid</h1>
+    <p class="text-muted mb-0">Start the authentication again from the SETUP window of the CPDLC plugin in vatSys.</p>
+}
+else
+{
+    <h1 class="h4 mb-3">Connect the vatSys plugin</h1>
+    <p>
+        The CPDLC plugin on this computer will connect to the server as
+        <strong>@User.GetName()</strong> (@User.GetCid()).
+    </p>
+    <p class="text-muted small">Continue only if you started the authentication from the SETUP window in vatSys.</p>
+
+    <form method="post">
+        @* The same names as the query string of the GET request *@
+        <input type="hidden" name="redirect_uri" value="@Model.RedirectUri" />
+        <input type="hidden" name="state" value="@Model.State" />
+        <input type="hidden" name="code_challenge" value="@Model.CodeChallenge" />
+        <input type="hidden" name="code_challenge_method" value="@Model.CodeChallengeMethod" />
+        <button type="submit" class="btn btn-primary w-100">Allow</button>
+    </form>
+}

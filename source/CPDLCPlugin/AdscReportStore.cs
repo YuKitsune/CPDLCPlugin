@@ -82,6 +82,26 @@ public class AdscReportStore
         }
     }
 
+    /// <summary>
+    /// Removes the report of the aircraft, if it is from the ATSU.
+    /// </summary>
+    /// <returns>True if the report was removed.</returns>
+    public async Task<bool> Remove(string callsign, string stationId, CancellationToken cancellationToken = default)
+    {
+        await _semaphore.WaitAsync(cancellationToken);
+        try
+        {
+            if (!_latestReports.TryGetValue(callsign, out var report) || report.StationId != stationId)
+                return false;
+
+            return _latestReports.Remove(callsign);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
     public async Task Clear(CancellationToken cancellationToken = default)
     {
         await _semaphore.WaitAsync(cancellationToken);

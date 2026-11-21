@@ -1,0 +1,124 @@
+@page "/cpdlc"
+@model IndexModel
+@{
+    ViewData["Title"] = "CPDLC";
+}
+
+<h1 class="h3 mb-4">CPDLC overview</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Controllers</div>
+            <div class="fs-3 fw-semibold">@Model.Controllers.Length</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Aircraft</div>
+            <div class="fs-3 fw-semibold">@Model.Aircraft.Length</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Open dialogues</div>
+            <div class="fs-3 fw-semibold">@Model.OpenDialogueCount</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card h-100"><div class="card-body">
+            <div class="text-muted small">Messages</div>
+            <div class="fs-3 fw-semibold">@Model.TotalMessageCount</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Controllers</div>
+            <div class="card-body">
+                @if (Model.Controllers.Length == 0)
+                {
+                    <p class="text-muted mb-0">No controllers are connected.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Callsign</th>
+                                    <th>Station</th>
+                                    <th>Controller</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var controller in Model.Controllers)
+                                {
+                                    <tr>
+                                        <td>@controller.Callsign</td>
+                                        <td><a href="/cpdlc/stations/@controller.StationId">@controller.StationId</a></td>
+                                        <td>@controller.Name <span class="text-muted small">(@controller.Cid)</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Aircraft</div>
+            <div class="card-body">
+                @if (Model.Aircraft.Length == 0)
+                {
+                    <p class="text-muted mb-0">No aircraft are connected.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Callsign</th>
+                                    <th>Station</th>
+                                    <th>Data authority</th>
+                                    <th>ACARS connection</th>
+                                    <th>Last seen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var aircraft in Model.Aircraft)
+                                {
+                                    <tr>
+                                        <td><a href="/cpdlc/aircraft/@aircraft.Callsign">@aircraft.Callsign</a></td>
+                                        <td><a href="/cpdlc/stations/@aircraft.StationId">@aircraft.StationId</a></td>
+                                        <td>@aircraft.DataAuthorityState</td>
+                                        <td class="small">@aircraft.AcarsConnectionId</td>
+                                        <td class="text-nowrap">@aircraft.LastSeen.ToString("HH:mm:ss")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Recent messages</span>
+                <a href="/cpdlc/messages" class="small">All messages</a>
+            </div>
+            <div class="card-body">
+                <partial name="_MessageTable" model="Model.RecentMessages" />
+            </div>
+        </div>
+    </div>
+</div>

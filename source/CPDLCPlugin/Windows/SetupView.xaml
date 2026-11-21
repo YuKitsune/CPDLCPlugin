@@ -51,6 +51,39 @@
                 IsEnabled="{Binding Connected, Converter={StaticResource BoolInversionConverter}}"/>
         </Grid>
 
+        <!-- Authentication -->
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock
+                Grid.Column="0"
+                Text="{Binding AuthenticationStatus}"
+                VerticalAlignment="Center"
+                TextTrimming="CharacterEllipsis"/>
+
+            <Button
+                Grid.Column="1"
+                Command="{Binding AuthenticateOrLogOutCommand}"
+                IsEnabled="{Binding Authenticating, Converter={StaticResource BoolInversionConverter}}"
+                Margin="8,0,0,0">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource ButtonBaseStyle}">
+                        <Setter Property="Content" Value="Authenticate"/>
+                        <Setter Property="Height" Value="32"/>
+                        <Setter Property="MinWidth" Value="100"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Authenticated}" Value="True">
+                                <Setter Property="Content" Value="Log out"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
+
         <!-- Station Identifier -->
         <Grid Grid.Row="2" Margin="0,0,0,8">
             <Grid.RowDefinitions>
@@ -64,21 +97,6 @@
                       ItemsSource="{Binding AvailableStationIdentifiers}"
                       SelectedItem="{Binding SelectedStationIdentifier}"/>
         </Grid>
-
-        <!-- API Key -->
-        <!-- <Grid Grid.Row="1" Margin="0,0,0,8"> -->
-        <!--     <Grid.RowDefinitions> -->
-        <!--         <RowDefinition Height="Auto"/> -->
-        <!--         <RowDefinition Height="Auto"/> -->
-        <!--     </Grid.RowDefinitions> -->
-        <!-- -->
-        <!--     <TextBlock Grid.Row="0" Text="API Key" Margin="0,0,0,4"/> -->
-        <!--     <PasswordBox -->
-        <!--         Grid.Row="1" -->
-        <!--         x:Name="ApiKeyPasswordBox" -->
-        <!--         PasswordChanged="ApiKeyPasswordBox_OnPasswordChanged" -->
-        <!--         IsEnabled="{Binding Connected, Converter={StaticResource BoolInversionConverter}}"/> -->
-        <!-- </Grid> -->
 
         <!-- Buttons -->
         <Grid Grid.Row="4">

@@ -11,12 +11,12 @@ public partial class ADSContractViewModel : ObservableObject,
     IRecipient<AdscContractUpdatedNotification>,
     IRecipient<AdscContractRemovedNotification>,
     IRecipient<AdscReportReceivedNotification>,
+    IRecipient<AdscReportExpiredNotification>,
     IDisposable
 {
     readonly Plugin _plugin;
     readonly AdscContractStore _adscContractStore;
     readonly AdscReportStore _adscReportStore;
-    readonly AtsuSettingsStore _atsuSettingsStore;
     readonly IMediator _mediator;
     readonly IGuiInvoker _guiInvoker;
     readonly IErrorReporter _errorReporter;
@@ -26,7 +26,6 @@ public partial class ADSContractViewModel : ObservableObject,
         Plugin plugin,
         AdscContractStore adscContractStore,
         AdscReportStore adscReportStore,
-        AtsuSettingsStore atsuSettingsStore,
         IMediator mediator,
         IGuiInvoker guiInvoker,
         IErrorReporter errorReporter,
@@ -35,7 +34,6 @@ public partial class ADSContractViewModel : ObservableObject,
         _plugin = plugin;
         _adscContractStore = adscContractStore;
         _adscReportStore = adscReportStore;
-        _atsuSettingsStore = atsuSettingsStore;
         _mediator = mediator;
         _guiInvoker = guiInvoker;
         _errorReporter = errorReporter;
@@ -45,6 +43,7 @@ public partial class ADSContractViewModel : ObservableObject,
         WeakReferenceMessenger.Default.Register<AdscContractUpdatedNotification>(this);
         WeakReferenceMessenger.Default.Register<AdscContractRemovedNotification>(this);
         WeakReferenceMessenger.Default.Register<AdscReportReceivedNotification>(this);
+        WeakReferenceMessenger.Default.Register<AdscReportExpiredNotification>(this);
 
         if (!string.IsNullOrWhiteSpace(initialCallsign))
         {
@@ -58,7 +57,6 @@ public partial class ADSContractViewModel : ObservableObject,
         _plugin = null!;
         _adscContractStore = null!;
         _adscReportStore = null!;
-        _atsuSettingsStore = null!;
         _mediator = null!;
         _guiInvoker = null!;
         _errorReporter = null!;
@@ -109,8 +107,6 @@ public partial class ADSContractViewModel : ObservableObject,
     {
         try
         {
-            DefaultPeriod = (int?)_atsuSettingsStore.Settings?.DefaultAdscReportingInterval.TotalMinutes;
-
             if (string.IsNullOrWhiteSpace(Callsign))
             {
                 ShowContract(null);
@@ -139,6 +135,7 @@ public partial class ADSContractViewModel : ObservableObject,
     {
         CurrentPeriodMinutes = (int?)contract?.ReportingInterval?.TotalMinutes;
 
+        DefaultPeriod = (int?)contract?.DefaultReportingInterval.TotalMinutes;
         DefaultPeriodTransmissionState = contract?.DefaultContractState;
 
         SelectedPeriod = (int?)contract?.SelectedReportingInterval?.TotalMinutes;
@@ -148,7 +145,7 @@ public partial class ADSContractViewModel : ObservableObject,
         DemandContractTransmissionState = contract?.DemandContractState;
     }
 
-    // A null period requests the default contract
+    // A null period (DEF) requests the default contract. The server sees the default period as the default contract.
     [RelayCommand]
     async Task SelectPeriod(int? minutes)
     {
@@ -157,8 +154,14 @@ public partial class ADSContractViewModel : ObservableObject,
             if (string.IsNullOrWhiteSpace(Callsign))
                 return;
 
-            var reportingInterval = minutes is null ? (TimeSpan?)null : TimeSpan.FromMinutes(minutes.Value);
-            await _mediator.Send(new SelectAdscReportingIntervalRequest(Callsign, reportingInterval));
+            var period = minutes ?? DefaultPeriod;
+            if (period is null)
+            {
+                _errorReporter.ReportError(new InvalidOperationException($"The default period for {Callsign} is not known, because {Callsign} has no ADS-C contract. Select a period."));
+                return;
+            }
+
+            await _mediator.Send(new SelectAdscReportingIntervalRequest(Callsign, TimeSpan.FromMinutes(period.Value)));
         }
         catch (Exception ex)
         {
@@ -223,11 +226,19 @@ public partial class ADSContractViewModel : ObservableObject,
         ReloadIfShown(notification.AdscReportDto.Callsign);
     }
 
+    public void Receive(AdscReportExpiredNotification notification)
+    {
+        ReloadIfShown(notification.Callsign);
+    }
+
     void ReloadIfShown(string callsign)
     {
-        if (_disposed)
+        // The ADS-C reports come for all the aircraft. Do not post to the UI thread for an aircraft that this window
+        // does not show. The UI thread checks again, because the callsign can change before the action runs.
+        if (_disposed || callsign != Callsign)
             return;
 
+        // LoadContractAsync changes the properties that the view binds to
         _guiInvoker.InvokeOnGUI(mainForm =>
         {
             if (_disposed)
@@ -255,6 +266,7 @@ public partial class ADSContractViewModel : ObservableObject,
         WeakReferenceMessenger.Default.Unregister<AdscContractUpdatedNotification>(this);
         WeakReferenceMessenger.Default.Unregister<AdscContractRemovedNotification>(this);
         WeakReferenceMessenger.Default.Unregister<AdscReportReceivedNotification>(this);
+        WeakReferenceMessenger.Default.Unregister<AdscReportExpiredNotification>(this);
         _disposed = true;
     }
 }

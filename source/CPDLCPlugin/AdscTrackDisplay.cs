@@ -55,6 +55,22 @@ public class AdscTrackDisplay(IClock clock, PluginConfiguration configuration)
             fdr.PredictedPosition.Location = new Coordinate(report.Latitude, report.Longitude);
     }
 
+    /// <summary>
+    /// Removes the ADS-C track of the aircraft, if it shows a report from the ATSU.
+    /// The track goes back to its flight plan position.
+    /// </summary>
+    public void Remove(string callsign, string stationId)
+    {
+        if (!_tracks.TryGetValue(callsign, out var track) || track.Report.StationId != stationId)
+            return;
+
+        // Do not remove a newer report that arrived after the check
+        if (!((ICollection<KeyValuePair<string, AdscTrack>>)_tracks).Remove(new KeyValuePair<string, AdscTrack>(callsign, track)))
+            return;
+
+        RestoreFlightPlanPosition(callsign);
+    }
+
     public void Clear()
     {
         var callsigns = _tracks.Keys.ToArray();

@@ -19,9 +19,15 @@ Deploy your own CPDLC Server instance to DigitalOcean:
 
 [![Deploy to DigitalOcean](https://www.deploytodo.com/do-btn-blue.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/YuKitsune/CPDLCPlugin/tree/main)
 
-After deployment, configure the following environment variables in the DigitalOcean dashboard:
-- `Acars__0__StationIdentifier`: Your station identifier (e.g., YBBB)
-- `Acars__0__AuthenticationCode`: Your Hoppie ACARS authentication code
+Since App Platform doesn't offer persistent disks, the template makes a PostgreSQL development database for the server data.
+
+:::warning
+You must set the `MasterKey`, `VatsimConnect__ClientId` and `VatsimConnect__ClientSecret` environment variables before you deploy. If one of them is not set, the server does not start.
+
+Make a key with `openssl rand -base64 32`, and keep a copy in a safe place. See [VATSIM Connect](#vatsim-connect) for the client.
+:::
+
+After deployment, open `/setup` on the server, and enter the CID of the first administrator (see [Setup](#setup)). Then log in with VATSIM, and add your ACARS connection in Configuration → ACARS connections (`/configuration/acars`).
 
 ## Prerequisites
 
@@ -31,86 +37,143 @@ Before running the CPDLC Server, ensure you have:
 - [Docker](https://www.docker.com/get-started) (for Docker deployment)
 - A Hoppies ACARS account and logon code from [hoppie.nl](https://www.hoppie.nl/acars/system/register.html)
 
+## Setup
+
+When the server starts for the first time, it is not set up. All the pages of the dashboard redirect to the setup page (`/setup`).
+
+On the setup page, enter the VATSIM CID of the first administrator. After the setup, the setup page does not exist. The administrator logs in with VATSIM, and can add more administrators in Configuration → Administrators.
+
+:::warning
+The setup page needs no login. The first person who opens it chooses the administrator. Do the setup immediately after the first start.
+:::
+
+### VATSIM Connect
+
+All users log in with [VATSIM Connect](https://vatsim.dev/services/connect). Make an OAuth client for the server at [auth.vatsim.net](https://auth.vatsim.net) (or [auth-dev.vatsim.net](https://auth-dev.vatsim.net) for development), with the redirect URL `https://<server>/signin-vatsim`. Then set these environment variables:
+
+- `VatsimConnect__ClientId`: the ID of the client.
+- `VatsimConnect__ClientSecret`: the secret of the client.
+- `VatsimConnect__Authority` (optional): the VATSIM Connect server. The default is `https://auth.vatsim.net`.
+
+Any VATSIM user can log in, open the CPDLC and ADS-C areas, and connect with the plugin. Only an administrator can open the Configuration area.
+
+Behind a proxy that ends TLS, the server uses the `X-Forwarded-Proto` header, so that the redirect URL uses `https`.
+
+### Plugin Authentication
+
+The plugin must authenticate before it can connect to the server. In the SETUP window of the plugin, select **Authenticate**. The browser opens the server, the user logs in with VATSIM, and selects **Allow**. Then the plugin gets a token. The token is valid for 30 days. The plugin keeps it encrypted for the Windows account of the user.
+
+### Master Key
+
+The master key encrypts the secrets in the database, for example the authentication codes of the ACARS connections. Set it in the `MasterKey` environment variable before the first start. You can make a key with `openssl rand -base64 32`, and keep a copy in a safe place.
+
+If `MasterKey` is not set, or the key is not valid, the server does not start.
+
+If the key is lost, the server cannot decrypt the secrets.
+
 ## Configuration
 
-The server can be configured using environment variables.
-Copy `example.env` to `.env` and update with your settings:
+The logging level, the master key, VATSIM Connect, the data directory and the database are configured with environment variables. `MasterKey`, `VatsimConnect__ClientId` and `VatsimConnect__ClientSecret` are required.
+For local development, copy `example.env` to `.env` and update with your settings:
 
 ```bash
 # Logging
 Logging__Level=Information
 
-# ACARS Client Configuration
-Acars__0__Type=Hoppie
-Acars__0__FlightSimulationNetwork=VATSIM
-Acars__0__StationIdentifier=YBBB
-Acars__0__Url=http://www.hoppie.nl/acars/system/connect.html
-Acars__0__AuthenticationCode=your-hoppie-logon-code
-# Reporting interval in minutes of the ADS-C contract requested on CPDLC logon (default: 10)
-Acars__0__DefaultAdscReportingInterval=10
-# Minutes from the request of a selected ADS-C contract to its end. Then the default contract is requested again (default: 60)
-Acars__0__SelectedAdscContractDuration=60
+# Master Key (required)
+# Encrypts the secrets in the database. Make a key with: openssl rand -base64 32
+MasterKey=your-master-key
 
-# Handoff Configuration
-# How many minutes before the expected transfer time to send the NEXT DATA AUTHORITY message (default: 10)
-Handoff__NotificationLeadTime=10
+# VATSIM Connect (required)
+VatsimConnect__ClientId=your-client-id
+VatsimConnect__ClientSecret=your-client-secret
 
-# ADS-C from VATSIM status data
-# Make ADS-C reports from the VATSIM status data for aircraft that do not support ADS-C over Hoppie (default: false)
-VatsimStatus__Enabled=false
-# The URL of the VATSIM status data (default: https://data.vatsim.net/v3/vatsim-data.json)
-VatsimStatus__Url=https://data.vatsim.net/v3/vatsim-data.json
-# The time in seconds between downloads of the VATSIM status data (default: 120)
-VatsimStatus__PollingIntervalSeconds=120
-# Also make reports for aircraft that do not have D1 or G1 in Item 10b of the flight plan (default: false)
-VatsimStatus__AllowNonEquippedAircraft=false
+# Data Directory
+# The directory of the SQLite database (cpdlc.db) (default: /data)
+DataPath=/data
+
+# Database Configuration
+# The database provider: Sqlite or PostgreSql (default: Sqlite)
+DatabaseProvider=Sqlite
+# PostgreSQL: the connection string. A URL (postgresql://...) is also accepted.
+# DatabaseConnectionString=Host=localhost;Database=cpdlc;Username=cpdlc;Password=your-password
 ```
 
-### Multiple ACARS Connections
+### Persistence
 
-You can configure multiple ACARS clients by incrementing the index (`Acars__1__`, `Acars__2__`, etc.). This is useful when serving multiple ATSUs (e.g., YBBB and YMMM)
+The server keeps the CPDLC connections, the dialogues, the ADS-C contracts, the ADS-C reports, settings, and the ACARS connections in a database.
 
-Example configuration for multiple connections:
+The server can use SQLite or PostgreSQL (`DatabaseProvider`):
 
-```bash
-# Brisbane FIR
-Acars__0__Type=Hoppie
-Acars__0__FlightSimulationNetwork=VATSIM
-Acars__0__StationIdentifier=YBBB
-Acars__0__Url=http://www.hoppie.nl/acars/system/connect.html
-Acars__0__AuthenticationCode=your-ybbb-hoppie-code
+- **SQLite** (default): the database is the file `cpdlc.db` in the data directory (`DataPath`). In the Docker image, the data directory is the `/data` volume. For local development, it is the `.data` directory at the root of the repository.
+- **PostgreSQL**: set `DatabaseConnectionString`. Use PostgreSQL when the platform has no persistent disk, for example DigitalOcean App Platform.
 
-# Melbourne FIR
-Acars__1__Type=Hoppie
-Acars__1__FlightSimulationNetwork=VATSIM
-Acars__1__StationIdentifier=YMMM
-Acars__1__Url=http://www.hoppie.nl/acars/system/connect.html
-Acars__1__AuthenticationCode=your-ymmm-hoppie-code
-```
+The server applies the migrations when it starts. With SQLite, it also makes the database file.
+
+The server deletes a dialogue when the dialogue retention period ends (default: 24 hours). The period starts when the dialogue opens, not when the server starts. Thus, after a restart, the server deletes the dialogues that are older than the period within a few minutes. The server keeps the dialogues after the aircraft disconnects.
+
+The server keeps only the latest ADS-C report for each contract. The report expires soon after the next periodic reports do not arrive (see [ADS-C](#ads-c)).
+
+When a CPDLC connection ends, the server deletes the CPDLC message IDs of the aircraft. The next connection starts again at the first message ID.
+
+### Concurrent Changes
+
+The server processes the requests from controllers, the ACARS connections and the background tasks at the same time. Each changed record has a version. If two requests change the same record at the same time, the second request fails and the server runs it again with the new data, up to three times.
+
+### ACARS Connections
+
+The ACARS connections connect the server to the upstream ACARS networks. Add, change and delete them in Configuration → ACARS connections on the dashboard (`/configuration/acars`).
+
+- When you add a connection, the server connects to the ACARS network.
+- When you change a connection, the server will reconnect to the upstream ACARS network with the new settings.
+
+You can add more than one connection, for example when the server serves more than one ATSU (YBBB and YMMM). Only one connection can use a station identifier.
+
+The server keeps the authentication code of each connection encrypted with the master key (`MasterKey`). The dashboard does not show the code. If the master key changes, the server cannot decrypt the codes, and you must enter them again.
+
+Each connection can have a message of the day. The server sends it to each aircraft as a CPDLC free text message, after the aircraft logs on and after the delay of the connection. The aircraft does not reply. The message shows in the dialogues, the same as the other uplinks.
+
+The Traffic button of a connection shows the most recent requests to the ACARS network and their responses, as raw text. The server keeps the last 500 requests of each connection in memory. The authentication code is not shown. The Logs button shows the log of the connection.
 
 :::note
 `Hoppie` is currently the only supported ACARS network type.
 :::
 
+### Branding
+
+In the Branding section of Configuration → Settings, you can change the name of the server, add a banner image (PNG, JPEG or WebP, 1 MB or less), and add a message of the day. They show at the top of the sidebar and on the login page. The banner changes when you upload or remove it. The Save button saves the name and the message of the day.
+
+### Logs
+
+The Logs page of the dashboard (`/configuration/logs`) shows the live log of the server, with the same text and level colours as the console output.
+
+You can show only the entries at or above a level, of one area (CPDLC, ADS-C, ACARS or System), of one ACARS connection, or with a text. You can also pause the log and clear the page. The filters are in the URL, so you can share a link to a filtered log. The logging level of the server (`Logging__Level`) sets which entries the server writes.
+
 ### ADS-C
 
-When an aircraft logs on with CPDLC, the server requests the default ADS-C contract with the aircraft. When the CPDLC connection ends, the server cancels the contract.
+When an aircraft logs on with CPDLC, the server requests the default ADS-C contract with the aircraft. When the CPDLC connection ends or is reset, the server cancels the contract.
 
-Each ATSU has its own default reporting interval, set with `Acars__<index>__DefaultAdscReportingInterval`. Controllers can read this value.
+:::note[VATSIM accommodation]
+In real operations, ADS-C does not depend on CPDLC, and an ATSU usually keeps its ADS-C contract after a CPDLC transfer. Hoppie's network has no AFN logon, so the server uses the CPDLC connection as the signal that an aircraft is online.
+:::
 
-A controller can select a different reporting interval for an aircraft. The selected contract ends `Acars__<index>__SelectedAdscContractDuration` minutes after the server sends the request. Then the server requests the default contract again. A controller can also go back to the default contract at any time.
+Each ATSU has its own default reporting interval, set on its ACARS connection. Controllers can read this value.
+
+A controller can select a different reporting interval for an aircraft. The selected contract ends after the selected ADS-C contract duration of the ACARS connection. Then the server requests the default contract again. A controller can also go back to the default contract at any time.
 
 The aircraft does not acknowledge a request. The first report after a request accepts it. If the aircraft rejects a selected contract, the server requests the default contract again. If the aircraft rejects the default contract, the server does not send it again.
 
-The server keeps the latest report for each aircraft. When a controller connects, the plugin loads these reports, so that the controller sees the ADS-C tracks immediately.
+The server keeps one report for each contract. A new report replaces the previous report. When a controller connects, the plugin loads the latest report for each aircraft, so that the controller sees the ADS-C tracks immediately.
 
-The ADS-C page of the dashboard (`/adsc`) shows all the contracts and their states, and a log of all the ADS-C messages that the server sent and received.
+A report expires when the next two periodic reports do not arrive. The expiry time is two reporting intervals plus three minutes, from the time in the report. A contract with only a demand request uses the default reporting interval. When a report expires, or when its contract is removed, the server deletes the report and the plugin shows the flight plan track again.
+
+The ADS-C area of the dashboard shows all the contracts and their states (`/adsc`), and a log of all the ADS-C messages that the server sent and received (`/adsc/messages`).
 
 ### ADS-C from VATSIM Status Data
 
-Not all aircraft support ADS-C over Hoppie's network. When `VatsimStatus__Enabled` is `true`, the server fakes ADS-C reports using data from the [VATSIM status API](https://data.vatsim.net/v3/vatsim-data.json).
+Not all aircraft support ADS-C over Hoppie's network. When the "ADS-C from VATSIM status data" setting is on, the server fakes ADS-C reports using data from the [VATSIM status API](https://data.vatsim.net/v3/vatsim-data.json).
 
-This is only done for aircraft that have `D1` or `G1` in Item 10b of the flight plan, unless `VatsimStatus__AllowNonEquippedAircraft` is `true`. A report from Hoppie always has priority. If the Hoppie reports stop for more than two reporting intervals, the server uses the VATSIM status data again.
+This is only done for aircraft that have `D1` or `G1` in Item 10b of the flight plan, unless the "allow aircraft without ADS-C equipment" setting is on. The server waits for the "report delay" after it makes a contract before it uses the VATSIM status data, so that the aircraft can send its first report through Hoppie. A report from Hoppie always has priority, and it stops the VATSIM reports for that contract. When the Hoppie report expires, the server uses the VATSIM status data again.
 
 ## Running
 

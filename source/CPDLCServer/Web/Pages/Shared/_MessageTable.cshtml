@@ -1,0 +1,55 @@
+@model IEnumerable<CPDLCServer.Web.Pages.ViewModels.MessageRowViewModel>
+
+@{
+    string GetAlertBadgeClass(string alertType) => alertType switch
+    {
+        "High" => "text-bg-danger",
+        "Medium" => "text-bg-warning",
+        "Low" => "text-bg-info",
+        _ => "text-bg-light"
+    };
+}
+
+@if (!Model.Any())
+{
+    <p class="text-muted mb-0">No messages.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th></th>
+                    <th>Sender</th>
+                    <th>Receiver</th>
+                    <th>Content</th>
+                    <th>Response</th>
+                    <th>Alert</th>
+                    <th>Dialogue</th>
+                    <th>ACARS connection</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var msg in Model)
+                {
+                    <tr>
+                        <td class="text-nowrap">@msg.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td title="@(msg.IsUplink ? "Uplink" : "Downlink")">@(msg.IsUplink ? "↑" : "↓")</td>
+                        <td>@msg.Sender</td>
+                        <td>@msg.Receiver</td>
+                        <td class="font-monospace small">@msg.Content</td>
+                        <td>@msg.ResponseType</td>
+                        <td><span class="badge @GetAlertBadgeClass(msg.AlertType)">@msg.AlertType</span></td>
+                        <td class="text-nowrap">
+                            <a href="/cpdlc/dialogues/@msg.DialogueId">@msg.DialogueId.ToString()[..8]</a>
+                            <span class="badge @(msg.IsClosed ? "text-bg-secondary" : "text-bg-success")">@(msg.IsClosed ? "Closed" : "Open")</span>
+                        </td>
+                        <td class="small">@msg.AcarsNetwork</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

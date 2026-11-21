@@ -24,6 +24,7 @@
     "ExecutableTarget": {
       "type": "string",
       "enum": [
+        "AddMigration",
         "CheckVersion",
         "CompilePlugin",
         "CompileServer",
@@ -126,10 +127,18 @@
           ],
           "description": "Configuration to build - Default is 'Debug' (local) or 'Release' (server)"
         },
+        "ForceVersion": {
+          "type": "string",
+          "description": "Version to use instead of the GitVersion version, for example 1.0.0-rc1"
+        },
         "GitHubToken": {
           "type": "string",
           "description": "GitHub token for creating releases",
           "default": "Secrets must be entered via 'fallout :secrets [profile]'"
+        },
+        "MigrationName": {
+          "type": "string",
+          "description": "Name of the migration to add"
         },
         "ProfileName": {
           "type": "string"

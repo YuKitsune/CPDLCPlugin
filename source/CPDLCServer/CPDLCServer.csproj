@@ -6,6 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
+        <!-- The shared compiler server keeps stale Razor output between builds, which breaks the build -->
+        <UseSharedCompilation>false</UseSharedCompilation>
     </PropertyGroup>
 
     <ItemGroup>
@@ -13,19 +15,21 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="DotNetEnv" Version="3.1.1" />
+        <PackageReference Include="DotNetEnv" Version="3.2.0" />
+        <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
         <PackageReference Include="MediatR" Version="12.5.0" />
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.1" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="10.0.1" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="10.0.1" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.13" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="10.0.14" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="10.0.14" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="10.0.14" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
         <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     </ItemGroup>
 
@@ -37,14 +41,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\CPDLCServer.Contracts\CPDLCServer.Contracts.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <AdditionalFiles Include="Pages\Atsu\Index.cshtml" />
-      <AdditionalFiles Include="Pages\Connections\Index.cshtml" />
-      <AdditionalFiles Include="Pages\Dialogue\Index.cshtml" />
-      <AdditionalFiles Include="Pages\Messages\Index.cshtml" />
-      <AdditionalFiles Include="Pages\Pilot\Index.cshtml" />
     </ItemGroup>
 
     <ItemGroup>

@@ -14,7 +14,6 @@ public class ConnectedNotificationHandler(
     AdscContractStore adscContractStore,
     AdscReportStore adscReportStore,
     AdscTrackDisplay adscTrackDisplay,
-    AtsuSettingsStore atsuSettingsStore,
     IJurisdictionChecker jurisdictionChecker,
     IMediator mediator,
     ILogger logger)
@@ -28,15 +27,6 @@ public class ConnectedNotificationHandler(
             logger.Warning("Not connected to server");
             return;
         }
-
-        // Load ATSU settings
-        logger.Verbose("Loading ATSU settings");
-        var atsuSettings = await plugin.ConnectionManager.GetAtsuSettings(cancellationToken);
-        atsuSettingsStore.Set(atsuSettings);
-        logger.Information(
-            "Loaded ATSU settings for {StationId} (Default ADS-C reporting interval: {DefaultAdscReportingInterval})",
-            atsuSettings.StationId,
-            atsuSettings.DefaultAdscReportingInterval);
 
         // Load dialogues
         logger.Verbose("Loading all dialogues");

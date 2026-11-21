@@ -1,0 +1,63 @@
+@page "/adsc"
+@using CPDLCServer.AdscContracts
+@model IndexModel
+@{
+    ViewData["Title"] = "ADS-C contracts";
+
+    string FormatInterval(TimeSpan? interval) => interval is null ? "-" : $"{interval.Value.TotalMinutes:0.#} min";
+
+    string GetStateBadgeClass(AdscContractState? state) => state switch
+    {
+        AdscContractState.Sent => "text-bg-info",
+        AdscContractState.Accepted => "text-bg-success",
+        AdscContractState.Rejected => "text-bg-danger",
+        _ => "text-bg-light"
+    };
+}
+
+<h1 class="h3 mb-4">ADS-C contracts</h1>
+
+<div class="card">
+    <div class="card-body">
+        @if (Model.Contracts.Length == 0)
+        {
+            <p class="text-muted mb-0">No ADS-C contracts.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Callsign</th>
+                            <th>Station</th>
+                            <th>Current interval</th>
+                            <th>Default</th>
+                            <th>Selected interval</th>
+                            <th>Selected</th>
+                            <th>Selected ends</th>
+                            <th>Demand</th>
+                            <th>Report source</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var contract in Model.Contracts)
+                        {
+                            <tr>
+                                <td><a href="/cpdlc/aircraft/@contract.Callsign">@contract.Callsign</a></td>
+                                <td><a href="/cpdlc/stations/@contract.StationId">@contract.StationId</a></td>
+                                <td>@FormatInterval(contract.ReportingInterval)</td>
+                                <td><span class="badge @GetStateBadgeClass(contract.DefaultContractState)">@(contract.DefaultContractState?.ToString() ?? "-")</span></td>
+                                <td>@FormatInterval(contract.SelectedReportingInterval)</td>
+                                <td><span class="badge @GetStateBadgeClass(contract.SelectedContractState)">@(contract.SelectedContractState?.ToString() ?? "-")</span></td>
+                                <td class="text-nowrap">@(contract.SelectedContractEnds?.ToString("HH:mm:ss") ?? "-")</td>
+                                <td><span class="badge @GetStateBadgeClass(contract.DemandContractState)">@(contract.DemandContractState?.ToString() ?? "-")</span></td>
+                                <td>@(Model.ReportSources.TryGetValue(contract.Callsign, out var source) ? source.ToString() : "-")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

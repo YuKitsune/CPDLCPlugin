@@ -12,8 +12,36 @@ services:
       dockerfile: source/CPDLCServer/Dockerfile
     env_file:
       - .env
+    environment:
+      DataPath: /data
+      # Used only when DatabaseProvider=PostgreSql. In the container, the database is at the postgres service.
+      DatabaseConnectionString: Host=postgres;Port=5432;Database=cpdlc;Username=cpdlc;Password=cpdlc
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
     ports:
       - "8080:8080"
+    volumes:
+      - server-data:/data
+
+  # A PostgreSQL server for local development. Start it with: docker compose --profile postgres up
+  postgres:
+    profiles: [postgres]
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cpdlc
+      POSTGRES_USER: cpdlc
+      POSTGRES_PASSWORD: cpdlc
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cpdlc -d cpdlc"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   ngrok:
     profiles: [ngrok]
@@ -25,3 +53,7 @@ services:
       - .env
     ports:
       - 4040:4040
+
+volumes:
+  server-data:
+  postgres-data:

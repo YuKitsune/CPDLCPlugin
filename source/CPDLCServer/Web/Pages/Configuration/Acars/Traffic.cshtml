@@ -1,0 +1,78 @@
+@page "/configuration/acars/{id:guid}/traffic"
+@model TrafficModel
+@{
+    ViewData["Title"] = $"Traffic of {Model.AcarsConnectionId}";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h1 class="h3 mb-0">Traffic of @Model.AcarsConnectionId</h1>
+    <div class="d-flex gap-2">
+        <a href="/configuration/logs?connection=@Uri.EscapeDataString(Model.AcarsConnectionId)" class="btn btn-sm btn-outline-secondary">Logs</a>
+        <a asp-page="Index" class="btn btn-sm btn-outline-secondary">ACARS connections</a>
+    </div>
+</div>
+<p class="text-muted mt-2 mb-4">
+    The most recent requests to the ACARS network and their responses, newest first. The server keeps the last
+    @Model.Capacity requests in memory. The authentication code is not shown.
+</p>
+
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    <div class="form-check form-switch mb-0">
+        <input id="show-empty-polls" class="form-check-input" type="checkbox" role="switch" @(Model.ShowEmptyPolls ? "checked" : "") />
+        <label for="show-empty-polls" class="form-check-label">Show empty polls</label>
+    </div>
+    <div class="form-check form-switch mb-0">
+        <input id="auto-refresh" class="form-check-input" type="checkbox" role="switch" checked />
+        <label for="auto-refresh" class="form-check-label">Refresh every 5 seconds</label>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm align-top mb-0">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Request</th>
+                        <th>Response</th>
+                    </tr>
+                </thead>
+                <tbody id="traffic-rows">
+                    <partial name="_TrafficRows" model="Model.Entries" />
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const rows = document.getElementById('traffic-rows');
+            const showEmptyPolls = document.getElementById('show-empty-polls');
+            const autoRefresh = document.getElementById('auto-refresh');
+
+            // The server makes the rows, so the text from the ACARS network is encoded
+            async function refresh() {
+                const response = await fetch(`?handler=Rows&showEmptyPolls=${showEmptyPolls.checked}`);
+                if (response.ok) {
+                    rows.innerHTML = await response.text();
+                }
+            }
+
+            showEmptyPolls.addEventListener('change', () => {
+                history.replaceState(null, '', showEmptyPolls.checked ? '?showEmptyPolls=true' : window.location.pathname);
+                refresh();
+            });
+
+            setInterval(() => {
+                if (autoRefresh.checked && !document.hidden) {
+                    refresh();
+                }
+            }, 5000);
+        })();
+    </script>
+}

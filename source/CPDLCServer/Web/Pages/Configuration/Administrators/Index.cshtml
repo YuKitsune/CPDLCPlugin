@@ -1,0 +1,83 @@
+@page "/configuration/administrators"
+@model IndexModel
+@{
+    ViewData["Title"] = "Administrators";
+}
+
+<h1 class="h3">Administrators</h1>
+<p class="text-muted mb-4">Administrators can open the Configuration area. Each person logs in with VATSIM. The name shows after the first login.</p>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="alert">@Model.StatusMessage</div>
+}
+
+@if (Model.ErrorMessage is not null)
+{
+    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-header fw-semibold">Add an administrator</div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Add" class="row g-2 align-items-start">
+            <div class="col-sm-6 col-lg-4">
+                <label asp-for="Cid" class="visually-hidden"></label>
+                <input asp-for="Cid" class="form-control" inputmode="numeric" placeholder="VATSIM CID" autocomplete="off" />
+                <span asp-validation-for="Cid" class="text-danger small"></span>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>CID</th>
+                        <th>Name</th>
+                        <th>Added</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var administrator in Model.Administrators)
+                    {
+                        <tr>
+                            <td>@administrator.Cid</td>
+                            <td>
+                                @if (administrator.Name is null)
+                                {
+                                    <span class="text-muted">Not logged in yet</span>
+                                }
+                                else
+                                {
+                                    @administrator.Name
+                                }
+                                @if (Model.IsCurrentUser(administrator))
+                                {
+                                    <span class="badge text-bg-secondary">You</span>
+                                }
+                            </td>
+                            <td class="text-nowrap">@administrator.Added.ToString("yyyy-MM-dd HH:mm") UTC</td>
+                            <td class="text-end">
+                                @if (!Model.IsCurrentUser(administrator))
+                                {
+                                    <form method="post" asp-page-handler="Remove" asp-route-cid="@administrator.Cid" class="d-inline"
+                                          onsubmit="return confirm('Remove @administrator.Cid from the administrators?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

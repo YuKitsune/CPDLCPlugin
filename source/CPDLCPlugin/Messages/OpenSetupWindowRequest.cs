@@ -1,4 +1,5 @@
 ﻿using CPDLCPlugin.Configuration;
+using CPDLCPlugin.Server;
 using CPDLCPlugin.ViewModels;
 using CPDLCPlugin.Windows;
 using MediatR;
@@ -12,7 +13,9 @@ public class OpenSetupWindowRequestHandler(
     PluginConfiguration pluginConfiguration,
     IMediator mediator,
     Plugin plugin,
-    IErrorReporter errorReporter)
+    IErrorReporter errorReporter,
+    AuthenticationState authenticationState,
+    IGuiInvoker guiInvoker)
     : IRequestHandler<OpenSetupWindowRequest>
 {
     public Task Handle(OpenSetupWindowRequest request, CancellationToken cancellationToken)
@@ -28,6 +31,8 @@ public class OpenSetupWindowRequestHandler(
                     mediator,
                     errorReporter,
                     windowHandle,
+                    authenticationState,
+                    guiInvoker,
                     plugin.ConnectionManager?.ServerEndpoint ?? pluginConfiguration.ServerEndpoint,
                     pluginConfiguration.Stations,
                     isConnected ? plugin.ConnectionManager!.StationIdentifier : pluginConfiguration.Stations.First(),

@@ -35,12 +35,7 @@ public enum AlertType
     None
 }
 
-public record ControllerConnectionDto(string StationId, string Callsign, string VatsimCid);
-
-// Read-only settings of the ATSU the controller is connected to
-public record AtsuSettingsDto(
-    string StationId,
-    TimeSpan DefaultAdscReportingInterval);
+public record ControllerConnectionDto(string StationId, string Callsign);
 
 // ADS-C DTOs for SignalR API
 
@@ -52,11 +47,13 @@ public enum AdscContractState
 }
 
 // ReportingInterval is the interval of the latest periodic request. It is null when no periodic contract was requested.
+// DefaultReportingInterval is the default reporting interval of the ATSU.
 // SelectedContractEnds is null when no selected contract is in use.
 public record AdscContractDto(
     string Callsign,
     string StationId,
     TimeSpan? ReportingInterval,
+    TimeSpan DefaultReportingInterval,
     AdscContractState? DefaultContractState,
     TimeSpan? SelectedReportingInterval,
     AdscContractState? SelectedContractState,
@@ -149,3 +146,8 @@ public class DownlinkMessageDto : CpdlcMessageDto
 }
 
 
+
+// Plugin authentication DTOs
+public record PluginTokenResponse(string AccessToken, DateTimeOffset Expires, int Cid, string Name);
+
+public record PluginUserDto(int Cid, string Name, DateTimeOffset Expires);

@@ -17,6 +17,15 @@ URL of the CPDLC server WebSocket endpoint.
 "ServerEndpoint": "http://localhost:5261/hubs/controller"
 ```
 
+### AutoConnect
+
+When `true`, the plugin connects to the CPDLC server when vatSys connects to VATSIM. It uses the first station in `Stations`. The plugin must be authenticated (see [Connecting to the CPDLC Server](plugin.md#connecting-to-the-cpdlc-server)). Default: `false`.
+
+**Example:**
+```json
+"AutoConnect": true
+```
+
 ### Stations
 
 List of station identifiers this controller position will use. The plugin will connect to the server using these callsigns.
@@ -224,6 +233,7 @@ Array of message groups for organizing messages in the editor. Each group has:
 ```json
 {
   "ServerEndpoint": "http://localhost:5261/hubs/controller",
+  "AutoConnect": false,
   "Stations": ["YZZZ", "YXXX"],
   "LogLevel": "Verbose",
   "MaxCurrentMessages": 50,

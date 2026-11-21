@@ -1,0 +1,243 @@
+@page "/configuration/logs"
+@using CPDLCServer.Logging
+@model IndexModel
+@{
+    ViewData["Title"] = "Logs";
+}
+
+<style>
+    .log-output {
+        height: 65vh;
+        overflow-y: auto;
+        background-color: var(--bs-gray-900);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    /* The same colours as the console output */
+    .log-verbose { color: var(--bs-gray-600); }
+    .log-debug { color: var(--bs-gray-500); }
+    .log-information { color: var(--bs-gray-100); }
+    .log-warning { color: var(--bs-warning); }
+    .log-error { color: var(--bs-danger); }
+    .log-fatal { color: var(--bs-white); background-color: var(--bs-danger); }
+
+    .log-tag { color: var(--bs-info); }
+    .log-exception { color: var(--bs-danger); margin: 0 0 0 2rem; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center">
+    <h1 class="h3 mb-0">Logs</h1>
+    <span id="log-status" class="badge text-bg-secondary">Connecting</span>
+</div>
+<p class="text-muted mt-2 mb-4">The live log of the server. The page shows the recent entries, then each new entry. The logging level of the server (<code>Logging__Level</code>) sets which entries the server writes.</p>
+
+<div class="row g-2 align-items-end mb-2">
+    <div class="col-6 col-md-auto">
+        <label for="log-level" class="form-label small mb-1">Minimum level</label>
+        <select id="log-level" class="form-select form-select-sm">
+            <option value="Verbose">Verbose</option>
+            <option value="Debug">Debug</option>
+            <option value="Information">Information</option>
+            <option value="Warning">Warning</option>
+            <option value="Error">Error</option>
+            <option value="Fatal">Fatal</option>
+        </select>
+    </div>
+    <div class="col-6 col-md-auto">
+        <label for="log-area" class="form-label small mb-1">Area</label>
+        <select id="log-area" class="form-select form-select-sm">
+            <option value="">All areas</option>
+            @foreach (var area in LogArea.All)
+            {
+                <option value="@area">@area</option>
+            }
+        </select>
+    </div>
+    <div class="col-12 col-md-auto">
+        <label for="log-connection" class="form-label small mb-1">ACARS connection</label>
+        <select id="log-connection" class="form-select form-select-sm">
+            <option value="">All connections</option>
+            @foreach (var acarsConnectionId in Model.AcarsConnectionIds)
+            {
+                <option value="@acarsConnectionId">@acarsConnectionId</option>
+            }
+        </select>
+    </div>
+    <div class="col-12 col-md">
+        <label for="log-search" class="form-label small mb-1">Search</label>
+        <input id="log-search" type="search" class="form-control form-control-sm" placeholder="Text in the message, for example a callsign" />
+    </div>
+    <div class="col-12 col-md-auto d-flex align-items-center gap-2">
+        <div class="form-check form-switch mb-0 me-2">
+            <input id="log-autoscroll" class="form-check-input" type="checkbox" role="switch" checked />
+            <label for="log-autoscroll" class="form-check-label small">Follow</label>
+        </div>
+        <button id="log-pause" type="button" class="btn btn-sm btn-outline-secondary">Pause</button>
+        <button id="log-clear" type="button" class="btn btn-sm btn-outline-secondary">Clear</button>
+    </div>
+</div>
+
+<div id="log-output" class="log-output font-monospace small rounded p-2"></div>
+
+@section Scripts {
+    <script>
+        (() => {
+            // The page keeps only this number of entries
+            const maxLines = 5000;
+
+            const levelOrder = { Verbose: 0, Debug: 1, Information: 2, Warning: 3, Error: 4, Fatal: 5 };
+
+            const output = document.getElementById('log-output');
+            const status = document.getElementById('log-status');
+            const levelSelect = document.getElementById('log-level');
+            const areaSelect = document.getElementById('log-area');
+            const connectionSelect = document.getElementById('log-connection');
+            const searchInput = document.getElementById('log-search');
+            const autoscroll = document.getElementById('log-autoscroll');
+            const pauseButton = document.getElementById('log-pause');
+            const clearButton = document.getElementById('log-clear');
+
+            // The filters come from the query string, for example ?connection=Hoppies/YBBB
+            const query = new URLSearchParams(window.location.search);
+            levelSelect.value = query.get('level') ?? 'Verbose';
+            areaSelect.value = query.get('area') ?? '';
+            searchInput.value = query.get('search') ?? '';
+
+            // A connection that is not running has no option, but its old entries can still be in the log
+            const connection = query.get('connection');
+            if (connection && ![...connectionSelect.options].some(option => option.value === connection)) {
+                connectionSelect.add(new Option(connection, connection));
+            }
+            connectionSelect.value = connection ?? '';
+
+            let lastSequence = 0;
+            let paused = false;
+            const pausedEntries = [];
+
+            function isVisible(line) {
+                if (levelOrder[line.dataset.level] < levelOrder[levelSelect.value]) return false;
+                if (areaSelect.value && line.dataset.area !== areaSelect.value) return false;
+                if (connectionSelect.value && line.dataset.connection !== connectionSelect.value) return false;
+
+                const search = searchInput.value.trim().toLowerCase();
+                if (search && !line.dataset.text.includes(search)) return false;
+
+                return true;
+            }
+
+            function scrollToEnd() {
+                if (autoscroll.checked) {
+                    output.scrollTop = output.scrollHeight;
+                }
+            }
+
+            // Use textContent, not innerHTML. The log entries contain text from pilots and controllers.
+            function append(entry) {
+                const line = document.createElement('div');
+                line.className = `log-${entry.level.toLowerCase()}`;
+                line.dataset.level = entry.level;
+                line.dataset.area = entry.area;
+                line.dataset.connection = entry.acarsConnectionId ?? '';
+                line.dataset.text = entry.message.toLowerCase();
+
+                line.append(`[${entry.time} ${entry.levelCode}] `);
+
+                const tag = document.createElement('span');
+                tag.className = 'log-tag';
+                tag.textContent = entry.acarsConnectionId ? `${entry.area} ${entry.acarsConnectionId} ` : `${entry.area} `;
+                line.append(tag, entry.message);
+
+                if (entry.exception) {
+                    const exception = document.createElement('pre');
+                    exception.className = 'log-exception';
+                    exception.textContent = entry.exception;
+                    line.appendChild(exception);
+                }
+
+                line.hidden = !isVisible(line);
+                output.appendChild(line);
+
+                while (output.childElementCount > maxLines) {
+                    output.firstElementChild.remove();
+                }
+
+                scrollToEnd();
+            }
+
+            function applyFilters() {
+                for (const line of output.children) {
+                    line.hidden = !isVisible(line);
+                }
+
+                // Keep the filters in the URL, so that the page can be shared or opened again with the same filters
+                const params = new URLSearchParams();
+                if (levelSelect.value !== 'Verbose') params.set('level', levelSelect.value);
+                if (areaSelect.value) params.set('area', areaSelect.value);
+                if (connectionSelect.value) params.set('connection', connectionSelect.value);
+                if (searchInput.value.trim()) params.set('search', searchInput.value.trim());
+                const search = params.toString();
+                history.replaceState(null, '', search ? `?${search}` : window.location.pathname);
+
+                scrollToEnd();
+            }
+
+            function setStatus(text, className) {
+                status.textContent = text;
+                status.className = `badge ${className}`;
+            }
+
+            const source = new EventSource('/logs/stream');
+
+            source.onopen = () => setStatus('Live', 'text-bg-success');
+
+            // The browser connects again automatically
+            source.onerror = () => setStatus('Reconnecting', 'text-bg-warning');
+
+            source.onmessage = event => {
+                const entry = JSON.parse(event.data);
+
+                // After a reconnection, the server sends the recent entries again
+                if (entry.sequence <= lastSequence) {
+                    return;
+                }
+
+                lastSequence = entry.sequence;
+
+                if (paused) {
+                    pausedEntries.push(entry);
+                    pauseButton.textContent = `Resume (${pausedEntries.length} new)`;
+                    return;
+                }
+
+                append(entry);
+            };
+
+            levelSelect.addEventListener('change', applyFilters);
+            areaSelect.addEventListener('change', applyFilters);
+            connectionSelect.addEventListener('change', applyFilters);
+            searchInput.addEventListener('input', applyFilters);
+
+            pauseButton.addEventListener('click', () => {
+                paused = !paused;
+
+                if (!paused) {
+                    for (const entry of pausedEntries.splice(0)) {
+                        append(entry);
+                    }
+                }
+
+                pauseButton.textContent = paused ? 'Resume' : 'Pause';
+            });
+
+            clearButton.addEventListener('click', () => {
+                output.replaceChildren();
+                pausedEntries.length = 0;
+
+                if (paused) {
+                    pauseButton.textContent = 'Resume';
+                }
+            });
+        })();
+    </script>
+}

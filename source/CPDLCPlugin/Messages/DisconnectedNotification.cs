@@ -13,7 +13,6 @@ public class DisconnectedNotificationBridge(
     AdscContractStore adscContractStore,
     AdscReportStore adscReportStore,
     AdscTrackDisplay adscTrackDisplay,
-    AtsuSettingsStore atsuSettingsStore,
     ILogger logger) : INotificationHandler<DisconnectedNotification>
 {
     public async Task Handle(DisconnectedNotification notification, CancellationToken cancellationToken)
@@ -35,9 +34,6 @@ public class DisconnectedNotificationBridge(
 
         logger.Information("Clearing ADS-C tracks");
         adscTrackDisplay.Clear();
-
-        logger.Information("Clearing ATSU settings");
-        atsuSettingsStore.Clear();
 
         WeakReferenceMessenger.Default.Send(notification);
     }

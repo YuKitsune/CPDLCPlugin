@@ -1,0 +1,113 @@
+@using Microsoft.AspNetCore.Authorization
+@inject IServerSettingsProvider SettingsProvider
+@inject IAuthorizationService AuthorizationService
+@{
+    var branding = await SettingsProvider.LoadBranding(Context.RequestAborted);
+    var isAdministrator = (await AuthorizationService.AuthorizeAsync(User, AdministratorRequirement.PolicyName)).Succeeded;
+    var path = Context.Request.Path;
+
+    // "exact" is for a page that has sub-pages in a different menu item
+    string NavLink(string href, bool exact = false)
+    {
+        var isActive = exact
+            ? string.Equals(path.Value?.TrimEnd('/'), href, StringComparison.OrdinalIgnoreCase)
+            : path.StartsWithSegments(href, StringComparison.OrdinalIgnoreCase);
+        return isActive ? "nav-link active" : "nav-link";
+    }
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@ViewData["Title"] - @branding.ServerName</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <style>
+        @@media (min-width: 992px) {
+            .sidebar { width: 16rem; flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+        }
+
+        .sidebar .nav-link { color: var(--bs-body-color); border-radius: var(--bs-border-radius); padding: .375rem .75rem; }
+        .sidebar .nav-link:hover { background-color: var(--bs-secondary-bg); }
+        .sidebar .nav-link.active { background-color: var(--bs-primary); color: var(--bs-white); }
+        .sidebar-heading { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--bs-secondary-color); padding: 0 .75rem; margin: 1rem 0 .25rem; }
+        .motd { white-space: pre-line; }
+
+        /* Lets wide tables scroll in the content, not the page */
+        .min-w-0 { min-width: 0; }
+    </style>
+</head>
+<body>
+    <div class="d-lg-flex min-vh-100">
+        <aside id="sidebar" class="sidebar offcanvas-lg offcanvas-start bg-body-tertiary border-end" tabindex="-1" aria-label="Navigation">
+            <div class="offcanvas-header d-lg-none">
+                <span class="fw-semibold">@branding.ServerName</span>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
+            </div>
+
+            <div class="d-flex flex-column h-100 p-3">
+                <div class="d-none d-lg-block">
+                    <partial name="_Branding" model="branding" />
+                </div>
+                <div class="d-lg-none">
+                    @if (!string.IsNullOrWhiteSpace(branding.Motd))
+                    {
+                        <div class="motd small border rounded bg-body p-2 mb-3">@branding.Motd</div>
+                    }
+                </div>
+
+                <nav class="flex-grow-1">
+                    <div class="sidebar-heading">CPDLC</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a href="/cpdlc" class="@NavLink("/cpdlc", exact: true)">Overview</a></li>
+                        <li class="nav-item"><a href="/cpdlc/messages" class="@NavLink("/cpdlc/messages")">Messages</a></li>
+                    </ul>
+
+                    <div class="sidebar-heading">ADS-C</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item"><a href="/adsc" class="@NavLink("/adsc", exact: true)">Contracts</a></li>
+                        <li class="nav-item"><a href="/adsc/messages" class="@NavLink("/adsc/messages")">Message log</a></li>
+                    </ul>
+
+                    @if (isAdministrator)
+                    {
+                        <div class="sidebar-heading">Configuration</div>
+                        <ul class="nav flex-column">
+                            <li class="nav-item"><a href="/configuration/settings" class="@NavLink("/configuration/settings")">Settings</a></li>
+                            <li class="nav-item"><a href="/configuration/acars" class="@NavLink("/configuration/acars")">ACARS connections</a></li>
+                            <li class="nav-item"><a href="/configuration/administrators" class="@NavLink("/configuration/administrators")">Administrators</a></li>
+                            <li class="nav-item"><a href="/configuration/logs" class="@NavLink("/configuration/logs")">Logs</a></li>
+                        </ul>
+                    }
+                </nav>
+
+                <div class="border-top pt-3 mt-3 small">
+                    <div class="fw-semibold">@User.GetName()</div>
+                    <div class="text-muted mb-2">CID @User.GetCid()</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <form method="post" action="/logout" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Log out</button>
+                        </form>
+                        <a href="https://cpdlc.eoinmotherway.dev" class="link-secondary">Documentation</a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="flex-grow-1 min-w-0">
+            <header class="d-lg-none d-flex align-items-center gap-2 border-bottom px-3 py-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Open the navigation">&#9776;</button>
+                <span class="fw-semibold">@branding.ServerName</span>
+            </header>
+
+            <main class="container-fluid px-4 py-4">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

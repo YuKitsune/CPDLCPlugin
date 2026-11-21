@@ -1,0 +1,14 @@
+@page "/cpdlc/messages"
+@model MessagesModel
+@{
+    ViewData["Title"] = "CPDLC messages";
+}
+
+<h1 class="h3 mb-4">Messages</h1>
+
+<div class="card">
+    <div class="card-body">
+        <partial name="_MessageTable" model="Model.Messages" />
+        <partial name="_Pagination" model="Model.Pagination" />
+    </div>
+</div>

@@ -1,0 +1,52 @@
+using CPDLCServer.Cpdlc.Dialogues;
+using CPDLCServer.Cpdlc.Uplinks;
+using MediatR;
+
+namespace CPDLCServer.Cpdlc.Connections;
+
+public class TerminateConnectionOnDialogueClosedHandler(
+    IAircraftRepository aircraftRepository,
+    IMediator mediator,
+    ILogger logger)
+    : INotificationHandler<DialogueChangedNotification>
+{
+    public async Task Handle(DialogueChangedNotification notification, CancellationToken cancellationToken)
+    {
+        // Only act when dialogue is closed
+        if (!notification.Dialogue.IsClosed)
+            return;
+
+        // Check if any uplink in the dialogue contains END SERVICE
+        var hasEndService = notification.Dialogue.Messages
+            .OfType<UplinkMessage>()
+            .Any(ControlMessages.IsEndServiceUplink);
+
+        if (!hasEndService)
+            return;
+
+        // Find the aircraft connection (CDA state) with the ATSU of the dialogue
+        var aircraftConnections = await aircraftRepository.All(cancellationToken);
+        var aircraftConnection = aircraftConnections.FirstOrDefault(c =>
+            c.Callsign == notification.Dialogue.AircraftCallsign &&
+            c.StationId == notification.Dialogue.StationId &&
+            c.DataAuthorityState == DataAuthorityState.CurrentDataAuthority);
+
+        if (aircraftConnection is null)
+        {
+            logger.Warning(
+                "Cannot terminate connection for {Callsign}: aircraft connection not found",
+                notification.Dialogue.AircraftCallsign);
+            return;
+        }
+
+        logger.Information(
+            "END SERVICE dialogue closed for {Callsign}, terminating connection",
+            aircraftConnection.Callsign);
+
+        await mediator.Send(
+            new TerminateConnectionRequest(
+                aircraftConnection.Callsign,
+                aircraftConnection.AcarsConnectionId),
+            cancellationToken);
+    }
+}

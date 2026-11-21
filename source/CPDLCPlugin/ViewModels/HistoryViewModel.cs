@@ -105,9 +105,12 @@ public partial class HistoryViewModel : ObservableObject,
 
     public void Receive(DialogueChangedNotification notification)
     {
-        if (_disposed)
+        // The dialogues change for all the aircraft. Do not post to the UI thread for an aircraft that this window does
+        // not show. The UI thread checks again, because the callsign can change before the action runs.
+        if (_disposed || notification.Dialogue.AircraftCallsign != Callsign)
             return;
 
+        // LoadDialoguesAsync changes Dialogues, which the view binds to
         _guiInvoker.InvokeOnGUI(mainForm =>
         {
             if (_disposed)

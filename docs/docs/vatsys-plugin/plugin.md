@@ -11,6 +11,10 @@ It explains how to connect to the server, interpret track labels, manage CPDLC m
 
 To connect, open the CPDLC menu and select Setup. Verify the server URL and station ID, then click Connect.
 
+The first time, you must authenticate with the server. Below the server URL, the Setup window shows if you are authenticated. Click Authenticate. The browser opens the server. Log in with VATSIM, then click Allow. The plugin keeps the authentication for 30 days. To remove it, click Log out.
+
+The plugin does not connect to the server on the sweatbox. To connect automatically when you connect to VATSIM, set `AutoConnect` in the [configuration](configuration.md#autoconnect).
+
 The station you select is your primary ATSU. Once connected, you can send and receive messages for any ATSU managed by that server. This allows controllers to extend their jurisdiction across FIR boundaries (e.g., Brisbane Centre extending to Melbourne Centre) when both ATSUs share a server.
 
 ## Track Label Item

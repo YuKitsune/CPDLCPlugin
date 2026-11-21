@@ -12,6 +12,7 @@ namespace CPDLCPlugin.Server;
 /// </summary>
 public class SignalRConnectionManager(
     string serverEndpoint,
+    string accessToken,
     IDownlinkHandlerDelegate downlinkHandlerDelegate,
     ILogger logger)
     : IDisposable
@@ -50,6 +51,9 @@ public class SignalRConnectionManager(
         var hubConnectionBuilder = new HubConnectionBuilder()
             .WithUrl(url, options =>
             {
+                // The server accepts only an authenticated plugin
+                options.AccessTokenProvider = () => Task.FromResult<string?>(accessToken);
+
 #if DEBUG
                 // In DEBUG mode, bypass SSL certificate validation for local development
                 options.HttpMessageHandlerFactory = _ =>
@@ -128,6 +132,8 @@ public class SignalRConnectionManager(
             WithCancellationToken<string, string>(downlinkHandlerDelegate.AdscContractRemoved)(callsign, stationId));
         _connection.On<AdscReportDto>("AdscReportReceived", adscReport =>
             WithCancellationToken<AdscReportDto>(downlinkHandlerDelegate.AdscReportReceived)(adscReport));
+        _connection.On<string, string>("AdscReportExpired", (callsign, stationId) =>
+            WithCancellationToken<string, string>(downlinkHandlerDelegate.AdscReportExpired)(callsign, stationId));
     }
 
     Func<T, Task> WithCancellationToken<T>(Func<T, CancellationToken, Task> action)
@@ -247,18 +253,10 @@ public class SignalRConnectionManager(
             cancellationToken: cancellationToken);
     }
 
-    public async Task<AtsuSettingsDto> GetAtsuSettings(CancellationToken cancellationToken)
-    {
-        var connection = GetConnectedOrThrow();
-        return await connection.InvokeAsync<AtsuSettingsDto>(
-            "GetAtsuSettings",
-            cancellationToken);
-    }
-
-    // A null reporting interval ends the selected contract and requests the default contract again
+    // The default reporting interval of the ATSU requests the default contract. Any other interval requests a selected contract.
     public async Task RequestPeriodicAdscContract(
         string callsign,
-        TimeSpan? reportingInterval,
+        TimeSpan reportingInterval,
         CancellationToken cancellationToken)
     {
         var connection = GetConnectedOrThrow();

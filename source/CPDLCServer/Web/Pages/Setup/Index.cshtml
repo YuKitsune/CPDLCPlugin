@@ -1,0 +1,24 @@
+@page "/setup"
+@model IndexModel
+@{
+    ViewData["Title"] = "Setup";
+    Layout = "_CenteredLayout";
+}
+
+<h1 class="h4 mb-3">Set up the server</h1>
+<p class="text-muted">
+    Enter the VATSIM CID of the first administrator. After the setup, that person logs in with VATSIM
+    and can add more administrators. You can do the setup only one time.
+</p>
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<form method="post">
+    <div class="mb-3">
+        <label asp-for="Cid" class="form-label fw-semibold"></label>
+        <input asp-for="Cid" class="form-control" inputmode="numeric" autocomplete="off" autofocus />
+        <span asp-validation-for="Cid" class="text-danger small"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100">Complete the setup</button>
+</form>

@@ -33,10 +33,26 @@ public class ConnectRequestHandler(Plugin plugin, IMediator mediator, ILogger lo
             throw new Exception("Not connected to VATSIM");
         }
 
+        // The CPDLC server is for the live network only
+        if (!Network.IsOfficialServer)
+        {
+            logger.Warning("Cannot connect to server: connected to the sweatbox");
+            throw new Exception("Cannot connect to the CPDLC server on the sweatbox");
+        }
+
+        // Check the token first, so that an expired token gives a clear error
+        var token = await mediator.Send(new CheckAuthenticationRequest(request.ServerEndpoint), cancellationToken);
+        if (token is null)
+        {
+            logger.Warning("Cannot connect to server: not authenticated");
+            throw new Exception("Not authenticated with the CPDLC server. Open SETUP and select Authenticate.");
+        }
+
         logger.Verbose("Creating SignalR connection");
         var downlinkHandler = new MediatorMessageHandler(mediator);
         plugin.ConnectionManager = new SignalRConnectionManager(
             request.ServerEndpoint,
+            token,
             downlinkHandler,
             logger.ForContext<SignalRConnectionManager>());
 

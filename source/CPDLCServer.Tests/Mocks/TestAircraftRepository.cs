@@ -1,29 +1,29 @@
-using CPDLCServer.Model;
-using CPDLCServer.Persistence;
+using CPDLCServer.Cpdlc.Connections;
 
 namespace CPDLCServer.Tests.Mocks;
 
 public class TestAircraftRepository : IAircraftRepository
 {
-    private readonly InMemoryAircraftRepository _inner = new();
+    private readonly Dictionary<AircraftKey, AircraftConnection> _connections = new();
 
     public Task Add(AircraftKey aircraftKey, AircraftConnection connection, CancellationToken cancellationToken)
     {
-        return _inner.Add(aircraftKey, connection, cancellationToken);
+        _connections[aircraftKey] = connection;
+        return Task.CompletedTask;
     }
 
     public Task<AircraftConnection?> Find(AircraftKey aircraftKey, CancellationToken cancellationToken)
     {
-        return _inner.Find(aircraftKey, cancellationToken);
+        return Task.FromResult(_connections.GetValueOrDefault(aircraftKey));
     }
 
     public Task<AircraftConnection[]> All(CancellationToken cancellationToken)
     {
-        return _inner.All(cancellationToken);
+        return Task.FromResult(_connections.Values.ToArray());
     }
 
     public Task<bool> Remove(AircraftKey aircraftKey, CancellationToken cancellationToken)
     {
-        return _inner.Remove(aircraftKey, cancellationToken);
+        return Task.FromResult(_connections.Remove(aircraftKey));
     }
 }
