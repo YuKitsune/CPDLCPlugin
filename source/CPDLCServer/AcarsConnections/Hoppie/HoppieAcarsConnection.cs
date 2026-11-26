@@ -1,11 +1,13 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading.Channels;
 using CPDLCServer.AcarsConnections.Traffic;
+using CPDLC.Messages;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.MessageLog;
 using CPDLCServer.AdscContracts.Reports;
-using CPDLCServer.Cpdlc.Dialogues;
+using CPDLCServer.Cpdlc;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
@@ -13,17 +15,10 @@ using CPDLCServer.Logging;
 
 namespace CPDLCServer.AcarsConnections.Hoppie;
 
-// TODO: Accept encoded messages via the API (i.e. UMxxx), translate from within the connection.
-
 public class HoppieAcarsConnection : IAcarsConnection
 {
     // The server is only for VATSIM
     const string FlightSimulationNetwork = "VATSIM";
-
-    readonly Dictionary<string, string> _uplinkMessageTranslations = new()
-    {
-        { "END SERVICE", "LOGOFF" }
-    };
 
     readonly HoppiesConfiguration _configuration;
     readonly HttpClient _httpClient;
@@ -34,6 +29,10 @@ public class HoppieAcarsConnection : IAcarsConnection
 
     readonly Channel<ReceivedDownlink> _messageChannel = Channel.CreateUnbounded<ReceivedDownlink>();
     readonly Channel<ReceivedAdscMessage> _adscMessageChannel = Channel.CreateUnbounded<ReceivedAdscMessage>();
+    readonly Channel<ReceivedControlMessage> _controlMessageChannel = Channel.CreateUnbounded<ReceivedControlMessage>();
+
+    // The message ID of the last logon request from each aircraft. The reply to the logon request refers to it.
+    readonly ConcurrentDictionary<string, int> _logonRequestMessageIds = new();
     readonly Random _random = Random.Shared;
 
     CancellationTokenSource? _pollCancellationTokenSource;
@@ -44,6 +43,7 @@ public class HoppieAcarsConnection : IAcarsConnection
 
     public ChannelReader<ReceivedDownlink> MessageReader => _messageChannel.Reader;
     public ChannelReader<ReceivedAdscMessage> AdscMessageReader => _adscMessageChannel.Reader;
+    public ChannelReader<ReceivedControlMessage> ControlMessageReader => _controlMessageChannel.Reader;
     public string StationId => _configuration.StationIdentifier;
 
     public HoppieAcarsConnection(
@@ -85,6 +85,36 @@ public class HoppieAcarsConnection : IAcarsConnection
 
         var packet = SerializeCpdlcMessage(message);
         await SendPacket(message.Recipient, "cpdlc", packet, cancellationToken);
+    }
+
+    public async Task SendConnectionRequest(string callsign, int messageId, CancellationToken cancellationToken)
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(HoppieAcarsConnection));
+
+        await SendPacket(callsign, "cpdlc", $"/data2/{messageId}//NE/CONNECTION REQUESTED @{StationId}@", cancellationToken);
+    }
+
+    public async Task AcceptLogon(string callsign, int messageId, CancellationToken cancellationToken)
+    {
+        await SendLogonReply(callsign, messageId, "LOGON ACCEPTED", cancellationToken);
+    }
+
+    public async Task RejectLogon(string callsign, int messageId, CancellationToken cancellationToken)
+    {
+        await SendLogonReply(callsign, messageId, "LOGON REJECTED. NO ATS AVBL.", cancellationToken);
+    }
+
+    async Task SendLogonReply(string callsign, int messageId, string text, CancellationToken cancellationToken)
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(HoppieAcarsConnection));
+
+        var replyToId = _logonRequestMessageIds.TryRemove(callsign, out var logonRequestMessageId)
+            ? logonRequestMessageId.ToString()
+            : string.Empty;
+
+        await SendPacket(callsign, "cpdlc", $"/data2/{messageId}/{replyToId}/NE/{text}", cancellationToken);
     }
 
     public async Task RequestPeriodicAdscContract(string callsign, TimeSpan reportingInterval, CancellationToken cancellationToken)
@@ -368,6 +398,14 @@ public class HoppieAcarsConnection : IAcarsConnection
                 switch (type.ToLowerInvariant())
                 {
                     case "cpdlc":
+                        var controlMessage = ParseControlMessage(from, packet);
+                        if (controlMessage is not null)
+                        {
+                            _logger.Information("Received {ControlMessage} from {From}", controlMessage.GetType().Name, from);
+                            _controlMessageChannel.Writer.TryWrite(controlMessage);
+                            break;
+                        }
+
                         var downlink = ParseCpdlcDownlink(from, packet);
                         _logger.Information("Received {MessageType} from {From}", type, from);
                         _messageChannel.Writer.TryWrite(downlink);
@@ -456,11 +494,45 @@ public class HoppieAcarsConnection : IAcarsConnection
         return (headerParts[0], headerParts[1], packet);
     }
 
+    // Logon requests and logoffs are Hoppie messages, and not CPDLC elements, so they do not leave the connection
+    ReceivedControlMessage? ParseControlMessage(string from, string packet)
+    {
+        if (packet.StartsWith("/DATA1/", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var (messageId, _, _, text) = SplitCpdlcPacket(packet);
+
+        if (text.Contains("REQUEST LOGON") || text.Contains("REQUEST LOG ON"))
+        {
+            _logonRequestMessageIds[from] = messageId;
+            return new ReceivedLogonRequest(from, _clock.UtcNow());
+        }
+
+        if (text.Contains("LOGOFF") || text.Contains("LOG OFF"))
+            return new ReceivedLogoff(from, _clock.UtcNow());
+
+        return null;
+    }
+
     ReceivedDownlink ParseCpdlcDownlink(string from, string packet)
     {
         if (packet.StartsWith("/DATA1/", StringComparison.OrdinalIgnoreCase))
             return ParseData1Downlink(from, packet);
 
+        var (messageId, replyToId, responseType, text) = SplitCpdlcPacket(packet);
+
+        return new ReceivedDownlink(
+            messageId,
+            replyToId,
+            from,
+            responseType,
+            HoppieDownlinkParser.Parse(text),
+            _clock.UtcNow());
+    }
+
+    // Packet format: /data2/<message ID>/<reply to ID>/<response type>/<text>
+    static (int MessageId, int? ReplyToId, CpdlcDownlinkResponseType ResponseType, string Text) SplitCpdlcPacket(string packet)
+    {
         var parts = packet.Split('/', 6);
         if (parts.Length != 6)
             throw new MessageParseException($"Invalid CPDLC packet: Expected 6 components, got {parts.Length}: \"{packet}\"");
@@ -474,16 +546,7 @@ public class HoppieAcarsConnection : IAcarsConnection
             _ => throw new NotSupportedException($"Unsupported CPDLC downlink response type: {parts[4]}")
         };
 
-        var content = parts[5];
-
-        return new ReceivedDownlink(
-            messageId,
-            replyToId,
-            from,
-            responseType,
-            AlertType.None,
-            content,
-            _clock.UtcNow());
+        return (messageId, replyToId, responseType, parts[5]);
     }
 
     // Some aircraft (for example, PMDG) send position reports in this format:
@@ -493,10 +556,11 @@ public class HoppieAcarsConnection : IAcarsConnection
     //   ESTIMATING ISTEM AT 0533Z,
     //   ...
     // The first line is a header. The lines after the header contain the text of the report.
+    // The report is not a FANS 1/A element, so it is kept as free text.
     ReceivedDownlink ParseData1Downlink(string from, string packet)
     {
         var lines = packet.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var content = lines.Length > 1
+        var text = lines.Length > 1
             ? string.Join(" ", lines[1..])
             : packet;
 
@@ -505,8 +569,7 @@ public class HoppieAcarsConnection : IAcarsConnection
             null,
             from,
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            content,
+            [new DownlinkMessageElement(DownlinkElementIds.FreeText, [text])],
             _clock.UtcNow());
     }
 
@@ -632,20 +695,9 @@ public class HoppieAcarsConnection : IAcarsConnection
             ? uplinkMessage.MessageReference.ToString()
             : string.Empty;
 
-        var content = GetTranslatedContent(uplinkMessage);
+        var text = HoppieUplinkFormatter.Format(uplinkMessage.Elements);
 
-        return $"/data2/{uplinkMessage.MessageId}/{replyToId}/{responseType}/{content}";
-    }
-
-    string GetTranslatedContent(UplinkMessage uplinkMessage)
-    {
-        var translatedContent = uplinkMessage.Content;
-        foreach (var uplinkMessageTranslation in _uplinkMessageTranslations)
-        {
-            translatedContent = translatedContent.Replace(uplinkMessageTranslation.Key, uplinkMessageTranslation.Value);
-        }
-
-        return translatedContent;
+        return $"/data2/{uplinkMessage.MessageId}/{replyToId}/{responseType}/{text}";
     }
 
     public async ValueTask DisposeAsync()

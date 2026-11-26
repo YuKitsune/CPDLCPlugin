@@ -1,4 +1,5 @@
 ﻿using System.Windows.Media;
+using CPDLCPlugin.Extensions;
 using CPDLCServer.Contracts;
 using vatsys;
 using vatSysToolbox;
@@ -34,7 +35,7 @@ public class MessageColours
 
         // Special closed timeout: Special uplink that timed out before acknowledgement
         // Shows Normal video (not inverted) with pilot late color
-        if (message is UplinkMessageDto { IsSpecial: true, IsClosed: true, IsPilotLate: true, IsAcknowledged: false })
+        if (message is UplinkMessageDto { IsClosed: true, IsPilotLate: true, IsAcknowledged: false } specialLate && specialLate.IsSpecial())
         {
             return new ColorPair(background, Theme.CPDLCPilotLateColor);
         }
@@ -42,7 +43,7 @@ public class MessageColours
         // Special Closed: For a special Uplink Message that is closed by itself
         // After acknowledgement (even if it timed out), show Normal video with CPDLCClosedColor
         // Before acknowledgement (and hasn't timed out), show Inverse video with CPDLCClosedColor
-        if (message is UplinkMessageDto { IsSpecial: true, IsClosed: true } ul)
+        if (message is UplinkMessageDto { IsClosed: true } ul && ul.IsSpecial())
         {
             return new ColorPair(background, Theme.CPDLCClosedColor).InvertIf(!ul.IsAcknowledged);
         }
@@ -71,21 +72,17 @@ public class MessageColours
 
         return new ColorPair(background, Theme.CPDLCClosedColor);
 
+        // Only messages with a high alert use the urgent colour
         bool IsUrgent(CpdlcMessageDto message)
         {
-            return message switch
-            {
-                DownlinkMessageDto downlinkMessage => downlinkMessage.AlertType != AlertType.None,
-                UplinkMessageDto uplinkMessage => uplinkMessage.AlertType != AlertType.None,
-                _ => false
-            };
+            return message.AlertType == AlertType.High;
         }
 
         bool IsFailed(CpdlcMessageDto message)
         {
             return message switch
             {
-                DownlinkMessageDto downlinkMessage => downlinkMessage.Content.StartsWith("ERROR"),
+                DownlinkMessageDto downlinkMessage => downlinkMessage.HasElement(DownlinkElementIds.Error),
                 UplinkMessageDto uplinkMessage => uplinkMessage.IsTransmissionFailed,
                 _ => false
             };

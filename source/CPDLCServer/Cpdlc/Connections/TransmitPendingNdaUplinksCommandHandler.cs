@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.AcarsConnections.Stations;
 using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
@@ -64,8 +65,8 @@ public class TransmitPendingNdaUplinksCommandHandler(
                 new BeginDialogueCommand(
                     aircraftConnection.StationId,
                     aircraftConnection.Callsign,
-                    CpdlcUplinkResponseType.NoResponse,
-                    $"NEXT DATA AUTHORITY @{aircraftConnection.NextDataAuthority}@"),
+                    [new UplinkMessageElement(UplinkElementIds.NextDataAuthority, [aircraftConnection.NextDataAuthority!])],
+                    false),
                 cancellationToken);
 
             aircraftConnection.SentNextDataAuthorityMessage();

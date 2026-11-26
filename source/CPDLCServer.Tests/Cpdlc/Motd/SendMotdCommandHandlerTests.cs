@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Motd;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -37,7 +38,12 @@ public class SendMotdCommandHandlerTests
 
         // Assert
         await _mediator.Received(1).Send(
-            new BeginDialogueCommand("YBBB", "UAL123", CpdlcUplinkResponseType.NoResponse, "WELCOME TO BRISBANE"),
+            Arg.Is<BeginDialogueCommand>(c =>
+                c.Sender == "YBBB" &&
+                c.Recipient == "UAL123" &&
+                c.Elements.Single().Id == 169 &&
+                c.Elements.Single().Parameters.Single() == "WELCOME TO BRISBANE" &&
+                !c.CanAction),
             Arg.Any<CancellationToken>());
     }
 

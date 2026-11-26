@@ -45,9 +45,8 @@ public class ReplyToDownlinkCommandHandler(
             request.DownlinkMessageId,
             callsign,
             request.Sender,
-            request.ResponseType,
-            AlertType.None,
-            request.Content,
+            request.Elements,
+            request.CanAction,
             clock.UtcNow());
 
         logger.Information("Uplink {MessageId} added to dialogue {DialogueId} as reply to downlink {DownlinkMessageId}",

@@ -71,7 +71,7 @@ public partial class HistoryViewModel : ObservableObject,
                 .Select(d => new DialogueHistoryViewModel
                 {
                     Messages = new ObservableCollection<HistoryMessageViewModel>(
-                        d.Messages.Select(m => new HistoryMessageViewModel(m, _configuration.MaxDisplayMessageLength))),
+                        d.Messages.Select(m => new HistoryMessageViewModel(d, m, _configuration.MaxDisplayMessageLength))),
                     FirstMessageTime = d.Messages.OrderBy(m => m.Time).First().Time
                 })
                 .ToArray();

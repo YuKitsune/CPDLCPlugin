@@ -1,22 +1,24 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 namespace CPDLCServer.Cpdlc.Downlinks;
 
 public class DownlinkMessage : CpdlcMessage
 {
+    // The response type comes from the ACARS packet, and not from the elements.
+    // If the ACARS connection cannot read the text, the element is free text, which needs no response.
     public DownlinkMessage(
         Guid dialogueId,
         int messageId,
         int? messageReference,
         string sender,
         CpdlcDownlinkResponseType responseType,
-        AlertType alertType,
-        string content,
+        IReadOnlyList<DownlinkMessageElement> elements,
         DateTimeOffset received)
-        : base(dialogueId, messageId, messageReference, alertType)
+        : base(dialogueId, messageId, messageReference, AlertTypeMapping.From(MessageAttributes.AlertAttribute(elements)))
     {
         Sender = sender;
         ResponseType = responseType;
-        Content = content;
+        Elements = elements;
         Received = received;
 
         // Downlink messages requiring no response are self-closing
@@ -25,12 +27,14 @@ public class DownlinkMessage : CpdlcMessage
 
     public string Sender { get; }
     public CpdlcDownlinkResponseType ResponseType { get; }
-    public string Content { get; }
+    public IReadOnlyList<DownlinkMessageElement> Elements { get; }
     public DateTimeOffset Received { get; }
 
     public bool IsControllerLate { get; set; }
 
     public override DateTimeOffset Time => Received;
+
+    public bool HasElement(int elementId) => Elements.Any(e => e.Id == elementId);
 
     public override void Close(DateTimeOffset time)
     {

@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -26,9 +27,8 @@ public class ArchiveCompletedDialoguesRequestHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "ROGER",
+            [new UplinkMessageElement(3, [])],
+            false,
             startTime); // NoResponse uplinks are self-closing and auto-acknowledged
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -62,9 +62,8 @@ public class ArchiveCompletedDialoguesRequestHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "ROGER",
+            [new UplinkMessageElement(3, [])],
+            false,
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -97,9 +96,8 @@ public class ArchiveCompletedDialoguesRequestHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMB TO FL410",
+            [new UplinkMessageElement(20, ["FL410"])],
+            false,
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -133,8 +131,7 @@ public class ArchiveCompletedDialoguesRequestHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "WILCO",
+            [new DownlinkMessageElement(0, [])],
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 

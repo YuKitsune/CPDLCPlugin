@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Contracts;
 using CPDLCServer.AcarsConnections.Stations;
 using CPDLCServer.Auth;
@@ -12,7 +13,6 @@ using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using CpdlcUplinkResponseType = CPDLCServer.Contracts.CpdlcUplinkResponseType;
 
 namespace CPDLCServer.Web;
 
@@ -76,8 +76,8 @@ public class ControllerHub(
 
     public async Task BeginDialogue(
         string recipient,
-        CpdlcUplinkResponseType responseType,
-        string content)
+        UplinkMessageElement[] elements,
+        bool canAction)
     {
         var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
         if (controller is null)
@@ -85,29 +85,20 @@ public class ControllerHub(
             _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
             throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
         }
-
-        var modelResponseType = responseType switch
-        {
-            CpdlcUplinkResponseType.NoResponse => Cpdlc.Uplinks.CpdlcUplinkResponseType.NoResponse,
-            CpdlcUplinkResponseType.WilcoUnable => Cpdlc.Uplinks.CpdlcUplinkResponseType.WilcoUnable,
-            CpdlcUplinkResponseType.AffirmativeNegative => Cpdlc.Uplinks.CpdlcUplinkResponseType.AffirmativeNegative,
-            CpdlcUplinkResponseType.Roger => Cpdlc.Uplinks.CpdlcUplinkResponseType.Roger,
-            _ => throw new ArgumentOutOfRangeException(nameof(responseType), responseType, null)
-        };
 
         await mediator.Send(
             new BeginDialogueCommand(
                 controller.Callsign,
                 recipient,
-                modelResponseType,
-                content));
+                elements,
+                canAction));
     }
 
     public async Task ReplyToDownlink(
         Guid dialogueId,
         int downlinkMessageId,
-        CpdlcUplinkResponseType responseType,
-        string content)
+        UplinkMessageElement[] elements,
+        bool canAction)
     {
         var controller = await controllerRepository.FindByConnectionId(Context.ConnectionId, CancellationToken.None);
         if (controller is null)
@@ -115,23 +106,14 @@ public class ControllerHub(
             _logger.Warning("Controller not found for connection {ConnectionId}", Context.ConnectionId);
             throw new InvalidOperationException($"Controller not found for connection {Context.ConnectionId}");
         }
-
-        var modelResponseType = responseType switch
-        {
-            CpdlcUplinkResponseType.NoResponse => Cpdlc.Uplinks.CpdlcUplinkResponseType.NoResponse,
-            CpdlcUplinkResponseType.WilcoUnable => Cpdlc.Uplinks.CpdlcUplinkResponseType.WilcoUnable,
-            CpdlcUplinkResponseType.AffirmativeNegative => Cpdlc.Uplinks.CpdlcUplinkResponseType.AffirmativeNegative,
-            CpdlcUplinkResponseType.Roger => Cpdlc.Uplinks.CpdlcUplinkResponseType.Roger,
-            _ => throw new ArgumentOutOfRangeException(nameof(responseType), responseType, null)
-        };
 
         await mediator.Send(
             new ReplyToDownlinkCommand(
                 controller.Callsign,
                 dialogueId,
                 downlinkMessageId,
-                modelResponseType,
-                content));
+                elements,
+                canAction));
     }
 
     public async Task RequestConnection(string callsign, string stationId)
@@ -185,6 +167,11 @@ public class ControllerHub(
     public async Task AcknowledgeUplink(Guid dialogueId, int uplinkMessageId)
     {
         await mediator.Send(new AcknowledgeUplinkCommand(dialogueId, uplinkMessageId));
+    }
+
+    public async Task MarkUplinkActioned(Guid dialogueId, int uplinkMessageId)
+    {
+        await mediator.Send(new MarkUplinkActionedCommand(dialogueId, uplinkMessageId));
     }
 
     public async Task ArchiveDialogue(Guid dialogueId)

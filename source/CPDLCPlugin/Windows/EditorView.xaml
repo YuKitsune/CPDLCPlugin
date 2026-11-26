@@ -246,8 +246,6 @@
 
         <!-- Class Elements Display Area -->
         <!-- TODO: Prefix with * if the text needs to overflow. Right-click to extend the display area. -->
-        <!-- TODO: Prefix with F if uplink id is 169 -->
-        <!-- TODO: Prefix with E if uplink id is 170 -->
         <ScrollViewer
             Grid.Row="2"
             Margin="8"

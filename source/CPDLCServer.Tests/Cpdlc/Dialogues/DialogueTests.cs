@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -19,8 +20,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             time);
 
         // Assert
@@ -41,8 +41,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             time);
 
         // Assert
@@ -61,8 +60,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             DateTimeOffset.UtcNow);
 
         // Assert
@@ -80,8 +78,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             time);
 
         // Act
@@ -90,9 +87,8 @@ public class DialogueTests
             1, // References downlink message 1
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "UNABLE",
+            [new UplinkMessageElement(0, [])],
+            false,
             time.AddSeconds(10));
 
         // Assert
@@ -111,9 +107,8 @@ public class DialogueTests
             null,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMB TO FL410",
+            [new UplinkMessageElement(20, ["FL410"])],
+            false,
             time);
 
         // Act
@@ -122,8 +117,7 @@ public class DialogueTests
             1, // References uplink message 1
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "WILCO",
+            [new DownlinkMessageElement(0, [])],
             time.AddSeconds(10));
 
         // Assert
@@ -142,9 +136,8 @@ public class DialogueTests
             null,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMB FL410",
+            [new UplinkMessageElement(20, ["FL410"])],
+            false,
             time);
 
         // Act
@@ -153,8 +146,7 @@ public class DialogueTests
             1, // References uplink message 1
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "STANDBY",
+            [new DownlinkMessageElement(2, [])],
             time.AddSeconds(10));
 
         // Assert
@@ -172,8 +164,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             time);
 
         // Act
@@ -182,9 +173,8 @@ public class DialogueTests
             1, // References downlink message 1
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "STANDBY",
+            [new UplinkMessageElement(1, [])],
+            false,
             time.AddSeconds(10));
 
         // Assert
@@ -203,8 +193,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             time);
 
         // Act
@@ -213,9 +202,8 @@ public class DialogueTests
             1, // References downlink message 1
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "REQUEST DEFERRED",
+            [new UplinkMessageElement(2, [])],
+            false,
             time.AddSeconds(10));
 
         // Assert
@@ -234,8 +222,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             time);
 
         var uplink = dialogue.AddUplink(
@@ -243,9 +230,8 @@ public class DialogueTests
             1, // References downlink message 1
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse, // No response required, so self-closing
-            AlertType.None,
-            "UNABLE",
+            [new UplinkMessageElement(0, [])], // UNABLE needs no response, so it is self-closing
+            false,
             time.AddSeconds(10));
 
         // Assert
@@ -265,8 +251,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             time);
 
         var uplink = dialogue.AddUplink(
@@ -274,9 +259,8 @@ public class DialogueTests
             1, // References downlink message 1
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable, // Requires response, not self-closing
-            AlertType.None,
-            "CLIMB TO FL410",
+            [new UplinkMessageElement(20, ["FL410"])], // Requires response, not self-closing
+            false,
             time.AddSeconds(10));
 
         // Assert - downlink is closed by uplink response, but uplink requires response so stays open
@@ -299,8 +283,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse, // No response required
-            AlertType.None,
-            "POSITION REPORT",
+            [new DownlinkMessageElement(67, ["POSITION REPORT"])],
             time);
 
         // Assert
@@ -323,8 +306,7 @@ public class DialogueTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             time);
 
         Assert.False(dialogue.IsClosed); // Dialogue open - downlink awaiting response
@@ -335,9 +317,8 @@ public class DialogueTests
             1,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "STANDBY",
+            [new UplinkMessageElement(1, [])],
+            false,
             time.AddSeconds(5));
 
         Assert.False(downlink1.IsClosed); // STANDBY doesn't close the request
@@ -349,9 +330,8 @@ public class DialogueTests
             1,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMG TO FL410",
+            [new UplinkMessageElement(20, ["FL410"])],
+            false,
             time.AddSeconds(30));
 
         Assert.True(downlink1.IsClosed); // Now the request is closed
@@ -364,8 +344,7 @@ public class DialogueTests
             3,
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "WILCO",
+            [new DownlinkMessageElement(0, [])],
             time.AddSeconds(40));
 
         Assert.True(uplink2.IsClosed);
@@ -375,44 +354,41 @@ public class DialogueTests
     }
 
     [Fact]
-    public void Dialogue_LogonRequestAndAcceptanceClosesImmediately()
+    public void Dialogue_UnableDueToTrafficClosesAndArchivesImmediately()
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
 
         var dialogue = new Dialogue("UAL123", "YBBB");
 
-        // Pilot sends logon request
-        var logonRequest = dialogue.AddDownlink(
+        var request = dialogue.AddDownlink(
             1,
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST LOGON",
+            [new DownlinkMessageElement(9, ["FL410"])],
             time);
 
         Assert.False(dialogue.IsClosed); // Dialogue open - waiting for response
 
-        // System sends LOGON ACCEPTED (NoResponse type, so self-closing)
-        var logonAccepted = dialogue.AddUplink(
+        // UNABLE DUE TO TRAFFIC needs no response, so it is self-closing
+        var unable = dialogue.AddUplink(
             2,
-            1, // References logon request
+            1, // References the request
             "UAL123",
-            "SYSTEM",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "LOGON ACCEPTED",
+            "BN-TSN_FSS",
+            [new UplinkMessageElement(0, []), new UplinkMessageElement(166, [])],
+            false,
             time.AddSeconds(1));
 
         // Assert
-        Assert.True(logonRequest.IsClosed); // Request is closed by the acceptance
-        Assert.True(logonRequest.IsAcknowledged); // Request is auto-acknowledged
-        Assert.True(logonAccepted.IsClosed); // Acceptance is self-closing (NoResponse)
+        Assert.True(request.IsClosed); // Request is closed by the reply
+        Assert.True(request.IsAcknowledged); // Request is auto-acknowledged
+        Assert.True(unable.IsClosed);
         Assert.True(dialogue.IsClosed); // Dialogue closes immediately
-        Assert.Equal(logonAccepted.Sent, dialogue.Closed);
-        Assert.True(dialogue.IsArchived); // Dialogue is auto-archived with LOGON ACCEPTED
-        Assert.Equal(logonAccepted.Sent, dialogue.Archived);
+        Assert.Equal(unable.Sent, dialogue.Closed);
+        Assert.True(dialogue.IsArchived); // Dialogue is auto-archived with UNABLE DUE TO TRAFFIC
+        Assert.Equal(unable.Sent, dialogue.Archived);
     }
 
     [Fact]
@@ -421,11 +397,11 @@ public class DialogueTests
         // Arrange
         var time = new DateTimeOffset(2025, 1, 15, 10, 30, 0, TimeSpan.Zero);
         var dialogue = new Dialogue("UAL123", "YBBB");
-        dialogue.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST CLIMB FL410", time);
-        dialogue.AddDownlink(3, null, "UAL123", CpdlcDownlinkResponseType.NoResponse, AlertType.None, "FREE TEXT", time.AddMinutes(2));
+        dialogue.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, [new DownlinkMessageElement(9, ["FL410"])], time);
+        dialogue.AddDownlink(3, null, "UAL123", CpdlcDownlinkResponseType.NoResponse, [new DownlinkMessageElement(67, ["FREE TEXT"])], time.AddMinutes(2));
 
         // Act
-        dialogue.AddDownlink(2, null, "UAL123", CpdlcDownlinkResponseType.NoResponse, AlertType.None, "FREE TEXT", time.AddMinutes(1));
+        dialogue.AddDownlink(2, null, "UAL123", CpdlcDownlinkResponseType.NoResponse, [new DownlinkMessageElement(67, ["FREE TEXT"])], time.AddMinutes(1));
 
         // Assert
         Assert.Equal([1, 2, 3], dialogue.Messages.Select(m => m.MessageId));
@@ -438,10 +414,10 @@ public class DialogueTests
         // Arrange - the reply has an earlier time than the request, for example because of a clock difference
         var time = new DateTimeOffset(2025, 1, 15, 10, 30, 0, TimeSpan.Zero);
         var dialogue = new Dialogue("UAL123", "YBBB");
-        dialogue.AddDownlink(7, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST CLIMB FL410", time);
+        dialogue.AddDownlink(7, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, [new DownlinkMessageElement(9, ["FL410"])], time);
 
         // Act
-        dialogue.AddUplink(1, 7, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", time.AddSeconds(-5));
+        dialogue.AddUplink(1, 7, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, time.AddSeconds(-5));
 
         // Assert
         Assert.Equal([7, 1], dialogue.Messages.Select(m => m.MessageId));

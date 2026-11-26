@@ -1,4 +1,5 @@
 using CPDLCPlugin.LabelItems;
+using CPDLCPlugin.Extensions;
 using CPDLCServer.Contracts;
 using MediatR;
 using Serilog;
@@ -73,7 +74,7 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
                     var unacknowledgedUnableReceived = openDialogues
                         .SelectMany(d => d.Messages ?? [])
                         .OfType<DownlinkMessageDto>()
-                        .Any(m => (m.Content ?? string.Empty).Contains("UNABLE") && !m.IsAcknowledged);
+                        .Any(m => m.HasElement(DownlinkElementIds.Unable) && !m.IsAcknowledged);
 
                     var hasSuspendedMessage = suspendedMessageStore.HasSuspendedMessage(callsign);
 
@@ -152,7 +153,7 @@ public class RebuildCpdlcStatusLabelItemsRequestHandler(
                                 logger.Debug("[{Callsign}] Setting downlink background (green) - {Count} open downlink(s): {@Messages}",
                                     callsign,
                                     openDownlinkMessages.Length,
-                                    openDownlinkMessages.Select(m => new { m.MessageId, m.Content, m.IsClosed, m.IsAcknowledged, Closed = m.Closed, Acknowledged = m.Acknowledged }));
+                                    openDownlinkMessages.Select(m => new { m.MessageId, m.Elements, m.IsClosed, m.IsAcknowledged, Closed = m.Closed, Acknowledged = m.Acknowledged }));
                                 backgroundColour = colourCache.DownlinkBackgroundColour;
                             }
                             else

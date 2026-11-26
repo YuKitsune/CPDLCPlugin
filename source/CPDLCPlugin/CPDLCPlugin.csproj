@@ -22,6 +22,7 @@
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
         <PackageReference Include="Lib.Harmony" Version="2.3.3" />
         <PackageReference Include="MediatR" Version="12.4.1" />
+        <PackageReference Include="Polyfill" Version="7.0.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.NewtonsoftJson" Version="10.0.1" />
         <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
@@ -34,6 +35,7 @@
         <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
         <PackageReference Include="vatSysToolbox" Version="0.1.22" />
         <PackageReference Include="vatSysToolbox.MediatR" Version="0.1.22" />
+        <PackageReference Include="YamlDotNet" Version="16.3.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -52,6 +54,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\CPDLC.Messages\CPDLC.Messages.csproj" />
       <ProjectReference Include="..\CPDLCServer.Contracts\CPDLCServer.Contracts.csproj" />
     </ItemGroup>
 

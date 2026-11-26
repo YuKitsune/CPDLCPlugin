@@ -1,7 +1,6 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 namespace CPDLCServer.Cpdlc.Uplinks;
-
-// TODO: Separate formatted and plaintext contents.
 
 public class UplinkMessage : CpdlcMessage
 {
@@ -11,20 +10,20 @@ public class UplinkMessage : CpdlcMessage
         int? messageReference,
         string recipient,
         string senderCallsign,
-        CpdlcUplinkResponseType responseType,
-        AlertType alertType,
-        string content,
+        IReadOnlyList<UplinkMessageElement> elements,
+        bool canAction,
         DateTimeOffset sent)
-        : base(dialogueId, messageId, messageReference, alertType)
+        : base(dialogueId, messageId, messageReference, AlertTypeMapping.From(MessageAttributes.AlertAttribute(elements)))
     {
         Recipient = recipient;
         SenderCallsign = senderCallsign;
-        ResponseType = responseType;
-        Content = content;
+        ResponseType = CpdlcUplinkResponseTypeMapping.From(MessageAttributes.ResponseAttribute(elements));
+        Elements = elements;
+        CanAction = canAction;
         Sent = sent;
 
         // Uplink messages requiring no response are self-closing
-        Closed = responseType == CpdlcUplinkResponseType.NoResponse ? sent : null;
+        Closed = ResponseType == CpdlcUplinkResponseType.NoResponse ? sent : null;
 
         // Uplinks are automatically acknowledged
         Acknowledged = sent;
@@ -33,16 +32,21 @@ public class UplinkMessage : CpdlcMessage
     public string Recipient { get; }
     public string SenderCallsign { get; }
     public CpdlcUplinkResponseType ResponseType { get; }
-    public string Content { get; }
+    public IReadOnlyList<UplinkMessageElement> Elements { get; }
     public DateTimeOffset Sent { get; }
     public bool ClosedManually { get; private set; }
 
-    // public bool CanAction { get; set; }
-    // public bool Actioned { get; set; }
+    // CanAction is true when the plugin can update the FDR from the message.
+    // Actioned is true when the plugin updated the FDR from the message.
+    public bool CanAction { get; }
+    public bool Actioned { get; private set; }
+
     public bool IsPilotLate { get; set; }
     public bool DidTransmissionFail { get; set; }
 
     public override DateTimeOffset Time => Sent;
+
+    public bool HasElement(int elementId) => Elements.Any(e => e.Id == elementId);
 
     public override void Close(DateTimeOffset time) => Close(time, false);
 
@@ -51,5 +55,10 @@ public class UplinkMessage : CpdlcMessage
         Closed = time;
         ClosedManually = manual;
         IsPilotLate = false;
+    }
+
+    public void MarkActioned()
+    {
+        Actioned = true;
     }
 }

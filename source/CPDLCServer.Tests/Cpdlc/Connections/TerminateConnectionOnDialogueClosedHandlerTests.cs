@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
@@ -37,9 +38,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "END SERVICE",
+            [new UplinkMessageElement(161, [])],
+            false,
             clock.UtcNow());
 
         var notification = new DialogueChangedNotification(dialogue);
@@ -82,9 +82,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "END SERVICE. CONTACT AUCKLAND ON 123.450.",
+            [new UplinkMessageElement(161, []), new UplinkMessageElement(117, ["AUCKLAND", "123.450"])],
+            false,
             clock.UtcNow());
 
         var notification = new DialogueChangedNotification(dialogue);
@@ -125,9 +124,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "LOGON ACCEPTED",
+            [new UplinkMessageElement(3, [])], // ROGER needs no response, so the dialogue closes
+            false,
             clock.UtcNow());
 
         var notification = new DialogueChangedNotification(dialogue);
@@ -170,8 +168,7 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB TO FL370",
+            [new DownlinkMessageElement(9, ["FL370"])],
             clock.UtcNow());
 
         // Controller response with END SERVICE
@@ -180,9 +177,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             1,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLEARED TO CLIMB TO FL370. CONTACT MELBOURNE 123.45. END SERVICE",
+            [new UplinkMessageElement(20, ["FL370"]), new UplinkMessageElement(117, ["MELBOURNE", "123.45"]), new UplinkMessageElement(161, [])],
+            false,
             clock.UtcNow());
 
         // Pilot response (closes the dialogue)
@@ -191,8 +187,7 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             2,
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "WILCO",
+            [new DownlinkMessageElement(0, [])],
             clock.UtcNow());
 
         var notification = new DialogueChangedNotification(dialogue);
@@ -231,9 +226,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "END SERVICE",
+            [new UplinkMessageElement(161, [])],
+            false,
             clock.UtcNow());
 
         var notification = new DialogueChangedNotification(dialogue);
@@ -274,9 +268,8 @@ public class TerminateConnectionOnDialogueClosedHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "END SERVICE",
+            [new UplinkMessageElement(161, [])],
+            false,
             clock.UtcNow());
 
         var notification = new DialogueChangedNotification(dialogue);

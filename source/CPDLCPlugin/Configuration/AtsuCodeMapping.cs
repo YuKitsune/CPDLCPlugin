@@ -1,3 +1,7 @@
 namespace CPDLCPlugin.Configuration;
 
-public record AtsuCodeMapping(string AtsuCode, string[] Sectors);
+public class AtsuCodeMapping
+{
+    public required string AtsuCode { get; init; }
+    public required string[] Sectors { get; init; }
+}

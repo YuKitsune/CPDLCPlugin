@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using CPDLCPlugin.Extensions;
 using CPDLCServer.Contracts;
 using vatsys;
 
@@ -49,7 +50,7 @@ public class JurisdictionChecker : IJurisdictionChecker
         // Don't show END SERVICE messages sent by other controllers
         if (dialogue.Messages.OfType<UplinkMessageDto>().Any(um =>
                 um.SenderCallsign != Network.Callsign &&
-                um.Content.Contains("END SERVICE")))
+                um.HasElement(UplinkElementIds.EndService)))
         {
             return false;
         }

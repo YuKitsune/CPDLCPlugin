@@ -1,4 +1,4 @@
-using CPDLCServer.Contracts;
+using CPDLC.Messages;
 using MediatR;
 using Serilog;
 
@@ -8,8 +8,8 @@ public record ReplyToDownlinkRequest(
     string Recipient,
     Guid DialogueId,
     int DownlinkMessageId,
-    CpdlcUplinkResponseType ResponseType,
-    string Content)
+    UplinkMessageElement[] Elements,
+    bool CanAction)
     : IRequest;
 
 public class ReplyToDownlinkRequestHandler(Plugin plugin, ILogger logger)
@@ -29,8 +29,8 @@ public class ReplyToDownlinkRequestHandler(Plugin plugin, ILogger logger)
         await plugin.ConnectionManager.ReplyToDownlink(
             request.DialogueId,
             request.DownlinkMessageId,
-            request.ResponseType,
-            request.Content,
+            request.Elements,
+            request.CanAction,
             cancellationToken);
     }
 }

@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using System.Net;
 using CPDLCServer.AcarsConnections;
 using CPDLCServer.AcarsConnections.Hoppie;
@@ -75,9 +76,8 @@ public class HoppieAcarsConnectionTests : IDisposable
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMB TO @FL350@",
+            [new UplinkMessageElement(20, ["FL350"])],
+            false,
             clock.UtcNow());
 
         // Act
@@ -94,7 +94,7 @@ public class HoppieAcarsConnectionTests : IDisposable
         var formData = await ParseFormDataFromRequest(sendRequest);
 
         Assert.Equal("cpdlc", formData["type"]);
-        Assert.Equal("/data2/1//WU/CLIMB+TO+@FL350@", formData["packet"]);
+        Assert.Equal("/data2/1//WU/CLIMB+TO+AND+MAINTAIN+@FL350@", formData["packet"]);
     }
 
     [Fact]
@@ -114,9 +114,8 @@ public class HoppieAcarsConnectionTests : IDisposable
             5,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "ROGER",
+            [new UplinkMessageElement(3, [])],
+            false,
             clock.UtcNow());
 
         // Act
@@ -134,12 +133,13 @@ public class HoppieAcarsConnectionTests : IDisposable
         Assert.Equal("/data2/2/5/NE/ROGER", formData["packet"]);
     }
 
+    // The response type comes from the elements of the message
     [Theory]
-    [InlineData(CpdlcUplinkResponseType.NoResponse, "NE")]
-    [InlineData(CpdlcUplinkResponseType.WilcoUnable, "WU")]
-    [InlineData(CpdlcUplinkResponseType.AffirmativeNegative, "AN")]
-    [InlineData(CpdlcUplinkResponseType.Roger, "R")]
-    public async Task Send_CpdlcMessage_MapsResponseTypesCorrectly(CpdlcUplinkResponseType uplinkResponseType, string expectedCode)
+    [InlineData(0, new string[0], "NE", "UNABLE")]
+    [InlineData(96, new string[0], "WU", "FLY+PRESENT+HEADING")]
+    [InlineData(150, new[] { "FL350", "1200" }, "AN", "CAN+YOU+ACCEPT+@FL350@+AT+@1200@")]
+    [InlineData(169, new[] { "TEST" }, "R", "@TEST@")]
+    public async Task Send_CpdlcMessage_MapsResponseTypesCorrectly(int elementId, string[] parameters, string expectedCode, string expectedText)
     {
         // Arrange
         var httpHandler = new TestHttpMessageHandler();
@@ -155,9 +155,8 @@ public class HoppieAcarsConnectionTests : IDisposable
             null,
             "UAL123",
             "BN-TSN_FSS",
-            uplinkResponseType,
-            AlertType.None,
-            "TEST",
+            [new UplinkMessageElement(elementId, parameters)],
+            false,
             clock.UtcNow());
 
         // Act
@@ -172,14 +171,14 @@ public class HoppieAcarsConnectionTests : IDisposable
 
         Assert.NotNull(sendRequest);
         var formData = await ParseFormDataFromRequest(sendRequest);
-        Assert.Equal($"/data2/1//{expectedCode}/TEST", formData["packet"]);
+        Assert.Equal($"/data2/1//{expectedCode}/{expectedText}", formData["packet"]);
 
         await connection.DisposeAsync();
         _connections.Remove(connection);
     }
 
     [Fact]
-    public async Task Send_CpdlcMessage_TranslatesContent()
+    public async Task Send_CpdlcMessage_TranslatesEndServiceToLogoff()
     {
         // Arrange
         var httpHandler = new TestHttpMessageHandler();
@@ -195,9 +194,8 @@ public class HoppieAcarsConnectionTests : IDisposable
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "MONITOR ML CEN 123.450. END SERVICE.",
+            [new UplinkMessageElement(120, ["ML CEN", "123.450"]), new UplinkMessageElement(161, [])],
+            false,
             clock.UtcNow());
 
         // Act
@@ -212,11 +210,11 @@ public class HoppieAcarsConnectionTests : IDisposable
 
         Assert.NotNull(sendRequest);
         var formData = await ParseFormDataFromRequest(sendRequest);
-        Assert.Equal("/data2/1//NE/MONITOR+ML+CEN+123.450.+LOGOFF.", formData["packet"]);
+        Assert.Equal("/data2/1//WU/MONITOR+@ML+CEN@+@123.450@.+LOGOFF", formData["packet"]);
     }
 
     [Fact]
-    public async Task Send_CpdlcMessage_UrlEncodesContent()
+    public async Task Send_CpdlcMessage_UrlEncodesText()
     {
         // Arrange
         var httpHandler = new TestHttpMessageHandler();
@@ -232,9 +230,8 @@ public class HoppieAcarsConnectionTests : IDisposable
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMB TO @FL350@",
+            [new UplinkMessageElement(20, ["FL350"])],
+            false,
             clock.UtcNow());
 
         // Act
@@ -249,7 +246,7 @@ public class HoppieAcarsConnectionTests : IDisposable
 
         Assert.NotNull(sendRequest);
         var formData = await ParseFormDataFromRequest(sendRequest);
-        Assert.Equal("/data2/1//WU/CLIMB+TO+@FL350@", formData["packet"]);
+        Assert.Equal("/data2/1//WU/CLIMB+TO+AND+MAINTAIN+@FL350@", formData["packet"]);
     }
 
     [Fact]
@@ -271,7 +268,7 @@ public class HoppieAcarsConnectionTests : IDisposable
         // Assert
         Assert.Equal("UAL123", message.Sender);
         Assert.Equal(5, message.MessageId);
-        Assert.Equal("REQUEST DESCENT", message.Content);
+        Assert.Equal("REQUEST DESCENT", MessageText.Format(message.Elements));
         Assert.Equal(CpdlcDownlinkResponseType.ResponseRequired, message.ResponseType);
     }
 
@@ -295,8 +292,104 @@ public class HoppieAcarsConnectionTests : IDisposable
         Assert.Equal("UAL123", message.Sender);
         Assert.Equal(7, message.MessageId);
         Assert.Equal(3, message.MessageReference);
-        Assert.Equal("WILCO", message.Content);
+        Assert.Equal(0, Assert.Single(message.Elements).Id); // WILCO
         Assert.Equal(CpdlcDownlinkResponseType.NoResponse, message.ResponseType);
+    }
+
+    [Fact]
+    public async Task Poll_CpdlcMessage_ParsesElements()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 cpdlc {/data2/5//Y/REQUEST CLIMB TO FL380 DUE TO WEATHER}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var message = await connection.MessageReader.ReadAsync(cts.Token);
+
+        // Assert - DM9 REQUEST CLIMB TO [altitude] and DM65 DUE TO WEATHER
+        Assert.Equal(2, message.Elements.Count);
+        Assert.Equal(9, message.Elements[0].Id);
+        Assert.Equal("FL380", Assert.Single(message.Elements[0].Parameters));
+        Assert.Equal(65, message.Elements[1].Id);
+    }
+
+    [Fact]
+    public async Task Poll_LogonRequest_WritesControlMessage()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 cpdlc {/data2/4//Y/REQUEST LOGON}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var controlMessage = await connection.ControlMessageReader.ReadAsync(cts.Token);
+
+        // Assert - the logon request is a control message, and not a downlink
+        var logonRequest = Assert.IsType<ReceivedLogonRequest>(controlMessage);
+        Assert.Equal("UAL123", logonRequest.Callsign);
+        Assert.False(connection.MessageReader.TryRead(out _));
+    }
+
+    [Fact]
+    public async Task AcceptLogon_RefersToLogonRequest()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 cpdlc {/data2/4//Y/REQUEST LOGON}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await connection.ControlMessageReader.ReadAsync(cts.Token);
+
+        // Act
+        await connection.AcceptLogon("UAL123", 9, CancellationToken.None);
+
+        // Assert
+        var sendRequest = httpHandler.Requests.FirstOrDefault(r =>
+        {
+            var formDataString = r.Content?.ReadAsStringAsync().Result ?? "";
+            return formDataString.Contains("type=cpdlc");
+        });
+
+        Assert.NotNull(sendRequest);
+        var formData = await ParseFormDataFromRequest(sendRequest);
+        Assert.Equal("/data2/9/4/NE/LOGON+ACCEPTED", formData["packet"]);
+    }
+
+    [Fact]
+    public async Task Poll_Logoff_WritesControlMessage()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 cpdlc {/data2/6//N/LOGOFF}}");
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await Task.Delay(100); // Give polling task time to start
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var controlMessage = await connection.ControlMessageReader.ReadAsync(cts.Token);
+
+        // Assert
+        var logoff = Assert.IsType<ReceivedLogoff>(controlMessage);
+        Assert.Equal("UAL123", logoff.Callsign);
     }
 
     [Fact]
@@ -319,10 +412,10 @@ public class HoppieAcarsConnectionTests : IDisposable
 
         // Assert
         Assert.Equal("UAL123", message1.Sender);
-        Assert.Equal("REQUEST DESCENT", message1.Content);
+        Assert.Equal("REQUEST DESCENT", MessageText.Format(message1.Elements));
 
         Assert.Equal("DAL456", message2.Sender);
-        Assert.Equal("REQUEST CLIMB", message2.Content);
+        Assert.Equal("REQUEST CLIMB", MessageText.Format(message2.Elements));
     }
 
     [Fact]
@@ -343,7 +436,7 @@ public class HoppieAcarsConnectionTests : IDisposable
         var message = await connection.MessageReader.ReadAsync(cts.Token);
 
         // Assert
-        Assert.Equal("REQUEST CLIMB DUE TO A/C PERFORMANCE", message.Content);
+        Assert.Equal("REQUEST CLIMB DUE TO A/C PERFORMANCE", MessageText.Format(message.Elements));
     }
 
     [Theory]
@@ -376,7 +469,7 @@ public class HoppieAcarsConnectionTests : IDisposable
     {
         // Arrange
         var httpHandler = new TestHttpMessageHandler();
-        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 cpdlc {{/data2///N/LOGOFF}}}}");
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 cpdlc {{/data2///N/ROGER}}}}");
         httpHandler.SetResponse(HttpStatusCode.OK, "ok");
         var connection = CreateConnection(httpHandler);
 
@@ -419,7 +512,7 @@ public class HoppieAcarsConnectionTests : IDisposable
         Assert.Equal(CpdlcDownlinkResponseType.NoResponse, message.ResponseType);
         Assert.Equal(
             "OVER MEPAB AT 0501Z, FL380, ESTIMATING ISTEM AT 0533Z, NEXT MISLY. ETA AT 0736Z, 39.60 X 1000 KG FUEL REMAINING.",
-            message.Content);
+            MessageText.Format(message.Elements));
 
         await connection.DisposeAsync();
         _connections.Remove(connection);

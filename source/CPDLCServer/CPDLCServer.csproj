@@ -40,6 +40,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\CPDLC.Messages\CPDLC.Messages.csproj" />
       <ProjectReference Include="..\CPDLCServer.Contracts\CPDLCServer.Contracts.csproj" />
     </ItemGroup>
 

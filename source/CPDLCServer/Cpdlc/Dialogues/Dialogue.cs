@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
 using Serilog;
@@ -49,12 +50,11 @@ public class Dialogue
         int? messageReference,
         string recipient,
         string senderCallsign,
-        CpdlcUplinkResponseType responseType,
-        AlertType alertType,
-        string content,
+        IReadOnlyList<UplinkMessageElement> elements,
+        bool canAction,
         DateTimeOffset sent)
     {
-        var message = new UplinkMessage(Id, messageId, messageReference, recipient, senderCallsign, responseType, alertType, content, sent);
+        var message = new UplinkMessage(Id, messageId, messageReference, recipient, senderCallsign, elements, canAction, sent);
         AddMessage(message);
         return message;
     }
@@ -64,11 +64,10 @@ public class Dialogue
         int? messageReference,
         string sender,
         CpdlcDownlinkResponseType responseType,
-        AlertType alertType,
-        string content,
+        IReadOnlyList<DownlinkMessageElement> elements,
         DateTimeOffset received)
     {
-        var message = new DownlinkMessage(Id, messageId, messageReference, sender, responseType, alertType, content, received);
+        var message = new DownlinkMessage(Id, messageId, messageReference, sender, responseType, elements, received);
         AddMessage(message);
         return message;
     }
@@ -133,9 +132,9 @@ public class Dialogue
         TryClose(now);
     }
 
-    // Adds an error message from the aircraft, then closes all open messages, because no response can arrive.
+    // Adds an ERROR message from the aircraft, then closes all open messages, because no response can arrive.
     // The error message refers to the first open message.
-    public void AbortWithError(int messageId, string content, DateTimeOffset now)
+    public void AbortWithError(int messageId, string errorInformation, DateTimeOffset now)
     {
         var openMessage = _messages.FirstOrDefault(m => !m.IsClosed);
 
@@ -144,8 +143,7 @@ public class Dialogue
             openMessage?.MessageId,
             AircraftCallsign,
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.Medium,
-            content,
+            [new DownlinkMessageElement(DownlinkElementIds.Error, [errorInformation])],
             now);
 
         Abort(now);
@@ -159,9 +157,20 @@ public class Dialogue
         if (downlink is null)
             throw new InvalidOperationException($"Downlink message {downlinkMessageId} not found in dialogue");
 
-        Log.Debug("[Dialogue {DialogueId}] Acknowledging downlink {DownlinkId} (IsClosed: {IsClosed}, Content: {Content})",
-            Id, downlinkMessageId, downlink.IsClosed, downlink.Content);
+        Log.Debug("[Dialogue {DialogueId}] Acknowledging downlink {DownlinkId} (IsClosed: {IsClosed}, Elements: {@Elements})",
+            Id, downlinkMessageId, downlink.IsClosed, downlink.Elements);
         downlink.Acknowledge(now);
+    }
+
+    public void MarkUplinkActioned(int uplinkMessageId)
+    {
+        var uplink = _messages.OfType<UplinkMessage>()
+            .FirstOrDefault(ul => ul.MessageId == uplinkMessageId);
+
+        if (uplink is null)
+            throw new InvalidOperationException($"Uplink message {uplinkMessageId} not found in dialogue");
+
+        uplink.MarkActioned();
     }
 
     public void MarkTransmissionFailed(int uplinkMessageId)
@@ -214,8 +223,8 @@ public class Dialogue
                 break;
 
             case UplinkMessage uplink when uplink.MessageReference is not null:
-                Log.Debug("[Dialogue {DialogueId}] Uplink {UplinkId} references downlink {DownlinkId} but cannot close (Content: {Content})",
-                    Id, uplink.MessageId, uplink.MessageReference.Value, uplink.Content);
+                Log.Debug("[Dialogue {DialogueId}] Uplink {UplinkId} references downlink {DownlinkId} but cannot close (Elements: {@Elements})",
+                    Id, uplink.MessageId, uplink.MessageReference.Value, uplink.Elements);
                 break;
 
             case UplinkMessage uplink when uplink.MessageReference is null:
@@ -248,20 +257,20 @@ public class Dialogue
     bool CanCloseUplink(DownlinkMessage downlink)
     {
         // STANDBY responses do not close uplinks
-        return !downlink.Content.Equals("STANDBY");
+        return !downlink.HasElement(DownlinkElementIds.Standby);
     }
 
     bool CanCloseDownlink(UplinkMessage uplinkMessage)
     {
         // STANDBY and REQUEST DEFERRED responses do not close downlinks
-        return !uplinkMessage.Content.Equals("STANDBY") && !uplinkMessage.Content.Equals("REQUEST DEFERRED");
+        return !uplinkMessage.HasElement(UplinkElementIds.Standby) && !uplinkMessage.HasElement(UplinkElementIds.RequestDeferred);
     }
 
     bool ShouldAutoArchive(UplinkMessage uplinkMessage)
     {
-        // Auto-archive dialogues with these uplink messages
-        return uplinkMessage.Content.Equals("LOGON ACCEPTED") ||
-               uplinkMessage.Content.Equals("UNABLE DUE TO AIRSPACE RESTRICTIONS") ||
-               uplinkMessage.Content.Equals("UNABLE DUE TO TRAFFIC");
+        // Auto-archive dialogues with UNABLE DUE TO TRAFFIC or UNABLE DUE TO AIRSPACE RESTRICTION
+        var elementIds = uplinkMessage.Elements.Select(e => e.Id).ToArray();
+        return elementIds.SequenceEqual([UplinkElementIds.Unable, UplinkElementIds.DueToTraffic]) ||
+               elementIds.SequenceEqual([UplinkElementIds.Unable, UplinkElementIds.DueToAirspaceRestriction]);
     }
 }

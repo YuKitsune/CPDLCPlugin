@@ -9,6 +9,11 @@
 
     <ItemGroup>
       <PackageReference Include="System.Text.Json" Version="10.0.1" />
+      <PackageReference Include="Polyfill" Version="7.0.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\CPDLC.Messages\CPDLC.Messages.csproj" />
     </ItemGroup>
 
 </Project>

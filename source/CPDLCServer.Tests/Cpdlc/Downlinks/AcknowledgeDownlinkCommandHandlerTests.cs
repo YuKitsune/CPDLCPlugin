@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Tests.Mocks;
@@ -21,8 +22,7 @@ public class AcknowledgeDownlinkCommandHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT FL350",
+            [new DownlinkMessageElement(10, ["FL350"])],
             clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
@@ -59,8 +59,7 @@ public class AcknowledgeDownlinkCommandHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT FL350",
+            [new DownlinkMessageElement(10, ["FL350"])],
             clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
@@ -96,8 +95,7 @@ public class AcknowledgeDownlinkCommandHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT FL350",
+            [new DownlinkMessageElement(10, ["FL350"])],
             clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
@@ -157,8 +155,7 @@ public class AcknowledgeDownlinkCommandHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT FL350",
+            [new DownlinkMessageElement(10, ["FL350"])],
             clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 

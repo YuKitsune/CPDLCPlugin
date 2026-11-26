@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
@@ -41,8 +42,7 @@ public class TerminateConnectionHandlerTests
             null,
             callsign,
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT",
+            [new DownlinkMessageElement(67, ["REQUEST DESCENT"])],
             clock.UtcNow());
 
         await dialogueRepository.Add(dialogue, CancellationToken.None);
@@ -116,8 +116,7 @@ public class TerminateConnectionHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "WHEN CAN WE EXPECT HIGHER LEVEL",
+            [new DownlinkMessageElement(67, ["WHEN CAN WE EXPECT HIGHER LEVEL"])],
             clock.UtcNow());
         await dialogueRepository.Add(closedDialogue, CancellationToken.None);
 

@@ -11,10 +11,12 @@ namespace CPDLCPlugin.ViewModels;
 public partial class CurrentMessageViewModel : ObservableObject
 {
     readonly int _maxMessageDisplayLength;
+    readonly IReadOnlyCollection<int> _flaggedElementIds;
 
-    public CurrentMessageViewModel(DialogueDto dialogue, CpdlcMessageDto message, int maxMessageDisplayLength)
+    public CurrentMessageViewModel(DialogueDto dialogue, CpdlcMessageDto message, int maxMessageDisplayLength, IReadOnlyCollection<int> flaggedElementIds)
     {
         _maxMessageDisplayLength = maxMessageDisplayLength;
+        _flaggedElementIds = flaggedElementIds;
         UpdateMessage(dialogue, message);
     }
 
@@ -31,8 +33,8 @@ public partial class CurrentMessageViewModel : ObservableObject
 
         var formattedContent = newMessage switch
         {
-            UplinkMessageDto uplinkMessageDto => uplinkMessageDto.FormattedContent(),
-            DownlinkMessageDto downlinkMessageDto => downlinkMessageDto.Content,
+            UplinkMessageDto uplinkMessageDto => uplinkMessageDto.Text(),
+            DownlinkMessageDto downlinkMessageDto => downlinkMessageDto.Text(),
             _ => string.Empty
         };
 
@@ -116,11 +118,17 @@ public partial class CurrentMessageViewModel : ObservableObject
 
         sb.Append(content.Length > _maxMessageDisplayLength ? "*" : " ");
 
-        var isHighPriority = Message.AlertType != AlertType.None;
-        sb.Append(isHighPriority ? "!" : " ");
+        // "P" has priority over "!" (flagged)
+        var hasFreeText = Message switch
+        {
+            UplinkMessageDto uplink => uplink.HasFreeText(),
+            DownlinkMessageDto downlink => downlink.HasFreeText(),
+            _ => false
+        };
+        var isFlagged = Message is DownlinkMessageDto flaggedDownlink && flaggedDownlink.IsFlagged(_flaggedElementIds);
+        sb.Append(hasFreeText ? "P" : isFlagged ? "!" : " ");
 
-        var hasPilotFreeText = false; // TODO
-        sb.Append(hasPilotFreeText ? "P" : " ");
+        sb.Append(Message is UplinkMessageDto uplinkMessage && uplinkMessage.IsNotActioned(Dialogue) ? "X" : " ");
 
         return sb.ToString();
     }

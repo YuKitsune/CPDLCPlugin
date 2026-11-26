@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.AcarsConnections;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -18,9 +19,8 @@ public class UplinkTransmitterTests
         null,
         "UAL123",
         "BN-TSN_FSS",
-        CpdlcUplinkResponseType.WilcoUnable,
-        AlertType.None,
-        "CLIMB TO FL410",
+        [new UplinkMessageElement(20, ["FL410"])],
+        false,
         DateTimeOffset.UtcNow);
 
     [Fact]

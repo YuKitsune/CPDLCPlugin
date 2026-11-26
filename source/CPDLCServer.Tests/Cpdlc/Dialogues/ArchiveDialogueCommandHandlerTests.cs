@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -19,8 +20,7 @@ public class ArchiveDialogueCommandHandlerTests
         var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None, "ROGER",
+            [new UplinkMessageElement(3, [])], false,
             clock.UtcNow());
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -46,13 +46,11 @@ public class ArchiveDialogueCommandHandlerTests
         var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None, "CLIMB TO FL350",
+            [new UplinkMessageElement(20, ["FL350"])], false,
             clock.UtcNow());
         var downlink = dialogue.AddDownlink(
             2, 1, "UAL123",
-            CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None, "WILCO",
+            CpdlcDownlinkResponseType.NoResponse, [new DownlinkMessageElement(0, [])],
             clock.UtcNow());
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -81,8 +79,7 @@ public class ArchiveDialogueCommandHandlerTests
         var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None, "CLIMB TO FL350",
+            [new UplinkMessageElement(20, ["FL350"])], false,
             clock.UtcNow());
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -110,8 +107,7 @@ public class ArchiveDialogueCommandHandlerTests
         var dialogue = new Dialogue("UAL123", "YBBB");
         dialogue.AddUplink(
             1, null, "UAL123", "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None, "ROGER",
+            [new UplinkMessageElement(3, [])], false,
             clock.UtcNow());
         dialogue.Archive(clock.UtcNow());
         await repository.Add(dialogue, CancellationToken.None);

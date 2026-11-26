@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using CPDLC.Messages;
 
 namespace CPDLCServer.Contracts;
 
@@ -120,14 +121,16 @@ public class UplinkMessageDto : CpdlcMessageDto
     public required string Recipient { get; init; }
     public required string SenderCallsign { get; init; }
     public required CpdlcUplinkResponseType ResponseType { get; init; }
-    public required string Content { get; init; }
+    public required IReadOnlyList<UplinkMessageElement> Elements { get; init; }
     public required DateTimeOffset Sent { get; init; }
     public required bool IsClosedManually { get; init; }
     public required bool IsPilotLate { get; init; }
     public required bool IsTransmissionFailed { get; init; }
 
-    [JsonIgnore]
-    public bool IsSpecial => Content is "STANDBY" or "REQUEST DEFERRED";
+    // CanAction is true when the plugin can update the FDR from the message.
+    // Actioned is true when the plugin updated the FDR from the message.
+    public required bool CanAction { get; init; }
+    public required bool Actioned { get; init; }
 }
 
 public class DownlinkMessageDto : CpdlcMessageDto
@@ -135,12 +138,9 @@ public class DownlinkMessageDto : CpdlcMessageDto
     public override DateTimeOffset Time => Received;
     public required string Sender { get; init; }
     public required CpdlcDownlinkResponseType ResponseType { get; init; }
-    public required string Content { get; init; }
+    public required IReadOnlyList<DownlinkMessageElement> Elements { get; init; }
     public required DateTimeOffset Received { get; init; }
     public required bool IsControllerLate { get; init; }
-
-    [JsonIgnore]
-    public bool IsSpecial => Content is "STANDBY";
 }
 
 

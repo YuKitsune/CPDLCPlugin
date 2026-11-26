@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
@@ -44,8 +45,8 @@ public class CpdlcDbContextTests
         // Arrange
         using var database = new TestDatabase();
         var dialogue = new Dialogue("UAL123", "YBBB");
-        dialogue.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST CLIMB TO FL410", Start);
-        dialogue.AddDownlink(2, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST DIRECT TO BIXAD", Start);
+        dialogue.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, [new DownlinkMessageElement(9, ["FL410"])], Start);
+        dialogue.AddDownlink(2, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, [new DownlinkMessageElement(22, ["BIXAD"])], Start);
         await using (var dbContext = database.CreateDbContext())
         {
             await new DialogueRepository(dbContext).Add(dialogue, CancellationToken.None);
@@ -92,7 +93,7 @@ public class CpdlcDbContextTests
         // Arrange
         using var database = new TestDatabase();
         var dialogue = new Dialogue("UAL123", "YBBB");
-        dialogue.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST CLIMB TO FL410", Start);
+        dialogue.AddDownlink(1, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, [new DownlinkMessageElement(9, ["FL410"])], Start);
         await using (var dbContext = database.CreateDbContext())
         {
             await new DialogueRepository(dbContext).Add(dialogue, CancellationToken.None);
@@ -104,7 +105,7 @@ public class CpdlcDbContextTests
         {
             await using var dbContext = database.CreateDbContext();
             var saved = await new DialogueRepository(dbContext).FindById(dialogue.Id, CancellationToken.None);
-            saved!.AddUplink(minutes + 10, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.NoResponse, AlertType.None, "STANDBY", Start.AddMinutes(minutes));
+            saved!.AddUplink(minutes + 10, null, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(1, [])], false, Start.AddMinutes(minutes));
             await dbContext.SaveChangesAsync();
         }
 

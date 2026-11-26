@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.AcarsConnections;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -35,8 +36,8 @@ public class SendMotdCommandHandler(
             new BeginDialogueCommand(
                 aircraftConnection.StationId,
                 request.Callsign,
-                CpdlcUplinkResponseType.NoResponse,
-                configuration.Motd),
+                [new UplinkMessageElement(UplinkElementIds.FreeText, [configuration.Motd])],
+                false),
             cancellationToken);
     }
 }

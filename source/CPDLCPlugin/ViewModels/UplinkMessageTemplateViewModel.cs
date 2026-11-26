@@ -7,55 +7,35 @@ namespace CPDLCPlugin.ViewModels;
 public partial class UplinkMessageTemplateViewModel : ObservableObject
 {
     [ObservableProperty] string content;
-    [ObservableProperty] UplinkResponseType responseType;
-
-    // TODO: Make these message types and indicators configurable
-    [ObservableProperty] bool isFreeText;
-    [ObservableProperty] bool isRevision;
+    [ObservableProperty] int elementId;
 
     [ObservableProperty] string displayText;
     [ObservableProperty] int maxCharacters;
 
     public UplinkMessageReference MessageReference { get; }
 
-    public UplinkMessageTemplateViewModel(string content, UplinkResponseType responseType, bool isFreeText, bool isRevision, UplinkMessageReference messageReference)
+    public UplinkMessageTemplateViewModel(string content, int elementId, UplinkMessageReference messageReference)
     {
         Content = content;
-        ResponseType = responseType;
-        IsFreeText = isFreeText;
-        IsRevision = isRevision;
+        ElementId = elementId;
         MessageReference = messageReference;
         MaxCharacters = 250; // TODO: Calculate based on view width
-        DisplayText = GetDisplayText(Content, MaxCharacters, IsFreeText, IsRevision);
+        DisplayText = GetDisplayText(Content, ElementId, MaxCharacters);
     }
 
-    static string GetDisplayText(string fullContent, int maxCharacters, bool isFreeText, bool isRevision)
+    static string GetDisplayText(string fullContent, int elementId, int maxCharacters)
     {
         var sb = new StringBuilder();
 
         sb.Append(" ");
 
-        if (isFreeText)
+        // "F:" for free text, and "E:" for distress free text
+        sb.Append(elementId switch
         {
-            sb.Append("F");
-        }
-        else if (isRevision)
-        {
-            sb.Append("E");
-        }
-        else
-        {
-            sb.Append(" ");
-        }
-
-        if (isFreeText || isRevision)
-        {
-            sb.Append(":");
-        }
-        else
-        {
-            sb.Append(" ");
-        }
+            UplinkElementIds.FreeText => "F:",
+            UplinkElementIds.DistressFreeText => "E:",
+            _ => "  "
+        });
 
         var remainingLength = maxCharacters - sb.Length;
         if (fullContent.Length > remainingLength)

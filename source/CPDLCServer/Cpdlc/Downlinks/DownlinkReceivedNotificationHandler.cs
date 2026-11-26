@@ -25,57 +25,14 @@ public class DownlinkReceivedNotificationHandler(
         var downlink = notification.Downlink;
         logger.Information("Downlink message received from {Callsign}", downlink.Sender);
 
-        // Scenario 1: Logon request
-        // TODO: Handle this in hoppies
-        if (ControlMessages.IsLogonRequest(downlink))
-        {
-            await mediator.Send(
-                new LogonCommand(
-                    downlink.MessageId,
-                    downlink.MessageReference,
-                    downlink.Sender,
-                    downlink.ResponseType,
-                    downlink.AlertType,
-                    downlink.Content,
-                    downlink.Received,
-                    notification.AcarsConnectionId),
-                cancellationToken);
-            return;
-        }
-
         var aircraftConnection = await aircraftRepository.Find(
             new(downlink.Sender, notification.AcarsConnectionId),
             cancellationToken);
 
-        // Scenario 2: Unknown aircraft
+        // Scenario 1: Unknown aircraft
         if (aircraftConnection is null)
         {
             logger.Information("{Callsign} is not known by this ATSU, ignoring downlink", downlink.Sender);
-            return;
-        }
-
-        // Scenario 3: Logoff notice
-        // Show the logoff to the controller, then terminate the connection.
-        // Return early so that the terminated connection is not promoted to CurrentDataAuthority.
-        // TODO: Handle this in hoppies
-        if (ControlMessages.IsLogoffNotice(downlink))
-        {
-            var logoffDialogue = new Dialogue(downlink.Sender, notification.StationId);
-            logoffDialogue.AddDownlink(
-                downlink.MessageId,
-                downlink.MessageReference,
-                downlink.Sender,
-                downlink.ResponseType,
-                downlink.AlertType,
-                downlink.Content,
-                downlink.Received);
-
-            await dialogueRepository.Add(logoffDialogue, cancellationToken);
-            logger.Information("Dialogue {DialogueId} created for logoff from {Callsign}", logoffDialogue.Id, downlink.Sender);
-
-            await mediator.Publish(new DialogueChangedNotification(logoffDialogue), cancellationToken);
-
-            await mediator.Send(new TerminateConnectionRequest(downlink.Sender, notification.AcarsConnectionId), cancellationToken);
             return;
         }
 
@@ -108,7 +65,7 @@ public class DownlinkReceivedNotificationHandler(
 
         aircraftConnection.LogLastSeen(clock.UtcNow());
 
-        // Scenario 4: Aircraft replies to an uplink
+        // Scenario 2: Aircraft replies to an uplink
         if (downlink.MessageReference.HasValue)
         {
             var dialogue = await dialogueRepository.FindOpenDialogueByUplink(
@@ -118,7 +75,7 @@ public class DownlinkReceivedNotificationHandler(
                 cancellationToken);
             if (dialogue is not null)
             {
-                dialogue.AddDownlink(downlink.MessageId, downlink.MessageReference, downlink.Sender, downlink.ResponseType, downlink.AlertType, downlink.Content, downlink.Received);
+                dialogue.AddDownlink(downlink.MessageId, downlink.MessageReference, downlink.Sender, downlink.ResponseType, downlink.Elements, downlink.Received);
                 logger.Information("Downlink from {Callsign} appended to dialogue {DialogueId}", downlink.Sender, dialogue.Id);
             }
             else
@@ -132,8 +89,7 @@ public class DownlinkReceivedNotificationHandler(
                     downlink.MessageReference,
                     downlink.Sender,
                     downlink.ResponseType,
-                    downlink.AlertType,
-                    downlink.Content,
+                    downlink.Elements,
                     downlink.Received);
 
                 await dialogueRepository.Add(dialogue, cancellationToken);
@@ -141,7 +97,7 @@ public class DownlinkReceivedNotificationHandler(
 
             await mediator.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
         }
-        else // Scenario 5: Aircraft initiates a new dialogue
+        else // Scenario 3: Aircraft initiates a new dialogue
         {
             var dialogue = new Dialogue(downlink.Sender, notification.StationId);
             dialogue.AddDownlink(
@@ -149,8 +105,7 @@ public class DownlinkReceivedNotificationHandler(
                 downlink.MessageReference,
                 downlink.Sender,
                 downlink.ResponseType,
-                downlink.AlertType,
-                downlink.Content,
+                downlink.Elements,
                 downlink.Received);
 
             await dialogueRepository.Add(dialogue, cancellationToken);

@@ -481,11 +481,11 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 {
                     b.HasBaseType("CPDLCServer.Cpdlc.Dialogues.CpdlcMessage");
 
-                    b.Property<string>("Content")
+                    b.Property<string>("Elements")
                         .IsRequired()
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("text")
-                        .HasColumnName("Content");
+                        .HasColumnName("Elements");
 
                     b.Property<bool>("IsControllerLate")
                         .HasColumnType("boolean");
@@ -509,17 +509,23 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                 {
                     b.HasBaseType("CPDLCServer.Cpdlc.Dialogues.CpdlcMessage");
 
+                    b.Property<bool>("Actioned")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("CanAction")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("ClosedManually")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Content")
+                    b.Property<bool>("DidTransmissionFail")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Elements")
                         .IsRequired()
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("text")
-                        .HasColumnName("Content");
-
-                    b.Property<bool>("DidTransmissionFail")
-                        .HasColumnType("boolean");
+                        .HasColumnName("Elements");
 
                     b.Property<bool>("IsPilotLate")
                         .HasColumnType("boolean");

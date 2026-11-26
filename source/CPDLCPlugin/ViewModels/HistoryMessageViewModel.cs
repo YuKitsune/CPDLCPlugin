@@ -12,10 +12,12 @@ public partial class HistoryMessageViewModel : ObservableObject
 {
     readonly int _maxMessageDisplayLength;
 
+    public DialogueDto Dialogue { get; }
     public CpdlcMessageDto OriginalMessage { get; }
 
-    public HistoryMessageViewModel(CpdlcMessageDto message, int maxMessageDisplayLength)
+    public HistoryMessageViewModel(DialogueDto dialogue, CpdlcMessageDto message, int maxMessageDisplayLength)
     {
+        Dialogue = dialogue;
         OriginalMessage = message;
         _maxMessageDisplayLength = maxMessageDisplayLength;
 
@@ -24,8 +26,8 @@ public partial class HistoryMessageViewModel : ObservableObject
 
         var formattedContent = message switch
         {
-            UplinkMessageDto uplinkMessage => uplinkMessage.FormattedContent(),
-            DownlinkMessageDto downlinkMessage => downlinkMessage.Content,
+            UplinkMessageDto uplinkMessage => uplinkMessage.Text(),
+            DownlinkMessageDto downlinkMessage => downlinkMessage.Text(),
             _ => string.Empty
         };
 
@@ -127,9 +129,7 @@ public partial class HistoryMessageViewModel : ObservableObject
             sb.Append(" ");
         }
 
-        // TODO: Revisit actioning messages
-        // sb.Append(message is UplinkMessageDto { CanAction: true, Actioned: false } ? "X" : " ");
-        sb.Append(" ");
+        sb.Append(message is UplinkMessageDto uplink && uplink.IsNotActioned(Dialogue) ? "X" : " ");
 
         sb.Append(message is UplinkMessageDto { IsClosedManually: true } ? "M" : " ");
 

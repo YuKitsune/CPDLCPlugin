@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Tests.Mocks;
@@ -15,7 +16,7 @@ public class MarkUplinkTransmissionFailedCommandHandlerTests
         var publisher = new TestPublisher();
 
         var dialogue = new Dialogue("UAL123", "YBBB");
-        var uplink = dialogue.AddUplink(3, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", DateTimeOffset.UtcNow);
+        var uplink = dialogue.AddUplink(3, null, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, DateTimeOffset.UtcNow);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new MarkUplinkTransmissionFailedCommandHandler(dialogueRepository, publisher, Logger.None);

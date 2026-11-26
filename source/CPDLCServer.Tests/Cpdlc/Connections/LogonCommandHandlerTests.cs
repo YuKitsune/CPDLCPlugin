@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Controllers;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
@@ -12,14 +13,8 @@ namespace CPDLCServer.Tests.Cpdlc.Connections;
 
 public class LogonCommandHandlerTests
 {
-    static LogonCommand BuildLogonCommand(TestClock clock) => new(
-        DownlinkId: 1,
-        DownlinkMessageReference: null,
+    static LogonCommand BuildLogonCommand() => new(
         Callsign: "QFA1",
-        DownlinkResponseType: CpdlcDownlinkResponseType.NoResponse,
-        DownlinkAlertType: AlertType.None,
-        DownlinkContent: "REQUEST LOGON",
-        DownlinkReceived: clock.UtcNow(),
         AcarsConnectionId: "hoppies-ybbb");
 
     static LogonCommandHandler BuildHandler(
@@ -38,7 +33,7 @@ public class LogonCommandHandlerTests
             messageIdProvider,
             clock,
             mediator,
-            new TestUplinkTransmitter(),
+            new TestUnitOfWork(),
             Logger.None);
 
     [Fact]
@@ -53,18 +48,17 @@ public class LogonCommandHandlerTests
         var messageIdProvider = new TestMessageIdProvider();
         var mediator = Substitute.For<IMediator>();
 
-        var command = BuildLogonCommand(clock);
+        var command = BuildLogonCommand();
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
 
         // Act
         await handler.Handle(command, CancellationToken.None);
 
-        // Assert - rejection uplink transmitted via the ACARS connection
+        // Assert - the rejection is sent by the ACARS connection
         var acarsConnection = (TestAcarsConnection)await acarsConnectionManager.GetAcarsConnection("hoppies-ybbb", CancellationToken.None);
-        Assert.Single(acarsConnection.SentMessages);
-        Assert.Equal("LOGON REJECTED. NO ATS AVBL.", acarsConnection.SentMessages[0].Content);
-        Assert.Equal("QFA1", acarsConnection.SentMessages[0].Recipient);
-        Assert.Equal(1, acarsConnection.SentMessages[0].MessageReference);
+        var rejectedLogon = Assert.Single(acarsConnection.RejectedLogons);
+        Assert.Equal("QFA1", rejectedLogon.Callsign);
+        Assert.Empty(acarsConnection.AcceptedLogons);
     }
 
     [Fact]
@@ -79,7 +73,7 @@ public class LogonCommandHandlerTests
         var messageIdProvider = new TestMessageIdProvider();
         var mediator = Substitute.For<IMediator>();
 
-        var command = BuildLogonCommand(clock);
+        var command = BuildLogonCommand();
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
 
         // Act
@@ -110,18 +104,17 @@ public class LogonCommandHandlerTests
             "1234567");
         await controllerRepository.Add(controller, CancellationToken.None);
 
-        var command = BuildLogonCommand(clock);
+        var command = BuildLogonCommand();
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
 
         // Act
         await handler.Handle(command, CancellationToken.None);
 
-        // Assert - acceptance uplink transmitted
+        // Assert - the acceptance is sent by the ACARS connection
         var acarsConnection = (TestAcarsConnection)await acarsConnectionManager.GetAcarsConnection("hoppies-ybbb", CancellationToken.None);
-        Assert.Single(acarsConnection.SentMessages);
-        Assert.Equal("LOGON ACCEPTED", acarsConnection.SentMessages[0].Content);
-        Assert.Equal("QFA1", acarsConnection.SentMessages[0].Recipient);
-        Assert.Equal(1, acarsConnection.SentMessages[0].MessageReference);
+        var acceptedLogon = Assert.Single(acarsConnection.AcceptedLogons);
+        Assert.Equal("QFA1", acceptedLogon.Callsign);
+        Assert.Empty(acarsConnection.RejectedLogons);
     }
 
     [Fact]
@@ -144,7 +137,7 @@ public class LogonCommandHandlerTests
             "1234567");
         await controllerRepository.Add(controller, CancellationToken.None);
 
-        var command = BuildLogonCommand(clock);
+        var command = BuildLogonCommand();
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
 
         // Act
@@ -160,7 +153,7 @@ public class LogonCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_NewConnection_PersistsDialogueWithDownlinkAndUplink()
+    public async Task Handle_NewConnection_DoesNotCreateDialogue()
     {
         // Arrange
         var clock = new TestClock();
@@ -171,35 +164,17 @@ public class LogonCommandHandlerTests
         var messageIdProvider = new TestMessageIdProvider();
         var mediator = Substitute.For<IMediator>();
 
-        var controller = new ControllerInfo(
-            Guid.NewGuid(),
-            "Connection-1",
-            "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
-        await controllerRepository.Add(controller, CancellationToken.None);
+        await AddController(controllerRepository);
 
-        var command = BuildLogonCommand(clock);
+        var command = BuildLogonCommand();
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
 
         // Act
         await handler.Handle(command, CancellationToken.None);
 
-        // Assert - dialogue contains the original LOGON REQUEST downlink and the LOGON ACCEPTED uplink
-        var dialogues = await dialogueRepository.All(CancellationToken.None);
-        Assert.Single(dialogues);
-        Assert.Equal("QFA1", dialogues[0].AircraftCallsign);
-        Assert.Equal(2, dialogues[0].Messages.Count);
-
-        var downlink = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
-        Assert.Equal("REQUEST LOGON", downlink.Content);
-        Assert.Equal(1, downlink.MessageId);
-
-        var uplink = Assert.IsType<UplinkMessage>(dialogues[0].Messages[1]);
-        Assert.Equal("LOGON ACCEPTED", uplink.Content);
-        Assert.Equal(1, uplink.MessageReference);
-
-        await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
+        // Assert - the logon is a control message of the ACARS connection, so it is not in a dialogue
+        Assert.Empty(await dialogueRepository.All(CancellationToken.None));
+        await mediator.DidNotReceive().Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
     }
 
     static async Task<AircraftConnection> AddExistingConnection(TestAircraftRepository aircraftRepository, TestClock clock)
@@ -238,7 +213,7 @@ public class LogonCommandHandlerTests
         await AddController(controllerRepository);
         var existing = await AddExistingConnection(aircraftRepository, clock);
 
-        var command = BuildLogonCommand(clock);
+        var command = BuildLogonCommand();
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
 
         // Act
@@ -246,7 +221,7 @@ public class LogonCommandHandlerTests
 
         // Assert - the logon is accepted
         var acarsConnection = (TestAcarsConnection)await acarsConnectionManager.GetAcarsConnection("hoppies-ybbb", CancellationToken.None);
-        Assert.Equal("LOGON ACCEPTED", Assert.Single(acarsConnection.SentMessages).Content);
+        Assert.Equal("QFA1", Assert.Single(acarsConnection.AcceptedLogons).Callsign);
 
         // Assert - a new connection replaces the existing connection, and does not keep its state
         var connection = Assert.Single(await aircraftRepository.All(CancellationToken.None));
@@ -275,7 +250,7 @@ public class LogonCommandHandlerTests
         await AddController(controllerRepository);
         await AddExistingConnection(aircraftRepository, clock);
 
-        var command = BuildLogonCommand(clock);
+        var command = BuildLogonCommand();
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
 
         // Act
@@ -304,15 +279,15 @@ public class LogonCommandHandlerTests
         await AddExistingConnection(aircraftRepository, clock);
 
         var openDialogue = new Dialogue("QFA1", "YBBB");
-        openDialogue.AddUplink(5, null, "QFA1", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", clock.UtcNow());
+        openDialogue.AddUplink(5, null, "QFA1", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, clock.UtcNow());
         await dialogueRepository.Add(openDialogue, CancellationToken.None);
 
         // A dialogue with a different ATSU is not part of the connection
         var otherStationDialogue = new Dialogue("QFA1", "YMMM");
-        otherStationDialogue.AddUplink(6, null, "QFA1", "ML-IND_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL390", clock.UtcNow());
+        otherStationDialogue.AddUplink(6, null, "QFA1", "ML-IND_FSS", [new UplinkMessageElement(20, ["FL390"])], false, clock.UtcNow());
         await dialogueRepository.Add(otherStationDialogue, CancellationToken.None);
 
-        var command = BuildLogonCommand(clock);
+        var command = BuildLogonCommand();
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
 
         // Act
@@ -321,7 +296,7 @@ public class LogonCommandHandlerTests
         // Assert - the open dialogue is closed with the reset message
         Assert.True(openDialogue.IsClosed);
         var resetMessage = Assert.IsType<DownlinkMessage>(openDialogue.Messages.Last());
-        Assert.Equal("CPDLC CONNECTION RESET", resetMessage.Content);
+        Assert.Equal("ERROR CPDLC CONNECTION RESET", MessageText.Format(resetMessage.Elements));
         Assert.Equal(10, resetMessage.MessageId);
         Assert.Equal(5, resetMessage.MessageReference);
 
@@ -350,7 +325,7 @@ public class LogonCommandHandlerTests
             "1234567");
         await controllerRepository.Add(controller, CancellationToken.None);
 
-        var command = BuildLogonCommand(clock);
+        var command = BuildLogonCommand();
         var handler = BuildHandler(acarsConnectionManager, aircraftRepository, controllerRepository, dialogueRepository, messageIdProvider, clock, mediator);
 
         // Act

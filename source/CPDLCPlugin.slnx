@@ -1,11 +1,12 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path="../docker-compose.yml" />
-    <File Path="../CPDLC.json" />
+    <File Path="../CPDLC.yaml" />
   </Folder>
   <Project Path="../build/_build.csproj">
     <Build Project="false" />
   </Project>
+  <Project Path="CPDLC.Messages/CPDLC.Messages.csproj" />
   <Project Path="CPDLCPlugin.Tests/CPDLCPlugin.Tests.csproj" />
   <Project Path="CPDLCPlugin/CPDLCPlugin.csproj" />
   <Project Path="CPDLCServer.Contracts/CPDLCServer.Contracts.csproj" />

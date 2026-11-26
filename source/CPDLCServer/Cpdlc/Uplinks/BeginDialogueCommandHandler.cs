@@ -19,8 +19,8 @@ public class BeginDialogueCommandHandler(
 {
     public async Task Handle(BeginDialogueCommand request, CancellationToken cancellationToken)
     {
-        logger.Information("Beginning new dialogue with {Recipient} (Content: {Content})",
-            request.Recipient, request.Content);
+        logger.Information("Beginning new dialogue with {Recipient} (Elements: {@Elements})",
+            request.Recipient, request.Elements);
 
         var allAircraft = await aircraftRepository.All(cancellationToken);
         var aircraftConnection =
@@ -42,9 +42,8 @@ public class BeginDialogueCommandHandler(
             null,
             request.Recipient,
             request.Sender,
-            request.ResponseType,
-            AlertType.None,
-            request.Content,
+            request.Elements,
+            request.CanAction,
             clock.UtcNow());
 
         await dialogueRepository.Add(dialogue, cancellationToken);

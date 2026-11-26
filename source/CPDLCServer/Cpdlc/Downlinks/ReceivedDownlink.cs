@@ -1,4 +1,4 @@
-using CPDLCServer.Cpdlc.Dialogues;
+using CPDLC.Messages;
 namespace CPDLCServer.Cpdlc.Downlinks;
 
 // Raw downlink data as parsed from an ACARS packet, before being assigned to a dialogue.
@@ -7,6 +7,5 @@ public record ReceivedDownlink(
     int? MessageReference,
     string Sender,
     CpdlcDownlinkResponseType ResponseType,
-    AlertType AlertType,
-    string Content,
+    IReadOnlyList<DownlinkMessageElement> Elements,
     DateTimeOffset Received);

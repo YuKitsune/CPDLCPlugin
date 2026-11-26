@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Controllers;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
@@ -72,8 +73,7 @@ public class DownlinkReceivedNotificationHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT",
+            [new DownlinkMessageElement(67, ["REQUEST DESCENT"])],
             clock.UtcNow());
 
         var notification = new DownlinkReceivedNotification(
@@ -92,7 +92,7 @@ public class DownlinkReceivedNotificationHandlerTests
         Assert.Equal("UAL123", dialogues[0].AircraftCallsign);
         Assert.Single(dialogues[0].Messages);
         var msg = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
-        Assert.Equal("REQUEST DESCENT", msg.Content);
+        Assert.Equal("REQUEST DESCENT", MessageText.Format(msg.Elements));
     }
 
     [Fact]
@@ -129,8 +129,7 @@ public class DownlinkReceivedNotificationHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT",
+            [new DownlinkMessageElement(67, ["REQUEST DESCENT"])],
             clock.UtcNow());
 
         var notification = new DownlinkReceivedNotification(
@@ -182,8 +181,7 @@ public class DownlinkReceivedNotificationHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT",
+            [new DownlinkMessageElement(67, ["REQUEST DESCENT"])],
             clock.UtcNow());
 
         var notification = new DownlinkReceivedNotification(
@@ -254,8 +252,7 @@ public class DownlinkReceivedNotificationHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "NOT CURRENT DATA AUTHORITY",
+            [new DownlinkMessageElement(63, [])],
             clock.UtcNow());
 
         var notification = new DownlinkReceivedNotification(
@@ -320,8 +317,7 @@ public class DownlinkReceivedNotificationHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT",
+            [new DownlinkMessageElement(67, ["REQUEST DESCENT"])],
             clock.UtcNow());
 
         var notification = new DownlinkReceivedNotification(
@@ -362,8 +358,7 @@ public class DownlinkReceivedNotificationHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             clock.UtcNow());
 
         var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
@@ -377,7 +372,7 @@ public class DownlinkReceivedNotificationHandlerTests
         Assert.Equal("UAL123", dialogues[0].AircraftCallsign);
         Assert.Single(dialogues[0].Messages);
         var msg = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
-        Assert.Equal("REQUEST CLIMB FL410", msg.Content);
+        Assert.Equal("REQUEST CLIMB TO FL410", MessageText.Format(msg.Elements));
         Assert.Equal(1, msg.MessageId);
     }
 
@@ -404,9 +399,8 @@ public class DownlinkReceivedNotificationHandlerTests
             null,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMB TO FL410",
+            [new UplinkMessageElement(20, ["FL410"])],
+            false,
             clock.UtcNow());
         await dialogueRepository.Add(existingDialogue, CancellationToken.None);
 
@@ -417,8 +411,7 @@ public class DownlinkReceivedNotificationHandlerTests
             5,
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "WILCO",
+            [new DownlinkMessageElement(0, [])],
             clock.UtcNow().AddSeconds(10));
 
         var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
@@ -432,7 +425,7 @@ public class DownlinkReceivedNotificationHandlerTests
         Assert.Equal(2, allDialogues[0].Messages.Count);
         var appendedMsg = allDialogues[0].Messages.OfType<DownlinkMessage>().FirstOrDefault(m => m.MessageId == 10);
         Assert.NotNull(appendedMsg);
-        Assert.Equal("WILCO", appendedMsg.Content);
+        Assert.Equal("WILCO", MessageText.Format(appendedMsg.Elements));
     }
 
     [Fact]
@@ -462,8 +455,7 @@ public class DownlinkReceivedNotificationHandlerTests
             99, // References uplink that doesn't exist in any open dialogue
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "WILCO",
+            [new DownlinkMessageElement(0, [])],
             clock.UtcNow());
 
         var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
@@ -506,11 +498,11 @@ public class DownlinkReceivedNotificationHandlerTests
         var priorDialogue = new Dialogue("UAL123", "YBBB");
         priorDialogue.AddUplink(
             5, null, "UAL123", "YBBB",
-            CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB FL410",
+            [new UplinkMessageElement(20, ["FL410"])], false,
             clock.UtcNow());
         priorDialogue.AddDownlink(
             3, 5, "UAL123",
-            CpdlcDownlinkResponseType.NoResponse, AlertType.None, "WILCO",
+            CpdlcDownlinkResponseType.NoResponse, [new DownlinkMessageElement(0, [])],
             clock.UtcNow().AddSeconds(30));
         await dialogueRepository.Add(priorDialogue, CancellationToken.None);
 
@@ -524,8 +516,7 @@ public class DownlinkReceivedNotificationHandlerTests
             5, // Same MessageReference as old session's uplink
             "UAL123",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "WILCO",
+            [new DownlinkMessageElement(0, [])],
             clock.UtcNow().AddMinutes(30));
 
         var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
@@ -543,193 +534,9 @@ public class DownlinkReceivedNotificationHandlerTests
     }
 
     [Fact]
-    public async Task Handle_LogoffMessage_TerminatesConnectionAndCreatesDialogue()
-    {
-        // Logoff messages must: (1) trigger connection termination, (2) still flow through
-        // to create a dialogue so the controller sees the logoff notification.
-        // Arrange
-        var clock = new TestClock();
-        var aircraftRepository = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
-        aircraft.RequestLogon(clock.UtcNow());
-        aircraft.AcceptLogon(clock.UtcNow());
-        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
-
-        var controllerRepository = new TestControllerRepository();
-        var dialogueRepository = new TestDialogueRepository();
-        var mediator = Substitute.For<IMediator>();
-        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
-
-        var handler = BuildHandler(aircraftRepository, mediator, clock, controllerRepository, dialogueRepository, hubContext);
-
-        var downlink = new ReceivedDownlink(
-            1, null, "UAL123",
-            CpdlcDownlinkResponseType.NoResponse, AlertType.None,
-            "LOGOFF",
-            clock.UtcNow());
-
-        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
-
-        // Act
-        await handler.Handle(notification, CancellationToken.None);
-
-        // Assert - connection termination was requested
-        await mediator.Received(1).Send(
-            Arg.Is<TerminateConnectionRequest>(r => r.Callsign == "UAL123" && r.AcarsConnectionId == "hoppies-ybbb"),
-            Arg.Any<CancellationToken>());
-
-        // Assert - logoff message still created a dialogue for the controller to see
-        var dialogues = await dialogueRepository.All(CancellationToken.None);
-        Assert.Single(dialogues);
-        var msg = Assert.IsType<DownlinkMessage>(dialogues[0].Messages[0]);
-        Assert.Equal("LOGOFF", msg.Content);
-
-        await mediator.Received(1).Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_LogoffMessage_FromNextDataAuthority_DoesNotPromoteOrNotifyControllers()
-    {
-        // A logoff can be the first downlink after a logon. The terminated connection must not be
-        // promoted, because the AircraftConnectionUpdated event would add the connection again in the plugin.
-        // Arrange
-        var clock = new TestClock();
-        var aircraftRepository = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.NextDataAuthority);
-        aircraft.RequestLogon(clock.UtcNow());
-        aircraft.AcceptLogon(clock.UtcNow());
-        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
-
-        var controllerRepository = new TestControllerRepository();
-        var controller = new ControllerInfo(
-            Guid.NewGuid(),
-            "ConnectionId-1",
-            "YBBB",
-            "BN-TSN_FSS",
-            "1234567");
-        await controllerRepository.Add(controller, CancellationToken.None);
-
-        var dialogueRepository = new TestDialogueRepository();
-        var mediator = Substitute.For<IMediator>();
-        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
-        var clientProxy = Substitute.For<IClientProxy>();
-        hubContext.Clients.Clients(Arg.Any<IReadOnlyList<string>>()).Returns(clientProxy);
-
-        var handler = BuildHandler(aircraftRepository, mediator, clock, controllerRepository, dialogueRepository, hubContext);
-
-        var downlink = new ReceivedDownlink(
-            1, null, "UAL123",
-            CpdlcDownlinkResponseType.NoResponse, AlertType.None,
-            "LOGOFF",
-            clock.UtcNow());
-
-        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
-
-        // Act
-        await handler.Handle(notification, CancellationToken.None);
-
-        // Assert - aircraft is not promoted
-        Assert.Equal(DataAuthorityState.NextDataAuthority, aircraft.DataAuthorityState);
-
-        // Assert - no AircraftConnectionUpdated event was sent to controllers
-        await clientProxy.DidNotReceive().SendCoreAsync(
-            Arg.Any<string>(),
-            Arg.Any<object?[]>(),
-            Arg.Any<CancellationToken>());
-
-        // Assert - connection termination was requested
-        await mediator.Received(1).Send(
-            Arg.Is<TerminateConnectionRequest>(r => r.Callsign == "UAL123" && r.AcarsConnectionId == "hoppies-ybbb"),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_LogoffMessage_PublishesDialogueBeforeTerminatingConnection()
-    {
-        // The logoff dialogue must exist before the connection terminates,
-        // so that the termination can close it if it is still open.
-        // Arrange
-        var clock = new TestClock();
-        var aircraftRepository = new TestAircraftRepository();
-        var aircraft = new AircraftConnection("UAL123", "hoppies-ybbb", "YBBB", DataAuthorityState.CurrentDataAuthority);
-        aircraft.RequestLogon(clock.UtcNow());
-        aircraft.AcceptLogon(clock.UtcNow());
-        await aircraftRepository.Add(new(aircraft.Callsign, aircraft.AcarsConnectionId), aircraft, CancellationToken.None);
-
-        var controllerRepository = new TestControllerRepository();
-        var dialogueRepository = new TestDialogueRepository();
-        var mediator = Substitute.For<IMediator>();
-        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
-
-        var handler = BuildHandler(aircraftRepository, mediator, clock, controllerRepository, dialogueRepository, hubContext);
-
-        var downlink = new ReceivedDownlink(
-            1, null, "UAL123",
-            CpdlcDownlinkResponseType.NoResponse, AlertType.None,
-            "LOGOFF",
-            clock.UtcNow());
-
-        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
-
-        // Act
-        await handler.Handle(notification, CancellationToken.None);
-
-        // Assert
-        Received.InOrder(() =>
-        {
-            mediator.Publish(Arg.Any<DialogueChangedNotification>(), Arg.Any<CancellationToken>());
-            mediator.Send(Arg.Any<TerminateConnectionRequest>(), Arg.Any<CancellationToken>());
-        });
-    }
-
-    [Fact]
-    public async Task Handle_LogonRequest_DispatchesLogonCommand()
-    {
-        // Branch 1: a logon request is forwarded to LogonCommandHandler verbatim and the
-        // notification handler must not touch the dialogue repository itself.
-        // Arrange
-        var clock = new TestClock();
-        var aircraftRepository = new TestAircraftRepository();
-        var controllerRepository = new TestControllerRepository();
-        var dialogueRepository = new TestDialogueRepository();
-        var mediator = Substitute.For<IMediator>();
-        var hubContext = Substitute.For<IHubContext<ControllerHub>>();
-
-        var handler = BuildHandler(aircraftRepository, mediator, clock, controllerRepository, dialogueRepository, hubContext);
-
-        var downlink = new ReceivedDownlink(
-            1,
-            null,
-            "QFA1",
-            CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "REQUEST LOGON",
-            clock.UtcNow());
-
-        var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);
-
-        // Act
-        await handler.Handle(notification, CancellationToken.None);
-
-        // Assert - LogonCommand dispatched with downlink primitives + AcarsConnectionId
-        await mediator.Received(1).Send(
-            Arg.Is<LogonCommand>(c =>
-                c.DownlinkId == 1 &&
-                c.DownlinkMessageReference == null &&
-                c.Callsign == "QFA1" &&
-                c.DownlinkContent == "REQUEST LOGON" &&
-                c.AcarsConnectionId == "hoppies-ybbb"),
-            Arg.Any<CancellationToken>());
-
-        // Notification handler must not have created a dialogue itself - LogonCommandHandler owns it.
-        var dialogues = await dialogueRepository.All(CancellationToken.None);
-        Assert.Empty(dialogues);
-    }
-
-    [Fact]
     public async Task Handle_UnknownAircraft_IgnoresDownlink()
     {
-        // Branch 2: a downlink arrives from an aircraft we have no connection for. The handler
+        // A downlink arrives from an aircraft we have no connection for. The handler
         // ignores it. We do not send messages to an aircraft that has no connection.
         // Arrange
         var clock = new TestClock();
@@ -746,8 +553,7 @@ public class DownlinkReceivedNotificationHandlerTests
             null,
             "GHOST1",
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            "REQUEST DESCENT",
+            [new DownlinkMessageElement(67, ["REQUEST DESCENT"])],
             clock.UtcNow());
 
         var notification = new DownlinkReceivedNotification("hoppies-ybbb", "YBBB", downlink);

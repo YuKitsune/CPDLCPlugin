@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Settings;
@@ -20,9 +21,9 @@ public class PurgeExpiredCpdlcDataRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         var oldDialogue = new Dialogue("UAL123", "YBBB");
-        oldDialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", startTime);
+        oldDialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, startTime);
         var newDialogue = new Dialogue("QFA1", "YBBB");
-        newDialogue.AddUplink(1, null, "QFA1", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", startTime.AddHours(2));
+        newDialogue.AddUplink(1, null, "QFA1", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, startTime.AddHours(2));
         await dialogueRepository.Add(oldDialogue, CancellationToken.None);
         await dialogueRepository.Add(newDialogue, CancellationToken.None);
 
@@ -48,7 +49,7 @@ public class PurgeExpiredCpdlcDataRequestHandlerTests
         clock.SetUtcNow(startTime);
 
         var dialogue = new Dialogue("UAL123", "YBBB");
-        dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", startTime);
+        dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, startTime);
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
         var handler = new PurgeExpiredCpdlcDataRequestHandler(dialogueRepository, settingsProvider, clock, Logger.None);

@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using MediatR;
 
 namespace CPDLCServer.Cpdlc.Uplinks;
@@ -5,6 +6,6 @@ namespace CPDLCServer.Cpdlc.Uplinks;
 public record BeginDialogueCommand(
     string Sender,
     string Recipient,
-    CpdlcUplinkResponseType ResponseType,
-    string Content)
+    IReadOnlyList<UplinkMessageElement> Elements,
+    bool CanAction)
     : IRequest;
