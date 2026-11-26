@@ -3,11 +3,13 @@ using CPDLCServer.Infrastructure;
 using CPDLCServer.Persistence;
 using CPDLCServer.Settings;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 
 namespace CPDLCServer.Setup;
 
 public class CompleteSetupCommandHandler(
     IAdministratorRepository administratorRepository,
+    IPasswordHasher<Administrator> passwordHasher,
     IServerSettingsProvider settingsProvider,
     SetupState setupState,
     IClock clock,
@@ -20,9 +22,17 @@ public class CompleteSetupCommandHandler(
         if (await administratorRepository.Any(cancellationToken))
             throw new InvalidOperationException("An administrator already exists");
 
-        await administratorRepository.Add(
-            new Administrator { Cid = request.AdministratorCid, Added = clock.UtcNow() },
-            cancellationToken);
+        var administrator = new Administrator
+        {
+            Cid = request.AdministratorCid,
+            Name = string.IsNullOrWhiteSpace(request.AdministratorName) ? null : request.AdministratorName.Trim(),
+            Added = clock.UtcNow()
+        };
+
+        if (request.AdministratorPassword is not null)
+            administrator.PasswordHash = passwordHasher.HashPassword(administrator, request.AdministratorPassword);
+
+        await administratorRepository.Add(administrator, cancellationToken);
 
         var settings = await settingsProvider.Load(cancellationToken);
         await settingsProvider.Save(

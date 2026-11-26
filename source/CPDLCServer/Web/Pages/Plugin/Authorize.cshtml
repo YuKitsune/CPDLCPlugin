@@ -13,13 +13,29 @@
 else
 {
     <h1 class="h4 mb-3">Connect the vatSys plugin</h1>
-    <p>
-        The CPDLC plugin on this computer will connect to the server as
-        <strong>@User.GetName()</strong> (@User.GetCid()).
-    </p>
+    @if (Model.AuthOptions.IsVatsim)
+    {
+        <p>
+            The CPDLC plugin on this computer will connect to the server as
+            <strong>@User.GetName()</strong> (@User.GetCid()).
+        </p>
+    }
+    else
+    {
+        <p>Enter your VATSIM CID. The CPDLC plugin on this computer will connect to the server with this CID.</p>
+    }
     <p class="text-muted small">Continue only if you started the authentication from the SETUP window in vatSys.</p>
 
     <form method="post">
+        @if (Model.AuthOptions.IsBuiltIn)
+        {
+            <div class="mb-3">
+                <label asp-for="Cid" class="form-label fw-semibold"></label>
+                <input asp-for="Cid" type="text" class="form-control" inputmode="numeric" pattern="[0-9]+" maxlength="@VatsimCid.MaxLength" autocomplete="off" autofocus required />
+                <span asp-validation-for="Cid" class="text-danger small"></span>
+            </div>
+        }
+
         @* The same names as the query string of the GET request *@
         <input type="hidden" name="redirect_uri" value="@Model.RedirectUri" />
         <input type="hidden" name="state" value="@Model.State" />

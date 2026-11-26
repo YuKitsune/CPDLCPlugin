@@ -22,12 +22,12 @@ Deploy your own CPDLC Server instance to DigitalOcean:
 Since App Platform doesn't offer persistent disks, the template makes a PostgreSQL development database for the server data.
 
 :::warning
-You must set the `MasterKey`, `VatsimConnect__ClientId` and `VatsimConnect__ClientSecret` environment variables before you deploy. If one of them is not set, the server does not start.
+You must set the `MasterKey` and `AuthType` environment variables before you deploy. With `AuthType=VATSIM`, you must also set `VatsimConnect__ClientId` and `VatsimConnect__ClientSecret`. If a required variable is not set, the server does not start.
 
-Make a key with `openssl rand -base64 32`, and keep a copy in a safe place. See [VATSIM Connect](#vatsim-connect) for the client.
+Make a key with `openssl rand -base64 32`, and keep a copy in a safe place. See [Authentication](#authentication) for the two types.
 :::
 
-After deployment, open `/setup` on the server, and enter the CID of the first administrator and the operator details (see [Setup](#setup)). Then log in with VATSIM, and add your ACARS connection in Configuration → ACARS connections (`/configuration/acars`).
+After deployment, open `/setup` on the server, and enter the first administrator and the operator details (see [Setup](#setup)). Then log in, and add your ACARS connection in Configuration → ACARS connections (`/configuration/acars`).
 
 ## Prerequisites
 
@@ -43,26 +43,47 @@ When the server starts for the first time, it is not set up. All the pages of th
 
 On the setup page, enter:
 
-- The VATSIM CID of the first administrator.
+- The VATSIM CID of the first administrator. With `AuthType=BuiltIn`, also enter the name and the password of the administrator.
 - The operator name: the person or organisation that operates the server, for example a VATSIM division or FIR.
 - The privacy contact: an email address or a URL. Users use it to ask questions about their data, or to ask for their data to be deleted.
 
 The privacy policy shows the operator name and the privacy contact. You can change them later in Configuration → Settings.
 
-After the setup, the setup page does not exist. The administrator logs in with VATSIM, and can add more administrators in Configuration → Administrators.
+After the setup, the setup page does not exist. The administrator logs in, and can add more administrators in Configuration → Administrators.
 
 :::warning
-The setup page needs no login. The first person who opens it chooses the administrator. Do the setup immediately after the first start.
+With `AuthType=VATSIM`, the setup page needs no login. The first person who opens it chooses the administrator. Do the setup immediately after the first start.
+
+With `AuthType=BuiltIn`, the setup page needs a token. When the server starts and is not set up, it writes the setup URL with the token to its log. The server makes a new token each time that it starts.
+:::
+
+## Authentication
+
+Set the `AuthType` environment variable to `BuiltIn` or `VATSIM`. If it is not set, the server does not start.
+
+| | `BuiltIn` | `VATSIM` |
+|---|---|---|
+| CPDLC and ADS-C pages | No login | Log in with VATSIM |
+| Administrators | Log in with their CID and a password | Log in with VATSIM |
+| Plugin | The controller enters their CID. The server does not check it. | The controller logs in with VATSIM |
+
+### BuiltIn
+
+Only administrators log in, with their CID and a password of 12 characters or more. An administrator adds the other administrators, and gives them their first password, in Configuration → Administrators. Each administrator can change their password (Change password, at the bottom of the sidebar).
+
+After 5 failed logins from one IP address, the login is locked for that IP address for 15 minutes.
+
+:::warning
+With `BuiltIn`, the server does not check the CID of the plugin. A controller can enter any CID. Use `BuiltIn` only when you trust the users of the server.
 :::
 
 ### VATSIM Connect
 
-All users log in with [VATSIM Connect](https://vatsim.dev/services/connect). Make an OAuth client for the server at [auth.vatsim.net](https://auth.vatsim.net) (or [auth-dev.vatsim.net](https://auth-dev.vatsim.net) for development), with the redirect URL `https://<server>/signin-vatsim`. Then set these environment variables:
+With `AuthType=VATSIM`, all users log in with [VATSIM Connect](https://vatsim.dev/services/connect). Make an OAuth client for the server at [auth.vatsim.net](https://auth.vatsim.net) (or [auth-dev.vatsim.net](https://auth-dev.vatsim.net) for development), with the redirect URL `https://<server>/signin-vatsim`. Then set these environment variables:
 
 - `VatsimConnect__ClientId`: the ID of the client.
 - `VatsimConnect__ClientSecret`: the secret of the client.
 - `VatsimConnect__Authority` (optional): the VATSIM Connect server. The default is `https://auth.vatsim.net`.
-- `VatsimConnect__DevCid` (optional, development only): the login page logs in all users with this CID, and does not use VATSIM Connect. The client ID and the client secret are then not necessary. The server uses this value only when `ASPNETCORE_ENVIRONMENT` is `Development`.
 
 Any VATSIM user can log in, open the CPDLC and ADS-C areas, and connect with the plugin. Only an administrator can open the Configuration area.
 
@@ -70,7 +91,9 @@ Behind a proxy that ends TLS, the server uses the `X-Forwarded-Proto` header, so
 
 ### Plugin Authentication
 
-The plugin must authenticate before it can connect to the server. In the SETUP window of the plugin, select **Authenticate**. The browser opens the server, the user logs in with VATSIM, and selects **Allow**. Then the plugin gets a token. The token is valid for 30 days. The plugin keeps it encrypted for the Windows account of the user.
+The plugin must authenticate before it can connect to the server. In the SETUP window of the plugin, select **Authenticate**. The browser opens the server. With `VATSIM`, the user logs in with VATSIM. With `BuiltIn`, the user enters their CID. Then the user selects **Allow**, and the plugin gets a token. The token is valid for 30 days. The plugin keeps it encrypted for the Windows account of the user.
+
+One CID can have many tokens, for example one on each computer. Administrators see the tokens in Configuration → Plugin tokens (`/configuration/tokens`): the CID, the name, and when each token was made, last used and expires. The page never shows the token itself. Administrators can search by CID, and delete one or more tokens. When a token is deleted, the plugin that uses it must authenticate again.
 
 ### Master Key
 
@@ -82,7 +105,7 @@ If the key is lost, the server cannot decrypt the secrets.
 
 ## Configuration
 
-The logging level, the master key, VATSIM Connect, the data directory and the database are configured with environment variables. `MasterKey`, `VatsimConnect__ClientId` and `VatsimConnect__ClientSecret` are required.
+The logging level, the master key, the authentication, the data directory and the database are configured with environment variables. `MasterKey` and `AuthType` are required. With `AuthType=VATSIM`, `VatsimConnect__ClientId` and `VatsimConnect__ClientSecret` are also required.
 For local development, copy `example.env` to `.env` and update with your settings:
 
 ```bash
@@ -93,7 +116,10 @@ Logging__Level=Information
 # Encrypts the secrets in the database. Make a key with: openssl rand -base64 32
 MasterKey=your-master-key
 
-# VATSIM Connect (required)
+# Authentication (required): BuiltIn or VATSIM
+AuthType=VATSIM
+
+# VATSIM Connect (required when AuthType=VATSIM)
 VatsimConnect__ClientId=your-client-id
 VatsimConnect__ClientSecret=your-client-secret
 

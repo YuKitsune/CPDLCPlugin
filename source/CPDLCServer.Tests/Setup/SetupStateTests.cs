@@ -50,6 +50,19 @@ public class SetupStateTests
         Assert.True(setupState.IsConfigured);
     }
 
+    [Fact]
+    public void IsValidSetupToken_AcceptsOnlyTheSetupToken()
+    {
+        // Arrange
+        var setupState = CreateSetupState();
+
+        // Act & Assert
+        Assert.True(setupState.IsValidSetupToken(setupState.SetupToken));
+        Assert.False(setupState.IsValidSetupToken("wrong-token"));
+        Assert.False(setupState.IsValidSetupToken(null));
+        Assert.False(setupState.IsValidSetupToken(string.Empty));
+    }
+
     SetupState CreateSetupState()
     {
         var services = new ServiceCollection();

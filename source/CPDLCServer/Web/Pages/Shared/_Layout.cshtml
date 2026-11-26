@@ -1,6 +1,7 @@
 @using Microsoft.AspNetCore.Authorization
 @inject IServerSettingsProvider SettingsProvider
 @inject IAuthorizationService AuthorizationService
+@inject AuthOptions AuthOptions
 @{
     var branding = await SettingsProvider.LoadBranding(Context.RequestAborted);
     var isAdministrator = (await AuthorizationService.AuthorizeAsync(User, AdministratorRequirement.PolicyName)).Succeeded;
@@ -59,19 +60,35 @@
                             <li class="nav-item"><a href="/configuration/settings" class="@NavLink("/configuration/settings")">Settings</a></li>
                             <li class="nav-item"><a href="/configuration/acars" class="@NavLink("/configuration/acars")">ACARS connections</a></li>
                             <li class="nav-item"><a href="/configuration/administrators" class="@NavLink("/configuration/administrators")">Administrators</a></li>
+                            <li class="nav-item"><a href="/configuration/tokens" class="@NavLink("/configuration/tokens")">Plugin tokens</a></li>
                             <li class="nav-item"><a href="/configuration/logs" class="@NavLink("/configuration/logs")">Logs</a></li>
                         </ul>
                     }
                 </nav>
 
                 <div class="border-top pt-3 mt-3 small">
-                    <div class="fw-semibold">@User.GetName()</div>
-                    <div class="text-muted mb-2">CID @User.GetCid()</div>
-                    <div class="d-flex align-items-center gap-2">
-                        <form method="post" action="/logout" class="d-inline">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">Log out</button>
-                        </form>
+                    @* With the BuiltIn login, the pages need no login, and only the administrators log in *@
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="fw-semibold">@User.GetName()</div>
+                        <div class="text-muted mb-2">CID @User.GetCid()</div>
+                    }
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <form method="post" action="/logout" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">Log out</button>
+                            </form>
+                            @if (AuthOptions.IsBuiltIn)
+                            {
+                                <a href="/account/password" class="link-secondary">Change password</a>
+                            }
+                        }
+                        else
+                        {
+                            <a href="/login" class="btn btn-sm btn-outline-secondary">Administrator log in</a>
+                        }
                         <a href="https://cpdlc.eoinmotherway.dev" class="link-secondary">Documentation</a>
                     </div>
                     <div class="mt-3">

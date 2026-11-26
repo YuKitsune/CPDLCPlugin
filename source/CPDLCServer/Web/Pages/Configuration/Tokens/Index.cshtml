@@ -1,0 +1,108 @@
+@page "/configuration/tokens"
+@model IndexModel
+@{
+    ViewData["Title"] = "Plugin tokens";
+}
+
+<h1 class="h3">Plugin tokens</h1>
+<p class="text-muted">
+    The plugin gets a token when a controller selects Authenticate in the SETUP window. One CID can have many tokens.
+    When you delete a token, the plugin that uses it must authenticate again.
+</p>
+
+@if (Model.StatusMessage is not null)
+{
+    <div class="alert alert-success" role="alert">@Model.StatusMessage</div>
+}
+
+<form method="get" class="row g-2 align-items-start mb-3">
+    <div class="col-sm-6 col-lg-4">
+        <label for="cid" class="visually-hidden">CID</label>
+        <input id="cid" name="cid" value="@Model.Cid" type="search" class="form-control @(Model.IsSearchValid ? "" : "is-invalid")"
+               inputmode="numeric" pattern="[0-9]*" placeholder="Search by CID" autocomplete="off" />
+        @if (!Model.IsSearchValid)
+        {
+            <div class="invalid-feedback">@VatsimCid.ErrorMessage</div>
+        }
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        @if (Model.Tokens.Length == 0)
+        {
+            <p class="text-muted mb-0">No tokens.</p>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Delete" asp-route-cid="@Model.Cid"
+                  onsubmit="return confirm('Delete the selected tokens? The plugins that use them must authenticate again.');">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small">@Model.TotalCount tokens</span>
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete selected</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input id="select-all" class="form-check-input" type="checkbox" aria-label="Select all" />
+                                </th>
+                                <th>CID</th>
+                                <th>Name</th>
+                                <th>Created</th>
+                                <th>Last used</th>
+                                <th>Expires</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var token in Model.Tokens)
+                            {
+                                <tr>
+                                    <td>
+                                        <input name="SelectedIds" value="@token.Id" class="form-check-input token-check" type="checkbox"
+                                               aria-label="Select the token of @token.Cid" />
+                                    </td>
+                                    <td><a href="/configuration/tokens?cid=@token.Cid">@token.Cid</a></td>
+                                    <td>@token.Name</td>
+                                    <td class="text-nowrap">@token.Created.ToString("yyyy-MM-dd HH:mm") UTC</td>
+                                    <td class="text-nowrap">
+                                        @(token.LastUsed is { } lastUsed ? lastUsed.ToString("yyyy-MM-dd HH:mm") + " UTC" : "Never")
+                                    </td>
+                                    <td class="text-nowrap">
+                                        @token.Expires.ToString("yyyy-MM-dd HH:mm") UTC
+                                        @if (token.Expires <= Model.Now)
+                                        {
+                                            <span class="badge text-bg-secondary">Expired</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+
+            <partial name="_Pagination" model="Model.Pagination" />
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const selectAll = document.getElementById('select-all');
+            if (!selectAll) return;
+
+            selectAll.addEventListener('change', () => {
+                for (const check of document.querySelectorAll('.token-check')) {
+                    check.checked = selectAll.checked;
+                }
+            });
+        })();
+    </script>
+}

@@ -19,16 +19,48 @@
 <div class="card mb-4">
     <div class="card-header fw-semibold">Add an administrator</div>
     <div class="card-body">
-        <form method="post" asp-page-handler="Add" class="row g-2 align-items-start">
-            <div class="col-sm-6 col-lg-4">
-                <label asp-for="Cid" class="visually-hidden"></label>
-                <input asp-for="Cid" type="text" class="form-control" inputmode="numeric" pattern="[0-9]+" placeholder="VATSIM CID" autocomplete="off" />
-                <span asp-validation-for="Cid" class="text-danger small"></span>
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Add</button>
-            </div>
-        </form>
+        @if (Model.AuthOptions.IsVatsim)
+        {
+            <form method="post" asp-page-handler="Add" class="row g-2 align-items-start">
+                <div class="col-sm-6 col-lg-4">
+                    <label asp-for="Cid" class="visually-hidden"></label>
+                    <input asp-for="Cid" type="text" class="form-control" inputmode="numeric" pattern="[0-9]+" placeholder="VATSIM CID" autocomplete="off" />
+                    <span asp-validation-for="Cid" class="text-danger small"></span>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Add" class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Cid" class="form-label fw-semibold"></label>
+                    <input asp-for="Cid" type="text" class="form-control" inputmode="numeric" pattern="[0-9]+" autocomplete="off" />
+                    <span asp-validation-for="Cid" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Name" class="form-label fw-semibold"></label>
+                    <input asp-for="Name" class="form-control" autocomplete="off" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Password" class="form-label fw-semibold"></label>
+                    <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                    <div class="form-text">Use 12 characters or more. Give the password to the new administrator. They can change it after they log in.</div>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="ConfirmPassword" class="form-label fw-semibold"></label>
+                    <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        }
     </div>
 </div>
 

@@ -32,7 +32,14 @@ spec:
           type: SECRET
           value: ""
         
-        # You must set the VATSIM Connect client before you deploy. Without it, the server does not start.
+        # BuiltIn or VATSIM. Without it, the server does not start.
+        # BuiltIn: administrators log in with their CID and a password. The setup URL with its token is in the log.
+        # VATSIM: all users log in with VATSIM Connect. Then set the client below.
+        - key: AuthType
+          scope: RUN_TIME
+          value: "VATSIM"
+
+        # With AuthType VATSIM, you must set the VATSIM Connect client before you deploy. Without it, the server does not start.
         # Set the redirect URL of the client to https://<app URL>/signin-vatsim
         - key: VatsimConnect__ClientId
           scope: RUN_TIME

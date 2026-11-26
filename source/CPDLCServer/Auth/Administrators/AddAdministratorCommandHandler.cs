@@ -1,11 +1,13 @@
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Persistence;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 
 namespace CPDLCServer.Auth.Administrators;
 
 public class AddAdministratorCommandHandler(
     IAdministratorRepository administratorRepository,
+    IPasswordHasher<Administrator> passwordHasher,
     IClock clock,
     IUnitOfWork unitOfWork,
     ILogger logger)
@@ -16,9 +18,17 @@ public class AddAdministratorCommandHandler(
         if (await administratorRepository.FindByCid(request.Cid, cancellationToken) is not null)
             throw new InvalidOperationException($"{request.Cid} is already an administrator");
 
-        await administratorRepository.Add(
-            new Administrator { Cid = request.Cid, Added = clock.UtcNow() },
-            cancellationToken);
+        var administrator = new Administrator
+        {
+            Cid = request.Cid,
+            Name = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name.Trim(),
+            Added = clock.UtcNow()
+        };
+
+        if (request.Password is not null)
+            administrator.PasswordHash = passwordHasher.HashPassword(administrator, request.Password);
+
+        await administratorRepository.Add(administrator, cancellationToken);
 
         unitOfWork.AfterCommit(_ =>
         {

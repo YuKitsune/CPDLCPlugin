@@ -13,6 +13,8 @@ using CPDLCServer.Setup;
 using CPDLCServer.VatsimStatus;
 using CPDLCServer.Web;
 using DotNetEnv;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -37,19 +39,21 @@ var dataPath = GetDataPath(builder);
 var databaseProvider = GetDatabaseProvider(builder);
 var databasePath = Path.Combine(dataPath, "cpdlc.db");
 
+var authOptions = AuthOptions.FromConfiguration(builder.Configuration);
+
 builder.Services
     .AddInfrastructure()
     .AddPersistence(builder.Configuration, databaseProvider, databasePath)
     .AddSecurity(builder.Configuration)
     .AddSetup()
-    .AddAuth(builder.Configuration, builder.Environment)
+    .AddAuth(builder.Configuration, authOptions)
     .AddSettings()
     .AddAcarsConnections()
     .AddAirTrafficControllers()
     .AddCpdlc()
     .AddAdsContracts()
     .AddVatsimStatus()
-    .AddWeb();
+    .AddWeb(authOptions);
 
 var app = builder.Build();
 
@@ -59,7 +63,13 @@ await SeedServerSettings(app);
 var setupState = app.Services.GetRequiredService<SetupState>();
 await setupState.Load(CancellationToken.None);
 if (!setupState.IsConfigured)
-    Log.Warning("The server is not set up. Open /setup on this server to set it up");
+{
+    // With the BuiltIn login, the setup URL contains a token, so that only a person who can read the log can do the setup
+    if (authOptions.IsBuiltIn)
+        app.Lifetime.ApplicationStarted.Register(() => TryLogSetupUrl(app, setupState));
+    else
+        Log.Warning("The server is not set up. Open /setup on this server to set it up");
+}
 
 // Behind a proxy that ends TLS, the request comes with http. VATSIM Connect needs the https redirect URL, so use the
 // scheme that the proxy received.
@@ -72,6 +82,7 @@ app.UseHttpsRedirection();
 app.UseRouting();
 
 app.UseMiddleware<RedirectToSetupMiddleware>();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -110,6 +121,31 @@ void TryLoadEnvFile()
         }
 
         currentDir = currentDir.Parent;
+    }
+}
+
+void TryLogSetupUrl(WebApplication app, SetupState setupState)
+{
+    var setupPath = $"/setup?token={setupState.SetupToken}";
+
+    var addresses = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()?.Addresses ?? [];
+    if (addresses.Count == 0)
+    {
+        Log.Warning("The server is not set up. Open {SetupPath} on this server to set it up", setupPath);
+        return;
+    }
+
+    foreach (var address in addresses)
+    {
+        // The server can listen on all addresses, for example in Docker. Show an address that a browser can open.
+        var browserAddress = address
+            .Replace("://[::]", "://localhost")
+            .Replace("://0.0.0.0", "://localhost")
+            .Replace("://+", "://localhost")
+            .Replace("://*", "://localhost")
+            .TrimEnd('/');
+
+        Log.Warning("The server is not set up. Open {SetupUrl} to set it up", browserAddress + setupPath);
     }
 }
 

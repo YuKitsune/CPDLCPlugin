@@ -191,6 +191,9 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<string>("Name")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
@@ -214,6 +217,9 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                         .HasColumnType("INTEGER");
 
                     b.Property<long>("Expires")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("LastUsed")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")

@@ -6,14 +6,42 @@
 }
 
 <h1 class="h4 mb-3">Log in</h1>
-<p class="text-muted">Log in with your VATSIM account.</p>
 
-<form method="post">
-    <input type="hidden" asp-for="ReturnUrl" />
-    <button type="submit" class="btn btn-primary w-100">Log in with VATSIM</button>
-</form>
+@if (Model.AuthOptions.IsVatsim)
+{
+    <p class="text-muted">Log in with your VATSIM account.</p>
 
-<p class="small text-muted mt-3 mb-0">
-    When you log in, VATSIM gives this server your CID and your name.
-    By logging in, you accept the <a href="/privacy">privacy policy</a>.
-</p>
+    <form method="post">
+        <input type="hidden" asp-for="ReturnUrl" />
+        <button type="submit" class="btn btn-primary w-100">Log in with VATSIM</button>
+    </form>
+
+    <p class="small text-muted mt-3 mb-0">
+        When you log in, VATSIM gives this server your CID and your name.
+        By logging in, you accept the <a href="/privacy">privacy policy</a>.
+    </p>
+}
+else
+{
+    <p class="text-muted">Only administrators log in. The other pages need no login.</p>
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+    <form method="post">
+        <input type="hidden" asp-for="ReturnUrl" />
+
+        <div class="mb-3">
+            <label asp-for="Input.Cid" class="form-label fw-semibold"></label>
+            <input asp-for="Input.Cid" class="form-control" inputmode="numeric" autocomplete="username" autofocus />
+            <span asp-validation-for="Input.Cid" class="text-danger small"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Input.Password" class="form-label fw-semibold"></label>
+            <input asp-for="Input.Password" class="form-control" autocomplete="current-password" />
+            <span asp-validation-for="Input.Password" class="text-danger small"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Log in</button>
+    </form>
+}

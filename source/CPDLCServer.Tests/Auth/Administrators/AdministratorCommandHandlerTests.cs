@@ -1,5 +1,6 @@
 using CPDLCServer.Auth.Administrators;
 using CPDLCServer.Tests.Mocks;
+using Microsoft.AspNetCore.Identity;
 using Serilog.Core;
 
 namespace CPDLCServer.Tests.Auth.Administrators;
@@ -8,21 +9,43 @@ public class AdministratorCommandHandlerTests
 {
     readonly TestAdministratorRepository _administratorRepository = new();
     readonly TestClock _clock = new();
+    readonly PasswordHasher<Administrator> _passwordHasher = new();
 
     [Fact]
     public async Task Add_AddsTheAdministrator()
     {
         // Arrange
-        var handler = new AddAdministratorCommandHandler(_administratorRepository, _clock, new TestUnitOfWork(), Logger.None);
+        var handler = new AddAdministratorCommandHandler(_administratorRepository, _passwordHasher, _clock, new TestUnitOfWork(), Logger.None);
 
         // Act
-        await handler.Handle(new AddAdministratorCommand("1234567"), CancellationToken.None);
+        await handler.Handle(new AddAdministratorCommand("1234567", null, null), CancellationToken.None);
 
         // Assert
         var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
         Assert.NotNull(administrator);
         Assert.Null(administrator.Name);
+        Assert.Null(administrator.PasswordHash);
         Assert.Equal(_clock.UtcNow(), administrator.Added);
+    }
+
+    [Fact]
+    public async Task Add_WithNameAndPassword_KeepsTheNameAndAHashOfThePassword()
+    {
+        // Arrange
+        var handler = new AddAdministratorCommandHandler(_administratorRepository, _passwordHasher, _clock, new TestUnitOfWork(), Logger.None);
+
+        // Act
+        await handler.Handle(new AddAdministratorCommand("1234567", " Test Controller ", "correct horse battery"), CancellationToken.None);
+
+        // Assert
+        var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
+        Assert.NotNull(administrator);
+        Assert.Equal("Test Controller", administrator.Name);
+        Assert.NotNull(administrator.PasswordHash);
+        Assert.NotEqual("correct horse battery", administrator.PasswordHash);
+        Assert.Equal(
+            PasswordVerificationResult.Success,
+            _passwordHasher.VerifyHashedPassword(administrator, administrator.PasswordHash, "correct horse battery"));
     }
 
     [Fact]
@@ -30,11 +53,11 @@ public class AdministratorCommandHandlerTests
     {
         // Arrange
         await _administratorRepository.Add(new Administrator { Cid = "1234567" }, CancellationToken.None);
-        var handler = new AddAdministratorCommandHandler(_administratorRepository, _clock, new TestUnitOfWork(), Logger.None);
+        var handler = new AddAdministratorCommandHandler(_administratorRepository, _passwordHasher, _clock, new TestUnitOfWork(), Logger.None);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.Handle(new AddAdministratorCommand("1234567"), CancellationToken.None));
+            handler.Handle(new AddAdministratorCommand("1234567", null, null), CancellationToken.None));
     }
 
     [Fact]
@@ -91,5 +114,33 @@ public class AdministratorCommandHandlerTests
         // Assert
         var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
         Assert.Equal("Test Controller", administrator!.Name);
+    }
+
+    [Fact]
+    public async Task ChangePassword_ChangesThePassword()
+    {
+        // Arrange
+        await _administratorRepository.Add(new Administrator { Cid = "1234567" }, CancellationToken.None);
+        var handler = new ChangePasswordCommandHandler(_administratorRepository, _passwordHasher, Logger.None);
+
+        // Act
+        await handler.Handle(new ChangePasswordCommand("1234567", "new password 123"), CancellationToken.None);
+
+        // Assert
+        var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
+        Assert.Equal(
+            PasswordVerificationResult.Success,
+            _passwordHasher.VerifyHashedPassword(administrator!, administrator!.PasswordHash!, "new password 123"));
+    }
+
+    [Fact]
+    public async Task ChangePassword_WhenNotAdministrator_Throws()
+    {
+        // Arrange
+        var handler = new ChangePasswordCommandHandler(_administratorRepository, _passwordHasher, Logger.None);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.Handle(new ChangePasswordCommand("1234567", "new password 123"), CancellationToken.None));
     }
 }

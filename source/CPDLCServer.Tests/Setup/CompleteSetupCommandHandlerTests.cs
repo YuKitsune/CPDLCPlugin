@@ -2,6 +2,7 @@ using CPDLCServer.Auth.Administrators;
 using CPDLCServer.Settings;
 using CPDLCServer.Setup;
 using CPDLCServer.Tests.Mocks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog.Core;
 
@@ -12,6 +13,7 @@ public class CompleteSetupCommandHandlerTests
     readonly TestAdministratorRepository _administratorRepository = new();
     readonly TestServerSettingsProvider _settingsProvider = new(new ServerSettings());
     readonly TestClock _clock = new();
+    readonly PasswordHasher<Administrator> _passwordHasher = new();
 
     [Fact]
     public async Task Handle_AddsTheAdministratorAndTheOperatorAndCompletesTheSetup()
@@ -21,10 +23,12 @@ public class CompleteSetupCommandHandlerTests
         var handler = CreateHandler(setupState);
 
         // Act
-        await handler.Handle(new CompleteSetupCommand("1234567", " VATPAC ", " privacy@example.com "), CancellationToken.None);
+        await handler.Handle(new CompleteSetupCommand("1234567", null, null, " VATPAC ", " privacy@example.com "), CancellationToken.None);
 
         // Assert
-        Assert.NotNull(await _administratorRepository.FindByCid("1234567", CancellationToken.None));
+        var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
+        Assert.NotNull(administrator);
+        Assert.Null(administrator.PasswordHash);
 
         var settings = await _settingsProvider.Load(CancellationToken.None);
         Assert.Equal("VATPAC", settings.OperatorName);
@@ -42,13 +46,33 @@ public class CompleteSetupCommandHandlerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.Handle(new CompleteSetupCommand("1234567", "VATPAC", "privacy@example.com"), CancellationToken.None));
+            handler.Handle(new CompleteSetupCommand("1234567", null, null, "VATPAC", "privacy@example.com"), CancellationToken.None));
         Assert.Null(await _administratorRepository.FindByCid("1234567", CancellationToken.None));
         Assert.Equal(string.Empty, (await _settingsProvider.Load(CancellationToken.None)).OperatorName);
     }
 
+    [Fact]
+    public async Task Handle_WithNameAndPassword_KeepsTheNameAndAHashOfThePassword()
+    {
+        // Arrange
+        var handler = CreateHandler(CreateSetupState());
+
+        // Act
+        await handler.Handle(
+            new CompleteSetupCommand("1234567", " Test Controller ", "correct horse battery", "VATPAC", "privacy@example.com"),
+            CancellationToken.None);
+
+        // Assert
+        var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
+        Assert.NotNull(administrator);
+        Assert.Equal("Test Controller", administrator.Name);
+        Assert.Equal(
+            PasswordVerificationResult.Success,
+            _passwordHasher.VerifyHashedPassword(administrator, administrator.PasswordHash!, "correct horse battery"));
+    }
+
     CompleteSetupCommandHandler CreateHandler(SetupState setupState) =>
-        new(_administratorRepository, _settingsProvider, setupState, _clock, new TestUnitOfWork(), Logger.None);
+        new(_administratorRepository, _passwordHasher, _settingsProvider, setupState, _clock, new TestUnitOfWork(), Logger.None);
 
     SetupState CreateSetupState()
     {

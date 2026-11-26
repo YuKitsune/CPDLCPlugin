@@ -18,8 +18,39 @@ public class PluginTokenRepository(CpdlcDbContext dbContext) : IPluginTokenRepos
         return Task.CompletedTask;
     }
 
+    public async Task<PluginToken?> FindById(Guid id, CancellationToken cancellationToken)
+    {
+        return await dbContext.PluginTokens.FindAsync([id], cancellationToken);
+    }
+
     public async Task<PluginToken?> FindByHash(string tokenHash, CancellationToken cancellationToken)
     {
         return await dbContext.PluginTokens.SingleOrDefaultAsync(t => t.TokenHash == tokenHash, cancellationToken);
+    }
+
+    public async Task<PluginToken[]> FindByIds(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
+    {
+        return await dbContext.PluginTokens.Where(t => ids.Contains(t.Id)).ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<PluginToken[]> Search(string? cidPrefix, int skip, int take, CancellationToken cancellationToken)
+    {
+        return await Filter(cidPrefix)
+            .OrderByDescending(t => t.Created)
+            .Skip(skip)
+            .Take(take)
+            .ToArrayAsync(cancellationToken);
+    }
+
+    public async Task<int> Count(string? cidPrefix, CancellationToken cancellationToken)
+    {
+        return await Filter(cidPrefix).CountAsync(cancellationToken);
+    }
+
+    IQueryable<PluginToken> Filter(string? cidPrefix)
+    {
+        return string.IsNullOrEmpty(cidPrefix)
+            ? dbContext.PluginTokens
+            : dbContext.PluginTokens.Where(t => t.Cid.StartsWith(cidPrefix));
     }
 }

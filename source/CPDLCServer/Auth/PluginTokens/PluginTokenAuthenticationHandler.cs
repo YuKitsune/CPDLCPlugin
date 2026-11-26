@@ -15,6 +15,7 @@ public class PluginTokenAuthenticationHandler(
     ILoggerFactory loggerFactory,
     UrlEncoder encoder,
     IPluginTokenRepository pluginTokenRepository,
+    IUnitOfWorkMediator mediator,
     IClock clock)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, loggerFactory, encoder)
 {
@@ -34,8 +35,12 @@ public class PluginTokenAuthenticationHandler(
         if (pluginToken is null)
             return AuthenticateResult.Fail("The token is not valid");
 
-        if (pluginToken.Expires <= clock.UtcNow())
+        var now = clock.UtcNow();
+        if (pluginToken.Expires <= now)
             return AuthenticateResult.Fail("The token has expired");
+
+        if (pluginToken.LastUsed is null || now - pluginToken.LastUsed >= PluginToken.LastUsedPrecision)
+            await mediator.Send(new RecordPluginTokenUseCommand(pluginToken.Id), Context.RequestAborted);
 
         var identity = CurrentUser.CreateIdentity(pluginToken.Cid, pluginToken.Name, AuthenticationScheme);
         identity.AddClaim(new Claim(ExpiresClaimType, pluginToken.Expires.ToString("O")));

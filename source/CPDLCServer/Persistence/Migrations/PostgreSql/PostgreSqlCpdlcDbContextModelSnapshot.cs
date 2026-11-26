@@ -200,6 +200,9 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<string>("Name")
                         .HasColumnType("text");
 
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text");
+
                     b.Property<int>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("integer");
@@ -223,6 +226,9 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                         .HasColumnType("bigint");
 
                     b.Property<long>("Expires")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("LastUsed")
                         .HasColumnType("bigint");
 
                     b.Property<string>("Name")

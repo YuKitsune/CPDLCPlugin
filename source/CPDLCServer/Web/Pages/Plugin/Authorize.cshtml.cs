@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using CPDLCServer.Auth;
 using CPDLCServer.Auth.PluginTokens;
 using Microsoft.AspNetCore.Mvc;
@@ -5,16 +6,25 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CPDLCServer.Web.Pages.Plugin;
 
-// The browser part of the plugin login. The user logs in with VATSIM, then allows the plugin to connect.
-// Then the browser goes to the plugin on this computer with a one-use code.
+// The browser part of the plugin login. Then the browser goes to the plugin on this computer with a one-use code.
+// - With VATSIM Connect, the user logs in with VATSIM, then allows the plugin to connect.
+// - With the BuiltIn login, the user enters their CID. The server does not check the CID.
 public class AuthorizeModel : PageModel
 {
     private readonly PluginAuthorizationCodes _authorizationCodes;
 
-    public AuthorizeModel(PluginAuthorizationCodes authorizationCodes)
+    public AuthorizeModel(AuthOptions authOptions, PluginAuthorizationCodes authorizationCodes)
     {
+        AuthOptions = authOptions;
         _authorizationCodes = authorizationCodes;
     }
+
+    public AuthOptions AuthOptions { get; }
+
+    // Only for the BuiltIn login
+    [BindProperty]
+    [Display(Name = "CID")]
+    public string? Cid { get; set; }
 
     [BindProperty(SupportsGet = true, Name = "redirect_uri")]
     public string? RedirectUri { get; set; }
@@ -43,7 +53,27 @@ public class AuthorizeModel : PageModel
         if (!IsValidRequest)
             return Page();
 
-        var code = _authorizationCodes.Create(User.GetCid()!, User.GetName(), RedirectUri!, CodeChallenge!);
+        string cid;
+        string name;
+        if (AuthOptions.IsVatsim)
+        {
+            cid = User.GetCid()!;
+            name = User.GetName();
+        }
+        else
+        {
+            cid = Cid?.Trim() ?? string.Empty;
+            if (!VatsimCid.IsValid(cid))
+            {
+                ModelState.AddModelError(nameof(Cid), VatsimCid.ErrorMessage);
+                return Page();
+            }
+
+            // The form does not ask for a name, so the CID is the name
+            name = cid;
+        }
+
+        var code = _authorizationCodes.Create(cid, name, RedirectUri!, CodeChallenge!);
 
         var redirectUri = $"{RedirectUri}?code={Uri.EscapeDataString(code)}&state={Uri.EscapeDataString(State!)}";
         return Redirect(redirectUri);

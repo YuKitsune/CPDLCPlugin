@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using CPDLCServer.Auth.Administrators;
+using CPDLCServer.Auth.Login;
 using CPDLCServer.Auth.PluginTokens;
 using CPDLCServer.Auth.VatsimConnect;
 using CPDLCServer.Infrastructure;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 
 namespace CPDLCServer.Auth;
 
@@ -19,18 +21,19 @@ public static class AuthServiceCollectionExtensions
     public static IServiceCollection AddAuth(
         this IServiceCollection services,
         IConfiguration configuration,
-        IHostEnvironment environment)
+        AuthOptions authOptions)
     {
-        var developmentLogin = new DevelopmentLogin(
-            environment.IsDevelopment() && configuration["VatsimConnect:DevCid"] is { Length: > 0 } devCid ? devCid : null);
-        if (developmentLogin.Cid is not null && !VatsimCid.IsValid(developmentLogin.Cid))
-            throw new InvalidOperationException("VatsimConnect:DevCid must contain only digits");
-
-        services.AddSingleton(developmentLogin);
+        services.AddSingleton(authOptions);
 
         services.AddScoped<IAdministratorRepository, AdministratorRepository>();
         services.AddScoped<IPluginTokenRepository, PluginTokenRepository>();
         services.AddSingleton<PluginAuthorizationCodes>();
+
+        // Only the BuiltIn login uses passwords. The services are registered for both types, so that the
+        // administrator handlers do not change with the type.
+        services.AddSingleton<IPasswordHasher<Administrator>, PasswordHasher<Administrator>>();
+        services.AddSingleton<LoginLockout>();
+        services.AddRateLimiter(PasswordRateLimit.Configure);
 
         // Keep the keys of the login cookies only in memory, so that no key is on the disk.
         // After a restart, the user must log in again.
@@ -55,8 +58,8 @@ public static class AuthServiceCollectionExtensions
                 PluginTokenAuthenticationHandler.AuthenticationScheme,
                 _ => { });
 
-        // With the development login, the server does not need a VATSIM Connect client
-        if (developmentLogin.Cid is null)
+        // The BuiltIn login does not need a VATSIM Connect client
+        if (authOptions.IsVatsim)
             AddVatsimConnect(authentication, configuration);
 
         services.AddScoped<IAuthorizationHandler, AdministratorRequirementHandler>();
