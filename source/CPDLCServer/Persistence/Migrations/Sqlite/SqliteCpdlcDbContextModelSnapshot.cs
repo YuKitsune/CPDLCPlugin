@@ -188,9 +188,6 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                     b.Property<long>("Added")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Name")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("PasswordHash")
                         .HasColumnType("TEXT");
 
@@ -221,10 +218,6 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
 
                     b.Property<long?>("LastUsed")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("TokenHash")
                         .IsRequired()

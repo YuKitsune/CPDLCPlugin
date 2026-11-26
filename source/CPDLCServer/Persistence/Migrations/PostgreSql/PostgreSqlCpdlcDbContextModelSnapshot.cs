@@ -197,9 +197,6 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
                     b.Property<long>("Added")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("Name")
-                        .HasColumnType("text");
-
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text");
 
@@ -230,10 +227,6 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
 
                     b.Property<long?>("LastUsed")
                         .HasColumnType("bigint");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<string>("TokenHash")
                         .IsRequired()
