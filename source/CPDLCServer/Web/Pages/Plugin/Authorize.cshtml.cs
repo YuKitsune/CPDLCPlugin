@@ -1,14 +1,18 @@
 using System.ComponentModel.DataAnnotations;
 using CPDLCServer.Auth;
+using CPDLCServer.Auth.Login;
 using CPDLCServer.Auth.PluginTokens;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CPDLCServer.Web.Pages.Plugin;
 
 // The browser part of the plugin login. Then the browser goes to the plugin on this computer with a one-use code.
 // - With VATSIM Connect, the user logs in with VATSIM, then allows the plugin to connect.
-// - With the BuiltIn login, the user enters their CID. The server does not check the CID.
+// - With the BuiltIn login, the user enters their CID. The server does not check the CID, so the rate limit stops a
+//   person who makes many tokens.
+[EnableRateLimiting(PasswordRateLimit.PolicyName)]
 public class AuthorizeModel : PageModel
 {
     private readonly PluginAuthorizationCodes _authorizationCodes;

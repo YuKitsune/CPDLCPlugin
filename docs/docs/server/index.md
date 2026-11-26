@@ -73,6 +73,8 @@ Only administrators log in, with their CID and a password of 12 characters or mo
 
 After 5 failed logins from one IP address, the login is locked for that IP address for 15 minutes.
 
+The login page and the CID form of the plugin accept 10 posts a minute from each IP address, together.
+
 :::warning
 With `BuiltIn`, the server does not check the CID of the plugin. A controller can enter any CID. Use `BuiltIn` only when you trust the users of the server.
 :::

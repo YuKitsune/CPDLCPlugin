@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace CPDLCServer.Auth.Login;
 
 /// <summary>
-/// Limits the number of password attempts from one IP address, so that a person cannot quickly try many passwords.
+/// Limits the number of form posts from one IP address to the login page and to the plugin authorize page, so that a
+/// person cannot quickly try many passwords, or make many plugin tokens. The two pages use the same limit.
 /// </summary>
 public static class PasswordRateLimit
 {
@@ -23,7 +24,7 @@ public static class PasswordRateLimit
 
         options.AddPolicy(PolicyName, httpContext =>
         {
-            // Only a form post sends a password. Do not limit the page itself.
+            // Only limit the form posts. Do not limit the pages themselves.
             if (!HttpMethods.IsPost(httpContext.Request.Method))
                 return RateLimitPartition.GetNoLimiter(string.Empty);
 
