@@ -43,24 +43,24 @@
     @if (AuthOptions.IsVatsim)
     {
         <li>
-            <strong>Your VATSIM account.</strong> You log in with VATSIM Connect. VATSIM gives the server your CID and
-            your full name. The server also asks VATSIM for your VATSIM details (for example, your rating and division),
+            <strong>Your VATSIM account.</strong> You log in with VATSIM Connect. VATSIM gives the server your CID. The
+            server also asks VATSIM for your VATSIM details (for example, your rating and division),
             but it does not use or keep them. The server does not get your email address or your password.
         </li>
     }
     else
     {
         <li>
-            <strong>Your CID.</strong> When you connect the plugin, you enter your CID. The server does not check the
-            CID with VATSIM. Administrators log in with their CID and a password.
+            <strong>Your CID.</strong> When you connect the plugin, the plugin sends your CID from vatSys,
+            or you enter your CID. The server does not check the CID with VATSIM. Administrators log in with their CID and a password.
         </li>
     }
     <li>
-        <strong>Controllers.</strong> When you connect with the vatSys plugin, the server records your CID, your name,
+        <strong>Controllers.</strong> When you connect with the vatSys plugin, the server records your CID,
         your callsign and your station while you are connected.
     </li>
     <li>
-        <strong>Administrators.</strong> The server records the CID and the name of each administrator, and the date
+        <strong>Administrators.</strong> The server records the CID of each administrator, and the date
         when they became an administrator.
         @if (AuthOptions.IsBuiltIn)
         {
@@ -78,7 +78,7 @@
     </li>
     <li>
         <strong>Logs.</strong> The server log records events, for example logins, plugin connections and messages.
-        A log entry can contain your CID, your name, your callsign and the text of a message.
+        A log entry can contain your CID, your callsign and the text of a message.
     </li>
     <li>
         <strong>Cookies.</strong> The server uses only the cookies that are necessary for it to operate: one cookie
@@ -105,13 +105,13 @@
 <ul>
     <li>
         @(AuthOptions.IsVatsim ? "Each VATSIM user who logs in to this server" : "Each person who can open this server")
-        can see the CPDLC and ADS-C pages. These pages show the name and the CID of each connected controller, the
+        can see the CPDLC and ADS-C pages. These pages show the CID of each connected controller, the
         callsigns of the aircraft, the CPDLC messages and the ADS-C data.
     </li>
     <li>Controllers who use the plugin see the CPDLC messages and the ADS-C data of the aircraft.</li>
     <li>
         Administrators can also see the server log, the raw messages to and from the ACARS network, and the list of
-        plugin tokens (the CID, the name, and when each token was made and last used).
+        plugin tokens (the CID, and when each token was made and last used).
     </li>
 </ul>
 
@@ -124,7 +124,7 @@
     <li>
         <strong>The ACARS network</strong> (for example, <a href="https://www.hoppie.nl/acars/">Hoppie's ACARS</a>)
         carries the CPDLC and ADS-C messages to and from the aircraft. It receives the station, the callsigns and
-        the messages. It does not receive your CID or your name.
+        the messages. It does not receive your CID.
     </li>
     <li><strong>The hosting provider</strong> of the server stores the database and can record network data, for example IP addresses.</li>
     <li>
@@ -148,7 +148,7 @@
                 <td>Until you log out, or after @Hours(Model.SessionLifetime) without activity. A restart of the server also logs out all users.</td>
             </tr>
             <tr>
-                <td>Plugin authentication (CID, name, token, and the time that the token was last used)</td>
+                <td>Plugin authentication (CID, token, and the time that the token was last used)</td>
                 <td>The token is valid for @Days(Model.PluginTokenLifetime). When you select Log out in the plugin, or when an administrator deletes the token, the server deletes it. The record of an expired token stays in the database until an administrator deletes it.</td>
             </tr>
             <tr>

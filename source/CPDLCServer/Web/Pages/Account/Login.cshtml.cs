@@ -59,7 +59,7 @@ public class LoginModel(AuthOptions authOptions, IUnitOfWorkMediator mediator) :
             return Page();
         }
 
-        var identity = CurrentUser.CreateIdentity(result.Cid, result.Name, CookieAuthenticationDefaults.AuthenticationScheme);
+        var identity = CurrentUser.CreateIdentity(result.Cid, CookieAuthenticationDefaults.AuthenticationScheme);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new(identity));
 
         return LocalRedirect(SafeReturnUrl());

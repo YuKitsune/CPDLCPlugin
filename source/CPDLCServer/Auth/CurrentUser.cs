@@ -10,18 +10,8 @@ public static class CurrentUser
         return principal.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
-    public static string GetName(this ClaimsPrincipal principal)
+    public static ClaimsIdentity CreateIdentity(string cid, string authenticationType)
     {
-        return principal.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
-    }
-
-    public static ClaimsIdentity CreateIdentity(string cid, string name, string authenticationType)
-    {
-        return new ClaimsIdentity(
-            [
-                new Claim(ClaimTypes.NameIdentifier, cid),
-                new Claim(ClaimTypes.Name, name)
-            ],
-            authenticationType);
+        return new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, cid)], authenticationType);
     }
 }

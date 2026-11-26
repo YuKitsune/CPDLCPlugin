@@ -16,8 +16,8 @@ else
     @if (Model.AuthOptions.IsVatsim)
     {
         <p>
-            The CPDLC plugin on this computer will connect to the server as
-            <strong>@User.GetName()</strong> (@User.GetCid()).
+            The CPDLC plugin on this computer will connect to the server with the CID
+            <strong>@User.GetCid()</strong>.
         </p>
     }
     else

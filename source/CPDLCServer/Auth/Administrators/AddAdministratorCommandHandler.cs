@@ -21,7 +21,6 @@ public class AddAdministratorCommandHandler(
         var administrator = new Administrator
         {
             Cid = request.Cid,
-            Name = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name.Trim(),
             Added = clock.UtcNow()
         };
 

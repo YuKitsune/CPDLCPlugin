@@ -52,6 +52,6 @@ public class LoginCommandHandler(
             administrator.PasswordHash = passwordHasher.HashPassword(administrator, request.Password);
 
         logger.Information("Administrator {Cid} logged in from {IpAddress}", administrator.Cid, request.IpAddress);
-        return new LoginResult(administrator.Cid, administrator.Name ?? administrator.Cid);
+        return new LoginResult(administrator.Cid);
     }
 }

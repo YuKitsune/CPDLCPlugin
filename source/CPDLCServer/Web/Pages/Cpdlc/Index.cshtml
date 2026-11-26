@@ -50,7 +50,7 @@
                                 <tr>
                                     <th>Callsign</th>
                                     <th>Station</th>
-                                    <th>Controller</th>
+                                    <th>Controller CID</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -59,7 +59,7 @@
                                     <tr>
                                         <td>@controller.Callsign</td>
                                         <td><a href="/cpdlc/stations/@controller.StationId">@controller.StationId</a></td>
-                                        <td>@controller.Name <span class="text-muted small">(@controller.Cid)</span></td>
+                                        <td>@controller.Cid</td>
                                     </tr>
                                 }
                             </tbody>

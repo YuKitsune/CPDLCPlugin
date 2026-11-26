@@ -7,7 +7,6 @@ public class PluginToken
 
     public Guid Id { get; init; }
     public required string Cid { get; init; }
-    public string Name { get; init; } = string.Empty;
     public string TokenHash { get; init; } = string.Empty;
     public DateTimeOffset Created { get; init; }
     public DateTimeOffset Expires { get; init; }

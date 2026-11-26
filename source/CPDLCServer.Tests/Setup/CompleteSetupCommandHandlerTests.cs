@@ -23,7 +23,7 @@ public class CompleteSetupCommandHandlerTests
         var handler = CreateHandler(setupState);
 
         // Act
-        await handler.Handle(new CompleteSetupCommand("1234567", null, null, " VATPAC ", " privacy@example.com "), CancellationToken.None);
+        await handler.Handle(new CompleteSetupCommand("1234567", null, " VATPAC ", " privacy@example.com "), CancellationToken.None);
 
         // Assert
         var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
@@ -46,26 +46,25 @@ public class CompleteSetupCommandHandlerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.Handle(new CompleteSetupCommand("1234567", null, null, "VATPAC", "privacy@example.com"), CancellationToken.None));
+            handler.Handle(new CompleteSetupCommand("1234567", null, "VATPAC", "privacy@example.com"), CancellationToken.None));
         Assert.Null(await _administratorRepository.FindByCid("1234567", CancellationToken.None));
         Assert.Equal(string.Empty, (await _settingsProvider.Load(CancellationToken.None)).OperatorName);
     }
 
     [Fact]
-    public async Task Handle_WithNameAndPassword_KeepsTheNameAndAHashOfThePassword()
+    public async Task Handle_WithPassword_KeepsAHashOfThePassword()
     {
         // Arrange
         var handler = CreateHandler(CreateSetupState());
 
         // Act
         await handler.Handle(
-            new CompleteSetupCommand("1234567", " Test Controller ", "correct horse battery", "VATPAC", "privacy@example.com"),
+            new CompleteSetupCommand("1234567", "correct horse battery", "VATPAC", "privacy@example.com"),
             CancellationToken.None);
 
         // Assert
         var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
         Assert.NotNull(administrator);
-        Assert.Equal("Test Controller", administrator.Name);
         Assert.Equal(
             PasswordVerificationResult.Success,
             _passwordHasher.VerifyHashedPassword(administrator, administrator.PasswordHash!, "correct horse battery"));

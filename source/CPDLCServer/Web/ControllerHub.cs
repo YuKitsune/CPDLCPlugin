@@ -57,14 +57,13 @@ public class ControllerHub(
             Context.ConnectionId,
             stationId,
             callsign,
-            user.GetCid()!,
-            user.GetName());
+            user.GetCid()!);
 
         await controllerRepository.Add(controller, Context.GetHttpContext()?.RequestAborted ?? CancellationToken.None);
 
         _logger.Information(
-            "Controller connected: {Callsign} ({Name}, {Cid}). ConnectionId: {ConnectionId}",
-            callsign, controller.Name, controller.Cid, Context.ConnectionId);
+            "Controller connected: {Callsign} ({Cid}). ConnectionId: {ConnectionId}",
+            callsign, controller.Cid, Context.ConnectionId);
 
         await mediator.Publish(
             new ControllerConnectedNotification(

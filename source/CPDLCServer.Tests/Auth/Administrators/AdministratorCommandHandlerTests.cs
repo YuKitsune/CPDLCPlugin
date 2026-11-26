@@ -18,29 +18,27 @@ public class AdministratorCommandHandlerTests
         var handler = new AddAdministratorCommandHandler(_administratorRepository, _passwordHasher, _clock, new TestUnitOfWork(), Logger.None);
 
         // Act
-        await handler.Handle(new AddAdministratorCommand("1234567", null, null), CancellationToken.None);
+        await handler.Handle(new AddAdministratorCommand("1234567", null), CancellationToken.None);
 
         // Assert
         var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
         Assert.NotNull(administrator);
-        Assert.Null(administrator.Name);
         Assert.Null(administrator.PasswordHash);
         Assert.Equal(_clock.UtcNow(), administrator.Added);
     }
 
     [Fact]
-    public async Task Add_WithNameAndPassword_KeepsTheNameAndAHashOfThePassword()
+    public async Task Add_WithPassword_KeepsAHashOfThePassword()
     {
         // Arrange
         var handler = new AddAdministratorCommandHandler(_administratorRepository, _passwordHasher, _clock, new TestUnitOfWork(), Logger.None);
 
         // Act
-        await handler.Handle(new AddAdministratorCommand("1234567", " Test Controller ", "correct horse battery"), CancellationToken.None);
+        await handler.Handle(new AddAdministratorCommand("1234567", "correct horse battery"), CancellationToken.None);
 
         // Assert
         var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
         Assert.NotNull(administrator);
-        Assert.Equal("Test Controller", administrator.Name);
         Assert.NotNull(administrator.PasswordHash);
         Assert.NotEqual("correct horse battery", administrator.PasswordHash);
         Assert.Equal(
@@ -57,7 +55,7 @@ public class AdministratorCommandHandlerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            handler.Handle(new AddAdministratorCommand("1234567", null, null), CancellationToken.None));
+            handler.Handle(new AddAdministratorCommand("1234567", null), CancellationToken.None));
     }
 
     [Fact]
@@ -99,21 +97,6 @@ public class AdministratorCommandHandlerTests
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             handler.Handle(new RemoveAdministratorCommand("1111111", CurrentUserCid: "9999999"), CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task UpdateName_ChangesTheNameOfAnAdministrator()
-    {
-        // Arrange
-        await _administratorRepository.Add(new Administrator { Cid = "1234567" }, CancellationToken.None);
-        var handler = new UpdateAdministratorNameCommandHandler(_administratorRepository);
-
-        // Act
-        await handler.Handle(new UpdateAdministratorNameCommand("1234567", "Test Controller"), CancellationToken.None);
-
-        // Assert
-        var administrator = await _administratorRepository.FindByCid("1234567", CancellationToken.None);
-        Assert.Equal("Test Controller", administrator!.Name);
     }
 
     [Fact]

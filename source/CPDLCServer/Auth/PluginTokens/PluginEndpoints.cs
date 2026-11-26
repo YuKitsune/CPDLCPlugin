@@ -35,21 +35,21 @@ public static class PluginEndpoints
         if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(codeVerifier) || string.IsNullOrEmpty(redirectUri))
             return Results.BadRequest(new { error = "invalid_request" });
 
-        var user = authorizationCodes.Redeem(code, redirectUri, codeVerifier);
-        if (user is null)
+        var cid = authorizationCodes.Redeem(code, redirectUri, codeVerifier);
+        if (cid is null)
         {
             logger.Warning("Plugin token request with a code that is not valid");
             return Results.BadRequest(new { error = "invalid_grant" });
         }
 
-        var response = await mediator.Send(new CreatePluginTokenCommand(user.Cid, user.Name), cancellationToken);
+        var response = await mediator.Send(new CreatePluginTokenCommand(cid), cancellationToken);
         return Results.Ok(response);
     }
 
     static IResult GetUser(ClaimsPrincipal user)
     {
         var expires = DateTimeOffset.Parse(user.FindFirstValue(PluginTokenAuthenticationHandler.ExpiresClaimType)!);
-        return Results.Ok(new PluginUserDto(user.GetCid()!, user.GetName(), expires));
+        return Results.Ok(new PluginUserDto(user.GetCid()!, expires));
     }
 
     static async Task<IResult> Logout(HttpRequest request, IUnitOfWorkMediator mediator, CancellationToken cancellationToken)

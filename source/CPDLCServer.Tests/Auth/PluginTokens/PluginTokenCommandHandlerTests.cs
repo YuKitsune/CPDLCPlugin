@@ -73,7 +73,6 @@ public class PluginTokenCommandHandlerTests
         {
             Id = Guid.NewGuid(),
             Cid = cid,
-            Name = cid,
             TokenHash = PluginTokenHash.Compute(PluginTokenHash.NewToken()),
             Created = _clock.UtcNow(),
             Expires = _clock.UtcNow() + PluginToken.Lifetime

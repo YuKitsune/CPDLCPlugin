@@ -10,8 +10,9 @@ namespace CPDLCServer.Web.Pages.Plugin;
 
 // The browser part of the plugin login. Then the browser goes to the plugin on this computer with a one-use code.
 // - With VATSIM Connect, the user logs in with VATSIM, then allows the plugin to connect.
-// - With the BuiltIn login, the user enters their CID. The server does not check the CID, so the rate limit stops a
-//   person who makes many tokens.
+// - With the BuiltIn login, the plugin puts the CID of vatSys in the URL, and the page continues without a form. If the
+//   URL has no CID, the user enters their CID. The server does not check the CID, so the rate limit stops a person who
+//   makes many tokens.
 [EnableRateLimiting(PasswordRateLimit.PolicyName)]
 public class AuthorizeModel : PageModel
 {
@@ -25,8 +26,8 @@ public class AuthorizeModel : PageModel
 
     public AuthOptions AuthOptions { get; }
 
-    // Only for the BuiltIn login
-    [BindProperty]
+    // Only for the BuiltIn login. The plugin can put it in the URL.
+    [BindProperty(SupportsGet = true, Name = "cid")]
     [Display(Name = "CID")]
     public string? Cid { get; set; }
 
@@ -48,8 +49,13 @@ public class AuthorizeModel : PageModel
         !string.IsNullOrEmpty(CodeChallenge) &&
         CodeChallengeMethod == "S256";
 
-    public void OnGet()
+    public IActionResult OnGet()
     {
+        // With the BuiltIn login and a CID in the URL, the user does not need to do anything
+        if (!IsValidRequest || !AuthOptions.IsBuiltIn || string.IsNullOrEmpty(Cid))
+            return Page();
+
+        return RedirectWithBuiltInCode();
     }
 
     public IActionResult OnPost()
@@ -57,27 +63,27 @@ public class AuthorizeModel : PageModel
         if (!IsValidRequest)
             return Page();
 
-        string cid;
-        string name;
         if (AuthOptions.IsVatsim)
-        {
-            cid = User.GetCid()!;
-            name = User.GetName();
-        }
-        else
-        {
-            cid = Cid?.Trim() ?? string.Empty;
-            if (!VatsimCid.IsValid(cid))
-            {
-                ModelState.AddModelError(nameof(Cid), VatsimCid.ErrorMessage);
-                return Page();
-            }
+            return RedirectWithCode(User.GetCid()!);
 
-            // The form does not ask for a name, so the CID is the name
-            name = cid;
+        return RedirectWithBuiltInCode();
+    }
+
+    private IActionResult RedirectWithBuiltInCode()
+    {
+        var cid = Cid?.Trim() ?? string.Empty;
+        if (!VatsimCid.IsValid(cid))
+        {
+            ModelState.AddModelError(nameof(Cid), VatsimCid.ErrorMessage);
+            return Page();
         }
 
-        var code = _authorizationCodes.Create(cid, name, RedirectUri!, CodeChallenge!);
+        return RedirectWithCode(cid);
+    }
+
+    private IActionResult RedirectWithCode(string cid)
+    {
+        var code = _authorizationCodes.Create(cid, RedirectUri!, CodeChallenge!);
 
         var redirectUri = $"{RedirectUri}?code={Uri.EscapeDataString(code)}&state={Uri.EscapeDataString(State!)}";
         return Redirect(redirectUri);

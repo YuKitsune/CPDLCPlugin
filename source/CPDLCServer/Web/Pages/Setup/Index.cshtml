@@ -44,12 +44,6 @@ else
         @if (Model.AuthOptions.IsBuiltIn)
         {
             <div class="mb-3">
-                <label asp-for="Input.Name" class="form-label fw-semibold"></label>
-                <input asp-for="Input.Name" class="form-control" autocomplete="name" />
-                <span asp-validation-for="Input.Name" class="text-danger small"></span>
-            </div>
-
-            <div class="mb-3">
                 <label asp-for="Input.Password" class="form-label fw-semibold"></label>
                 <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
                 <div class="form-text">Use 12 characters or more. Keep the password in a safe place. The server cannot show it again.</div>

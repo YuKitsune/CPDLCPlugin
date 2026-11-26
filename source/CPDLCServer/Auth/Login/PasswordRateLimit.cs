@@ -6,6 +6,8 @@ namespace CPDLCServer.Auth.Login;
 /// <summary>
 /// Limits the number of form posts from one IP address to the login page and to the plugin authorize page, so that a
 /// person cannot quickly try many passwords, or make many plugin tokens. The two pages use the same limit.
+/// The limit also applies to a plugin authorize request that has a CID in the URL, because the BuiltIn login makes a
+/// token from it without a form post.
 /// </summary>
 public static class PasswordRateLimit
 {
@@ -24,8 +26,8 @@ public static class PasswordRateLimit
 
         options.AddPolicy(PolicyName, httpContext =>
         {
-            // Only limit the form posts. Do not limit the pages themselves.
-            if (!HttpMethods.IsPost(httpContext.Request.Method))
+            // Only limit the form posts and the requests with a CID. Do not limit the pages themselves.
+            if (!HttpMethods.IsPost(httpContext.Request.Method) && !httpContext.Request.Query.ContainsKey("cid"))
                 return RateLimitPartition.GetNoLimiter(string.Empty);
 
             var address = ClientIpAddress.Get(httpContext);

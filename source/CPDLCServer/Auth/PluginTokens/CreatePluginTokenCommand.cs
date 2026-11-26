@@ -3,4 +3,4 @@ using MediatR;
 
 namespace CPDLCServer.Auth.PluginTokens;
 
-public record CreatePluginTokenCommand(string Cid, string Name) : IRequest<PluginTokenResponse>;
+public record CreatePluginTokenCommand(string Cid) : IRequest<PluginTokenResponse>;

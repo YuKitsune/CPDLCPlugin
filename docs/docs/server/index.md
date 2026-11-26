@@ -43,7 +43,7 @@ When the server starts for the first time, it is not set up. All the pages of th
 
 On the setup page, enter:
 
-- The VATSIM CID of the first administrator. With `AuthType=BuiltIn`, also enter the name and the password of the administrator.
+- The VATSIM CID of the first administrator. With `AuthType=BuiltIn`, also enter the password of the administrator.
 - The operator name: the person or organisation that operates the server, for example a VATSIM division or FIR.
 - The privacy contact: an email address or a URL. Users use it to ask questions about their data, or to ask for their data to be deleted.
 
@@ -65,7 +65,7 @@ Set the `AuthType` environment variable to `BuiltIn` or `VATSIM`. If it is not s
 |---|---|---|
 | CPDLC and ADS-C pages | No login | Log in with VATSIM |
 | Administrators | Log in with their CID and a password | Log in with VATSIM |
-| Plugin | The controller enters their CID. The server does not check it. | The controller logs in with VATSIM |
+| Plugin | The plugin sends the CID from vatSys. The server does not check it. | The controller logs in with VATSIM |
 
 ### BuiltIn
 
@@ -73,10 +73,10 @@ Only administrators log in, with their CID and a password of 12 characters or mo
 
 After 5 failed logins from one IP address, the login is locked for that IP address for 15 minutes.
 
-The login page and the CID form of the plugin accept 10 posts a minute from each IP address, together.
+The login page and the plugin authorize page accept 10 posts, or requests with a CID, a minute from each IP address, together.
 
 :::warning
-With `BuiltIn`, the server does not check the CID of the plugin. A controller can enter any CID. Use `BuiltIn` only when you trust the users of the server.
+With `BuiltIn`, the server does not check the CID of the plugin. A controller can use any CID. Use `BuiltIn` only when you trust the users of the server.
 :::
 
 ### VATSIM Connect
@@ -93,9 +93,9 @@ Behind a proxy that ends TLS, the server uses the `X-Forwarded-Proto` header, so
 
 ### Plugin Authentication
 
-The plugin must authenticate before it can connect to the server. In the SETUP window of the plugin, select **Authenticate**. The browser opens the server. With `VATSIM`, the user logs in with VATSIM. With `BuiltIn`, the user enters their CID. Then the user selects **Allow**, and the plugin gets a token. The token is valid for 30 days. The plugin keeps it encrypted for the Windows account of the user.
+The plugin must authenticate before it can connect to the server. In the SETUP window of the plugin, select **Authenticate**. The browser opens the server. With `VATSIM`, the user logs in with VATSIM. Then the user selects **Allow**, and the plugin gets a token. With `BuiltIn`, the plugin sends the CID from vatSys, and gets the token immediately. If vatSys has no CID, the user enters their CID, then selects **Allow**. The token is valid for 30 days. The plugin keeps it encrypted for the Windows account of the user.
 
-One CID can have many tokens, for example one on each computer. Administrators see the tokens in Configuration → Plugin tokens (`/configuration/tokens`): the CID, the name, and when each token was made, last used and expires. The page never shows the token itself. Administrators can search by CID, and delete one or more tokens. When a token is deleted, the plugin that uses it must authenticate again.
+One CID can have many tokens, for example one on each computer. Administrators see the tokens in Configuration → Plugin tokens (`/configuration/tokens`): the CID, and when each token was made, last used and expires. The page never shows the token itself. Administrators can search by CID, and delete one or more tokens. When a token is deleted, the plugin that uses it must authenticate again.
 
 ### Master Key
 
@@ -182,7 +182,7 @@ VATSIM Connect needs a privacy policy and a statement that the service is not pr
 
 - The privacy policy is at `/privacy`. Everyone can open it, also without a login. It shows the operator, the privacy contact, the data that the server collects, who can see it, the third parties, and how long the server keeps the data. The retention times come from the settings, so the page is correct when you change them.
 - Each page shows this statement, with a link to the privacy policy: "This server is a third-party service. It is not provided, operated or endorsed by VATSIM."
-- The login page tells users that VATSIM gives the server their CID and name, and that they accept the privacy policy when they log in.
+- The login page tells users that VATSIM gives the server their CID, and that they accept the privacy policy when they log in.
 
 :::warning
 The privacy policy describes the software. The operator is responsible for the data on their server. Read the policy, and make sure that it agrees with the laws that apply to you and with the VATSIM policies, before you open the server to users.

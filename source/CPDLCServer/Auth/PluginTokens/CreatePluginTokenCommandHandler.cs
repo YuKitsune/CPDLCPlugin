@@ -21,7 +21,6 @@ public class CreatePluginTokenCommandHandler(
         {
             Id = Guid.NewGuid(),
             Cid = request.Cid,
-            Name = request.Name,
             TokenHash = PluginTokenHash.Compute(token),
             Created = now,
             Expires = now + PluginToken.Lifetime
@@ -31,10 +30,10 @@ public class CreatePluginTokenCommandHandler(
 
         unitOfWork.AfterCommit(_ =>
         {
-            logger.Information("Plugin token created for {Name} ({Cid})", request.Name, request.Cid);
+            logger.Information("Plugin token created for {Cid}", request.Cid);
             return Task.CompletedTask;
         });
 
-        return new PluginTokenResponse(token, pluginToken.Expires, request.Cid, request.Name);
+        return new PluginTokenResponse(token, pluginToken.Expires, request.Cid);
     }
 }

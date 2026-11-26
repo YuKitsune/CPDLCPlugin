@@ -42,7 +42,7 @@ public class PluginTokenAuthenticationHandler(
         if (pluginToken.LastUsed is null || now - pluginToken.LastUsed >= PluginToken.LastUsedPrecision)
             await mediator.Send(new RecordPluginTokenUseCommand(pluginToken.Id), Context.RequestAborted);
 
-        var identity = CurrentUser.CreateIdentity(pluginToken.Cid, pluginToken.Name, AuthenticationScheme);
+        var identity = CurrentUser.CreateIdentity(pluginToken.Cid, AuthenticationScheme);
         identity.AddClaim(new Claim(ExpiresClaimType, pluginToken.Expires.ToString("O")));
 
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), AuthenticationScheme));

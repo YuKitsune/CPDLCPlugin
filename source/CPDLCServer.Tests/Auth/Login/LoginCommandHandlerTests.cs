@@ -20,7 +20,7 @@ public class LoginCommandHandlerTests
     public LoginCommandHandlerTests()
     {
         _loginLockout = new LoginLockout(_clock);
-        _administrator = new Administrator { Cid = "1234567", Name = "Test Controller" };
+        _administrator = new Administrator { Cid = "1234567" };
         _administrator.PasswordHash = _passwordHasher.HashPassword(_administrator, Password);
         _repository.Add(_administrator, CancellationToken.None);
     }
@@ -37,7 +37,6 @@ public class LoginCommandHandlerTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal("1234567", result.Cid);
-        Assert.Equal("Test Controller", result.Name);
     }
 
     [Fact]

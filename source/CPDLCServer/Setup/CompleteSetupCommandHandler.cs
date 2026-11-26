@@ -25,7 +25,6 @@ public class CompleteSetupCommandHandler(
         var administrator = new Administrator
         {
             Cid = request.AdministratorCid,
-            Name = string.IsNullOrWhiteSpace(request.AdministratorName) ? null : request.AdministratorName.Trim(),
             Added = clock.UtcNow()
         };
 

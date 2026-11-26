@@ -9,10 +9,6 @@ public class Administrator
 
     public required string Cid { get; init; }
 
-    // With VATSIM Connect, the VATSIM API does not give the name for a CID, so the name is not known until the
-    // administrator logs in. With the BuiltIn login, the name is set when the administrator is added.
-    public string? Name { get; set; }
-
     // Only for the BuiltIn login. Null with VATSIM Connect.
     public string? PasswordHash { get; set; }
 

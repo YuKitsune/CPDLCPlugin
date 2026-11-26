@@ -107,8 +107,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            "1234567",
-            "Test Controller");
+            "1234567");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);
@@ -142,8 +141,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            "1234567",
-            "Test Controller");
+            "1234567");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);
@@ -178,8 +176,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            "1234567",
-            "Test Controller");
+            "1234567");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);
@@ -222,8 +219,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            "1234567",
-            "Test Controller");
+            "1234567");
         await controllerRepository.Add(controller, CancellationToken.None);
     }
 
@@ -351,8 +347,7 @@ public class LogonCommandHandlerTests
             "Connection-1",
             "YBBB",
             "BN-TSN_FSS",
-            "1234567",
-            "Test Controller");
+            "1234567");
         await controllerRepository.Add(controller, CancellationToken.None);
 
         var command = BuildLogonCommand(clock);

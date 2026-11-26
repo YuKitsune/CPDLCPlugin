@@ -30,12 +30,7 @@ public class IndexModel : PageModel
     [Display(Name = "CID")]
     public string? Cid { get; set; }
 
-    // The name and the password are only for the BuiltIn login, so they do not have validation attributes
-    [BindProperty]
-    [StringLength(64)]
-    [Display(Name = "Name")]
-    public string? Name { get; set; }
-
+    // The password is only for the BuiltIn login, so it does not have validation attributes
     [BindProperty]
     [DataType(DataType.Password)]
     [Display(Name = "Password")]
@@ -75,7 +70,6 @@ public class IndexModel : PageModel
             await _mediator.Send(
                 new AddAdministratorCommand(
                     Cid!,
-                    AuthOptions.IsBuiltIn ? Name : null,
                     AuthOptions.IsBuiltIn ? Password : null),
                 cancellationToken);
             StatusMessage = $"{Cid} is now an administrator.";
@@ -109,9 +103,6 @@ public class IndexModel : PageModel
 
     void ValidateBuiltInAdministrator()
     {
-        if (string.IsNullOrWhiteSpace(Name))
-            ModelState.AddModelError(nameof(Name), "Enter the name of the administrator.");
-
         if (Password is not { Length: >= Administrator.MinimumPasswordLength and <= Administrator.MaximumPasswordLength })
             ModelState.AddModelError(nameof(Password), "Use a password of 12 characters or more.");
         else if (Password != ConfirmPassword)

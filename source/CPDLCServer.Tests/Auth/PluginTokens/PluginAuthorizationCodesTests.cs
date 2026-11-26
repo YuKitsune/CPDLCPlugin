@@ -21,17 +21,17 @@ public class PluginAuthorizationCodesTests
     }
 
     [Fact]
-    public void Redeem_WithTheVerifier_ReturnsTheUser()
+    public void Redeem_WithTheVerifier_ReturnsTheCid()
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
 
         // Act
-        var user = codes.Redeem(code, RedirectUri, CodeVerifier);
+        var cid = codes.Redeem(code, RedirectUri, CodeVerifier);
 
         // Assert
-        Assert.Equal(new PluginUser("1234567", "Test Controller"), user);
+        Assert.Equal("1234567", cid);
     }
 
     [Fact]
@@ -39,13 +39,13 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
 
         // Act
-        var user = codes.Redeem(code, RedirectUri, "wrong-verifier");
+        var cid = codes.Redeem(code, RedirectUri, "wrong-verifier");
 
         // Assert
-        Assert.Null(user);
+        Assert.Null(cid);
     }
 
     [Fact]
@@ -53,13 +53,13 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
 
         // Act
-        var user = codes.Redeem(code, "http://127.0.0.1:50001/callback", CodeVerifier);
+        var cid = codes.Redeem(code, "http://127.0.0.1:50001/callback", CodeVerifier);
 
         // Assert
-        Assert.Null(user);
+        Assert.Null(cid);
     }
 
     [Fact]
@@ -67,14 +67,14 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
         _clock.SetUtcNow(_clock.UtcNow() + PluginAuthorizationCodes.CodeLifetime);
 
         // Act
-        var user = codes.Redeem(code, RedirectUri, CodeVerifier);
+        var cid = codes.Redeem(code, RedirectUri, CodeVerifier);
 
         // Assert
-        Assert.Null(user);
+        Assert.Null(cid);
     }
 
     [Fact]
@@ -82,14 +82,14 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
         codes.Redeem(code, RedirectUri, CodeVerifier);
 
         // Act
-        var user = codes.Redeem(code, RedirectUri, CodeVerifier);
+        var cid = codes.Redeem(code, RedirectUri, CodeVerifier);
 
         // Assert
-        Assert.Null(user);
+        Assert.Null(cid);
     }
 
     [Fact]
@@ -97,13 +97,13 @@ public class PluginAuthorizationCodesTests
     {
         // Arrange
         var codes = new PluginAuthorizationCodes(_clock);
-        var code = codes.Create("1234567", "Test Controller", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
+        var code = codes.Create("1234567", RedirectUri, PluginAuthorizationCodes.ComputeChallenge(CodeVerifier));
         codes.Redeem(code, RedirectUri, "wrong-verifier");
 
         // Act
-        var user = codes.Redeem(code, RedirectUri, CodeVerifier);
+        var cid = codes.Redeem(code, RedirectUri, CodeVerifier);
 
         // Assert
-        Assert.Null(user);
+        Assert.Null(cid);
     }
 }

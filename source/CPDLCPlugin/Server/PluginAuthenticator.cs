@@ -24,7 +24,9 @@ public class PluginAuthenticator(ILogger logger)
 
     readonly HttpClient _httpClient = CreateHttpClient();
 
-    public async Task<PluginTokenResponse> Authenticate(Uri server, CancellationToken cancellationToken)
+    // With the BuiltIn login, the server makes the token from the CID without a form. With the VATSIM login, the server
+    // does not use the CID.
+    public async Task<PluginTokenResponse> Authenticate(Uri server, string? cid, CancellationToken cancellationToken)
     {
         // A TcpListener does not need the URL reservation that an HttpListener needs
         var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -44,7 +46,8 @@ public class PluginAuthenticator(ILogger logger)
                 $"?redirect_uri={Uri.EscapeDataString(redirectUri)}" +
                 $"&state={state}" +
                 $"&code_challenge={codeChallenge}" +
-                "&code_challenge_method=S256");
+                "&code_challenge_method=S256" +
+                (string.IsNullOrEmpty(cid) ? string.Empty : $"&cid={Uri.EscapeDataString(cid)}"));
 
             logger.Information("Opening the browser to authenticate with {Server}", server);
             Process.Start(new ProcessStartInfo(authorizeUri.ToString()) { UseShellExecute = true });

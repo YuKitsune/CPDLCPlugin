@@ -19,7 +19,7 @@ public class RevokePluginTokenCommandHandler(
 
         unitOfWork.AfterCommit(_ =>
         {
-            logger.Information("Plugin token revoked for {Name} ({Cid})", pluginToken.Name, pluginToken.Cid);
+            logger.Information("Plugin token revoked for {Cid}", pluginToken.Cid);
             return Task.CompletedTask;
         });
     }

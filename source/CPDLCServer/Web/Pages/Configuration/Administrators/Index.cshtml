@@ -35,15 +35,10 @@
         else
         {
             <form method="post" asp-page-handler="Add" class="row g-3">
-                <div class="col-md-6">
+                <div class="col-12">
                     <label asp-for="Cid" class="form-label fw-semibold"></label>
                     <input asp-for="Cid" type="text" class="form-control" inputmode="numeric" pattern="[0-9]+" autocomplete="off" />
                     <span asp-validation-for="Cid" class="text-danger small"></span>
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="Name" class="form-label fw-semibold"></label>
-                    <input asp-for="Name" class="form-control" autocomplete="off" />
-                    <span asp-validation-for="Name" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
                     <label asp-for="Password" class="form-label fw-semibold"></label>
@@ -71,7 +66,6 @@
                 <thead>
                     <tr>
                         <th>CID</th>
-                        <th>Name</th>
                         <th>Added</th>
                         <th></th>
                     </tr>
@@ -80,16 +74,8 @@
                     @foreach (var administrator in Model.Administrators)
                     {
                         <tr>
-                            <td>@administrator.Cid</td>
                             <td>
-                                @if (administrator.Name is null)
-                                {
-                                    <span class="text-muted">Not logged in yet</span>
-                                }
-                                else
-                                {
-                                    @administrator.Name
-                                }
+                                @administrator.Cid
                                 @if (Model.IsCurrentUser(administrator))
                                 {
                                     <span class="badge text-bg-secondary">You</span>

@@ -67,7 +67,6 @@ public class IndexModel : PageModel
             await _mediator.Send(
                 new CompleteSetupCommand(
                     Input.Cid!,
-                    AuthOptions.IsBuiltIn ? Input.Name : null,
                     AuthOptions.IsBuiltIn ? Input.Password : null,
                     Input.OperatorName,
                     Input.PrivacyContact),
@@ -83,12 +82,9 @@ public class IndexModel : PageModel
         return Redirect("/login");
     }
 
-    // The name and the password are necessary only for the BuiltIn login, so they do not have validation attributes
+    // The password is necessary only for the BuiltIn login, so it does not have validation attributes
     void ValidateBuiltInAdministrator()
     {
-        if (string.IsNullOrWhiteSpace(Input.Name))
-            ModelState.AddModelError($"{nameof(Input)}.{nameof(Input.Name)}", "Enter the name of the administrator.");
-
         if (Input.Password is not { Length: >= Administrator.MinimumPasswordLength and <= Administrator.MaximumPasswordLength })
             ModelState.AddModelError($"{nameof(Input)}.{nameof(Input.Password)}", "Use a password of 12 characters or more.");
         else if (Input.Password != Input.ConfirmPassword)
@@ -102,10 +98,6 @@ public class IndexModel : PageModel
         [RegularExpression(VatsimCid.Pattern, ErrorMessage = VatsimCid.ErrorMessage)]
         [Display(Name = "Administrator CID")]
         public string? Cid { get; set; }
-
-        [StringLength(64)]
-        [Display(Name = "Administrator name")]
-        public string? Name { get; set; }
 
         [DataType(DataType.Password)]
         [Display(Name = "Password")]

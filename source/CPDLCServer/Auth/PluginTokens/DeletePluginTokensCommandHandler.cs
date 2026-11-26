@@ -21,8 +21,8 @@ public class DeletePluginTokensCommandHandler(
             foreach (var pluginToken in pluginTokens)
             {
                 logger.Information(
-                    "Plugin token of {Name} ({Cid}) deleted by {AdministratorCid}",
-                    pluginToken.Name, pluginToken.Cid, request.AdministratorCid);
+                    "Plugin token of {Cid} deleted by {AdministratorCid}",
+                    pluginToken.Cid, request.AdministratorCid);
             }
 
             return Task.CompletedTask;

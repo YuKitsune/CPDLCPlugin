@@ -70,8 +70,7 @@
                     @* With the BuiltIn login, the pages need no login, and only the administrators log in *@
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <div class="fw-semibold">@User.GetName()</div>
-                        <div class="text-muted mb-2">CID @User.GetCid()</div>
+                        <div class="fw-semibold mb-2">CID @User.GetCid()</div>
                     }
                     <div class="d-flex flex-wrap align-items-center gap-2">
                         @if (User.Identity?.IsAuthenticated == true)

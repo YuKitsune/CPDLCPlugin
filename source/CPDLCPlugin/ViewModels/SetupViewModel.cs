@@ -132,7 +132,7 @@ public partial class SetupViewModel : ObservableObject,
         Authenticated = user is not null;
         AuthenticationStatus = user is null
             ? "Not authenticated"
-            : $"Authenticated as {user.Name} ({user.Cid})";
+            : $"Authenticated as {user.Cid}";
     }
 
     public void Receive(ConnectedNotification message)

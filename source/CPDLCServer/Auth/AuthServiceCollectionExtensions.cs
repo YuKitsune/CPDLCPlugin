@@ -100,7 +100,6 @@ public static class AuthServiceCollectionExtensions
             options.TokenEndpoint = new Uri(vatsimConnectOptions.Authority, "/oauth/token").ToString();
             options.UserInformationEndpoint = new Uri(vatsimConnectOptions.Authority, "/api/user").ToString();
             options.UsePkce = true;
-            options.Scope.Add("full_name");
             options.Scope.Add("vatsim_details");
 
             // The server uses the VATSIM token only to read the user. It does not keep the token.
@@ -118,13 +117,10 @@ public static class AuthServiceCollectionExtensions
                 using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(context.HttpContext.RequestAborted));
                 var user = VatsimUser.Parse(document.RootElement);
 
-                context.Principal = new(CurrentUser.CreateIdentity(user.Cid, user.Name, VatsimConnectOptions.AuthenticationScheme));
-
-                var mediator = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWorkMediator>();
-                await mediator.Send(new UpdateAdministratorNameCommand(user.Cid, user.Name), context.HttpContext.RequestAborted);
+                context.Principal = new(CurrentUser.CreateIdentity(user.Cid, VatsimConnectOptions.AuthenticationScheme));
 
                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger>();
-                logger.Information("{Name} ({Cid}) logged in", user.Name, user.Cid);
+                logger.Information("{Cid} logged in", user.Cid);
             };
         });
     }

@@ -16,18 +16,18 @@ public class PluginAuthorizationCodes(IClock clock)
 
     readonly ConcurrentDictionary<string, PendingCode> _codes = new();
 
-    public string Create(string cid, string name, string redirectUri, string codeChallenge)
+    public string Create(string cid, string redirectUri, string codeChallenge)
     {
         RemoveExpired();
 
         var code = PluginTokenHash.Base64Url(RandomNumberGenerator.GetBytes(32));
-        _codes[code] = new PendingCode(cid, name, redirectUri, codeChallenge, clock.UtcNow() + CodeLifetime);
+        _codes[code] = new PendingCode(cid, redirectUri, codeChallenge, clock.UtcNow() + CodeLifetime);
         return code;
     }
 
-    // Returns null when the code does not exist, has expired, or does not match the redirect URI and the verifier.
-    // A code can be used one time only, also when the check fails.
-    public PluginUser? Redeem(string code, string redirectUri, string codeVerifier)
+    // Returns the CID, or null when the code does not exist, has expired, or does not match the redirect URI and the
+    // verifier. A code can be used one time only, also when the check fails.
+    public string? Redeem(string code, string redirectUri, string codeVerifier)
     {
         if (!_codes.TryRemove(code, out var pendingCode))
             return null;
@@ -41,7 +41,7 @@ public class PluginAuthorizationCodes(IClock clock)
         if (!IsValidVerifier(codeVerifier, pendingCode.CodeChallenge))
             return null;
 
-        return new PluginUser(pendingCode.Cid, pendingCode.Name);
+        return pendingCode.Cid;
     }
 
     // S256: the challenge is the Base64 URL of the SHA-256 of the verifier
@@ -67,7 +67,5 @@ public class PluginAuthorizationCodes(IClock clock)
         }
     }
 
-    record PendingCode(string Cid, string Name, string RedirectUri, string CodeChallenge, DateTimeOffset Expires);
+    record PendingCode(string Cid, string RedirectUri, string CodeChallenge, DateTimeOffset Expires);
 }
-
-public record PluginUser(string Cid, string Name);
