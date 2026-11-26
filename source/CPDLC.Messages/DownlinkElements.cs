@@ -77,7 +77,7 @@ public static class DownlinkElements
         new(65, "DUE TO WEATHER", DownlinkResponseAttribute.NoResponse, AlertAttribute.None),
         new(66, "DUE TO AIRCRAFT PERFORMANCE", DownlinkResponseAttribute.NoResponse, AlertAttribute.None),
         new(67, "[free text]", DownlinkResponseAttribute.NoResponse, AlertAttribute.Medium, FreeText),
-        new(68, "[free text]", DownlinkResponseAttribute.ResponseRequired, AlertAttribute.Medium, FreeText),
+        new(68, "[free text]", DownlinkResponseAttribute.ResponseRequired, AlertAttribute.High, FreeText),
         new(69, "REQUEST VMC DESCENT", DownlinkResponseAttribute.ResponseRequired, AlertAttribute.Medium),
         new(70, "REQUEST HEADING [degrees]", DownlinkResponseAttribute.ResponseRequired, AlertAttribute.Medium, Degrees),
         new(71, "REQUEST GROUND TRACK [degrees]", DownlinkResponseAttribute.ResponseRequired, AlertAttribute.Medium, Degrees),

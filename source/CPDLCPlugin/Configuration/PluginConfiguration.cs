@@ -17,7 +17,7 @@ public class PluginConfiguration
     public required UplinkMessagesConfiguration UplinkMessages { get; init; }
 
     // The Current Messages window shows "!" for a downlink that has one of these elements, for example "DM29"
-    public string[] FlaggedElementId { get; init; } = [];
+    public string[] FlaggedElementIds { get; init; } = [];
     public int MaxLogFileAgeDays { get; init; } = 5;
     public LogEventLevel LogLevel { get; init; } = LogEventLevel.Information;
 

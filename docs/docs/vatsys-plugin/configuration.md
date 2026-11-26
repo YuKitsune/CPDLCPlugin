@@ -153,7 +153,7 @@ ADSCTrackExtrapolationThreshold: 10
 
 ## Flagged Downlinks
 
-### FlaggedElementId
+### FlaggedElementIds
 
 The FANS 1/A downlink elements that are "flagged". The Current Messages window shows `!` next to a downlink that has one of these elements. If the downlink also has a free text element, the window shows `P` in place of `!`.
 
@@ -161,7 +161,7 @@ Default: none
 
 **Example:**
 ```yaml
-FlaggedElementId:
+FlaggedElementIds:
   - DM29  # CLIMBING TO [altitude]
   - DM30  # DESCENDING TO [altitude]
   - DM80  # DEVIATING [distance offset] [direction] OF ROUTE
@@ -252,7 +252,7 @@ MaxCurrentMessages: 50
 MaxArchivedMessages: 50
 MaxDisplayMessageLength: 40
 MaxExtendedMessageLength: 80
-FlaggedElementId: [DM29, DM30, DM80]
+FlaggedElementIds: [DM29, DM30, DM80]
 AtsuCodes:
   - AtsuCode: YBBB
     Sectors: [ARL, INL, KPL, TSN]

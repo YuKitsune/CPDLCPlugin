@@ -129,7 +129,7 @@ public partial class HistoryMessageViewModel : ObservableObject
             sb.Append(" ");
         }
 
-        sb.Append(message is UplinkMessageDto uplink && uplink.IsNotActioned(Dialogue) ? "X" : " ");
+        sb.Append(message is UplinkMessageDto uplink && uplink.IsNotActioned() ? "X" : " ");
 
         sb.Append(message is UplinkMessageDto { IsClosedManually: true } ? "M" : " ");
 

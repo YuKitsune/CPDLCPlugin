@@ -180,7 +180,7 @@ public static class UplinkElements
         new(167, "DUE TO AIRSPACE RESTRICTION", UplinkResponseAttribute.NoResponse, AlertAttribute.None),
         new(168, "DISREGARD", UplinkResponseAttribute.Roger, AlertAttribute.Medium),
         new(169, "[free text]", UplinkResponseAttribute.Roger, AlertAttribute.Medium, FreeText),
-        new(170, "[free text]", UplinkResponseAttribute.Roger, AlertAttribute.Medium, FreeText),
+        new(170, "[free text]", UplinkResponseAttribute.Roger, AlertAttribute.High, FreeText),
         new(171, "CLIMB AT [vertical rate] MINIMUM", UplinkResponseAttribute.WilcoUnable, AlertAttribute.Medium, VerticalRate),
         new(172, "CLIMB AT [vertical rate] MAXIMUM", UplinkResponseAttribute.WilcoUnable, AlertAttribute.Medium, VerticalRate),
         new(173, "DESCEND AT [vertical rate] MINIMUM", UplinkResponseAttribute.WilcoUnable, AlertAttribute.Medium, VerticalRate),

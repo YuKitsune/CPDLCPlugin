@@ -128,7 +128,7 @@ public partial class CurrentMessageViewModel : ObservableObject
         var isFlagged = Message is DownlinkMessageDto flaggedDownlink && flaggedDownlink.IsFlagged(_flaggedElementIds);
         sb.Append(hasFreeText ? "P" : isFlagged ? "!" : " ");
 
-        sb.Append(Message is UplinkMessageDto uplinkMessage && uplinkMessage.IsNotActioned(Dialogue) ? "X" : " ");
+        sb.Append(Message is UplinkMessageDto uplinkMessage && uplinkMessage.IsNotActioned() ? "X" : " ");
 
         return sb.ToString();
     }

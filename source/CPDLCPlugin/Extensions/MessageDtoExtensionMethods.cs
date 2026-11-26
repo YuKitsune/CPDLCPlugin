@@ -35,21 +35,16 @@ public static class MessageDtoExtensionMethods
         return dto.HasElement(DownlinkElementIds.FreeText) || dto.HasElement(DownlinkElementIds.DistressFreeText);
     }
 
-    // A flagged downlink has one of the elements in FlaggedElementId in the configuration
+    // A flagged downlink has one of the elements in FlaggedElementIds in the configuration
     public static bool IsFlagged(this DownlinkMessageDto dto, IReadOnlyCollection<int> flaggedElementIds)
     {
         return dto.Elements.Any(e => flaggedElementIds.Contains(e.Id));
     }
 
-    // True when the pilot sent WILCO to an uplink that can update the FDR, but the FDR was not updated
-    public static bool IsNotActioned(this UplinkMessageDto dto, DialogueDto dialogue)
+    // True when an uplink that can update the FDR is closed, but the FDR was not updated
+    public static bool IsNotActioned(this UplinkMessageDto dto)
     {
-        if (!dto.CanAction || dto.Actioned)
-            return false;
-
-        return dialogue.Messages
-            .OfType<DownlinkMessageDto>()
-            .Any(d => d.MessageReference == dto.MessageId && d.HasElement(DownlinkElementIds.Wilco));
+        return dto.CanAction && dto.IsClosed && !dto.Actioned;
     }
 
     // STANDBY and REQUEST DEFERRED do not close a dialogue, so they have their own colours

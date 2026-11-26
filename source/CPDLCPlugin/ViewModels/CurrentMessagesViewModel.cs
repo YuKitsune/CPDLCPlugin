@@ -44,7 +44,7 @@ public partial class CurrentMessagesViewModel :
         bool closeWhenEmpty)
     {
         _configuration = configuration;
-        _flaggedElementIds = configuration.FlaggedElementId.Select(ElementReference.ParseDownlink).ToArray();
+        _flaggedElementIds = configuration.FlaggedElementIds.Select(ElementReference.ParseDownlink).ToArray();
         _dialogueStore = dialogueStore;
         _mediator = mediator;
         _guiInvoker = guiInvoker;

@@ -11,7 +11,9 @@ namespace CPDLCServer.Persistence.Migrations.PostgreSql
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             // The old messages are plain text, and cannot be converted to elements, so delete them.
+            // A dialogue without messages is not valid, so delete the dialogues too.
             migrationBuilder.Sql("DELETE FROM \"CpdlcMessages\";");
+            migrationBuilder.Sql("DELETE FROM \"Dialogues\";");
 
             migrationBuilder.RenameColumn(
                 name: "Content",

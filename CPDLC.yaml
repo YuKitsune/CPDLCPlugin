@@ -17,7 +17,7 @@ MaxDisplayMessageLength: 40
 MaxExtendedMessageLength: 80
 
 # The Current Messages window shows "!" for a downlink that has one of these elements
-FlaggedElementId:
+FlaggedElementIds:
   - DM29  # CLIMBING TO [altitude]
   - DM30  # DESCENDING TO [altitude]
   - DM80  # DEVIATING [distance offset] [direction] OF ROUTE
