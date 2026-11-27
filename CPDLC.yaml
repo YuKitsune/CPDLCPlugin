@@ -62,10 +62,45 @@ AtsuCodes:
 # Element is the FANS 1/A uplink element, for example UM20.
 # DefaultParameters gives values for the parameters. The names come from the element, for example "altitude".
 # If a type occurs more than one time in an element, the names have a number, for example "altitude1" and "altitude2".
+# A default value can use these variables from the FDR of the aircraft.
+# A variable is empty if the FDR has no value for it.
+#   $Callsign         The callsign, for example "QFA1"
+#   $AircraftType     The aircraft type, for example "B744"
+#   $Departure        The departure airport, for example "YSSY"
+#   $Destination      The destination airport, for example "WSSS"
+#   $AssignedSsrCode  The assigned SSR code, for example "3000"
+#   $RequestedLevel   The requested level, for example "FL350", or "A090" below the transition level
+#   $ClearedLevel     The cleared level, for example "FL350", or "A090" below the transition level.
+#                     It is empty for a block level.
+#   $NextWaypoint     The next waypoint in the route, for example "TAXEG"
 UplinkMessages:
+  # The transition level in feet. The level variables below this level are altitudes, for example "A090".
+  TransitionLevel: 11000
+
+  # The values that the controller can select for an [icao unit name] parameter
+  IcaoUnitNames:
+    - BRISBANE CTR
+    - MELBOURNE CTR
+    - NADI CTL
+    - MORESBY CTL
+    - AUCKLAND RDO
+    - MCMURDO RDO
+    - JOHANNESBURG CTL
+    - MAURITIUS CTL
+    - MALE CTL
+    - COLOMBO CTL
+    - JAKARTA CTR
+    - MAKASSAR CTR
+    - OAKLAND CTR
+    - WEST ASIA CTL
+    - SOUTH EAST ASIA CTL
+    - SOUTH AFRICA CTL
+
   QuickAccessMessages:
     - Element: UM147  # REQUEST POSITION REPORT
     - Element: UM123  # SQUAWK [beacon code]
+      DefaultParameters:
+        beaconCode: "$AssignedSsrCode"
     - Element: UM169  # [free text]
       DefaultParameters:
         freeText: "REQUEST RECEIVED, RESPONSE WILL BE VIA VOICE"
@@ -73,20 +108,36 @@ UplinkMessages:
     - Element: UM118  # AT [position] CONTACT [icao unit name] [frequency]
     - Element: UM161  # END SERVICE
     - Element: UM20  # CLIMB TO AND MAINTAIN [altitude]
+      DefaultParameters:
+        altitude: "$ClearedLevel"
     - Element: UM129  # REPORT LEVEL [altitude]
 
   Groups:
     - Name: "LEVEL"
       Messages:
         - Element: UM19  # MAINTAIN [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM20  # CLIMB TO AND MAINTAIN [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM164  # WHEN READY
         - Element: UM26  # CLIMB TO REACH [altitude] BY [time]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM27  # CLIMB TO REACH [altitude] BY [position]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM129  # REPORT LEVEL [altitude]
         - Element: UM23  # DESCEND TO AND MAINTAIN [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM28  # DESCEND TO REACH [altitude] BY [time]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM29  # DESCEND TO REACH [altitude] BY [position]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM128  # REPORT LEAVING [altitude]
         - Element: UM135  # CONFIRM ASSIGNED ALTITUDE
         - Element: UM171  # CLIMB AT [vertical rate] MINIMUM
@@ -94,9 +145,17 @@ UplinkMessages:
         - Element: UM173  # DESCEND AT [vertical rate] MINIMUM
         - Element: UM174  # DESCEND AT [vertical rate] MAXIMUM
         - Element: UM36  # EXPEDITE CLIMB TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM37  # EXPEDITE DESCENT TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM38  # IMMEDIATELY CLIMB TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM39  # IMMEDIATELY DESCEND TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
     - Name: "ROUTE"
       Messages:
         - Element: UM137  # CONFIRM ASSIGNED ROUTE
@@ -156,11 +215,13 @@ UplinkMessages:
             freeText: "ADVISE PREFERRED LEVEL"
         - Element: UM169  # [free text]
           DefaultParameters:
-            freeText: "ADVISE PREFERRED LEVEL TO CROSS [pos]"
+            freeText: "ADVISE PREFERRED LEVEL TO CROSS $NextWaypoint"
         - Element: UM151  # WHEN CAN YOU ACCEPT [speed]
     - Name: "SURV"
       Messages:
         - Element: UM123  # SQUAWK [beacon code]
+          DefaultParameters:
+            beaconCode: "$AssignedSsrCode"
         - Element: UM144  # CONFIRM SQUAWK
         - Element: UM179  # SQUAWK IDENT
         - Element: UM169  # [free text]
@@ -168,7 +229,7 @@ UplinkMessages:
             freeText: "IDENTIFIED"
         - Element: UM169  # [free text]
           DefaultParameters:
-            freeText: "RE-ENTER ADS-B IDENTIFICATION [ACID]"
+            freeText: "RE-ENTER ADS-B IDENTIFICATION $Callsign"
         - Element: UM169  # [free text]
           DefaultParameters:
             freeText: "IDENTIFICATION TERMINATED"
@@ -260,7 +321,7 @@ UplinkMessages:
             freeText: "REPORT SIGHTING AND PASSING OPPOSITE DIRECTION [tfc desc]"
         - Element: UM169  # [free text]
           DefaultParameters:
-            freeText: "REPORT ETA [pos]"
+            freeText: "REPORT ETA $NextWaypoint"
         - Element: UM169  # [free text]
           DefaultParameters:
             freeText: "REPORT GROUND SPEED"
@@ -330,9 +391,17 @@ UplinkMessages:
           DefaultParameters:
             freeText: "ROGER PAN"
         - Element: UM38  # IMMEDIATELY CLIMB TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM39  # IMMEDIATELY DESCEND TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM36  # EXPEDITE CLIMB TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM37  # EXPEDITE DESCENT TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
         - Element: UM157  # CHECK STUCK MICROPHONE [frequency]
         - Element: UM169  # [free text]
           DefaultParameters:

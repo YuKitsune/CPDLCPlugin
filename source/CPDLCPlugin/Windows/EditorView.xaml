@@ -8,6 +8,7 @@
         xmlns:local="clr-namespace:CPDLCPlugin"
         xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
         xmlns:converters="clr-namespace:CPDLCPlugin.Converters"
+        xmlns:popups="clr-namespace:CPDLCPlugin.Popups"
         Background="{toolbox:VatSysColour WindowBackground}"
         d:DataContext="{d:DesignInstance Type=viewModels:EditorViewModel}"
         mc:Ignorable="d"
@@ -404,7 +405,10 @@
                                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityConverter}}"
                                                     IsVisibleChanged="TemplatePartTextBox_IsVisibleChanged"
                                                     PreviewKeyDown="TemplatePartTextBox_PreviewKeyDown"
+                                                    PreviewTextInput="TemplatePartTextBox_PreviewTextInput"
+                                                    DataObject.Pasting="TemplatePartTextBox_Pasting"
                                                     LostFocus="TemplatePartTextBox_LostFocus"
+                                                    MaxLength="{Binding MaxLength}"
                                                     CharacterCasing="Upper"
                                                     MinWidth="60"
                                                     VerticalContentAlignment="Center"/>
@@ -441,5 +445,10 @@
             </Grid>
         </Border>
         </Grid>
+
+        <popups:FixedValuesPopup x:Name="FixedValuesPopup"/>
+        <popups:AltitudePopup x:Name="AltitudePopup"/>
+        <popups:TimePopup x:Name="TimePopup"/>
+        <popups:SpeedPopup x:Name="SpeedPopup"/>
     </Grid>
 </UserControl>

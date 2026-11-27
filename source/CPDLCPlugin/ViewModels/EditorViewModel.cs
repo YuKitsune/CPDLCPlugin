@@ -5,11 +5,13 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CPDLC.Messages;
 using CPDLCPlugin.Configuration;
+using CPDLCPlugin.Extensions;
 using CPDLCPlugin.Messages;
 using CPDLCServer.Contracts;
 using MediatR;
 using Serilog;
 using Serilog.Core;
+using vatsys;
 using vatSysToolbox;
 using vatSysToolbox.Windows;
 
@@ -19,6 +21,9 @@ namespace CPDLCPlugin.ViewModels;
 
 public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChangedNotification>, IDisposable
 {
+    // The maximum number of waypoints in the position popup
+    const int PositionPopupWaypointCount = 9;
+
     // readonly PluginConfiguration _configuration;
     readonly UplinkMessagesConfiguration _uplinkMessagesConfiguration;
     readonly DialogueStore _dialogueStore;
@@ -397,6 +402,22 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         }
     }
 
+    // Clears the value and shows an error if the manual entry is not valid
+    [RelayCommand]
+    void EndEditingTemplatePart(UplinkMessageTemplateElementComponentViewModel templatePart)
+    {
+        templatePart.IsEditing = false;
+
+        if (string.IsNullOrEmpty(templatePart.Value))
+            return;
+
+        if (ParameterInputRules.TryValidate(templatePart.ParameterType, templatePart.Value!, out var error))
+            return;
+
+        templatePart.Value = null;
+        _errorReporter.ReportError(new FormatException(error));
+    }
+
     [RelayCommand]
     void InsertMessageElementAbove(UplinkMessageElementViewModel element)
     {
@@ -619,11 +640,18 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                 case ']' when insideBrackets:
                 {
                     var parameter = definition.Parameters[parameterIndex];
-                    var templateElement = new UplinkMessageTemplateElementComponentViewModel($"[{placeholder}]");
+                    var fixedValues = parameter.Type == ParameterType.Position
+                        ? GetNextWaypoints()
+                        : ParameterInputRules.FixedValues(parameter.Type, _uplinkMessagesConfiguration.IcaoUnitNames);
+
+                    var templateElement = new UplinkMessageTemplateElementComponentViewModel(
+                        $"[{placeholder}]",
+                        parameter.Type,
+                        fixedValues);
 
                     if (reference.DefaultParameters?.TryGetValue(parameter.Name, out var defaultValue) == true)
                     {
-                        templateElement.Value = defaultValue;
+                        templateElement.Value = FdrDefaultValues.Resolve(defaultValue, Callsign, _uplinkMessagesConfiguration.TransitionLevel);
                     }
 
                     parts.Add(templateElement);
@@ -746,6 +774,13 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         WeakReferenceMessenger.Default.Unregister<DialogueChangedNotification>(this);
     }
 
+    // The next waypoints in the route of the aircraft, for the position popup
+    string[] GetNextWaypoints()
+    {
+        var fdr = FDP2.GetFDRs.FirstOrDefault(f => f.Callsign == Callsign);
+        return fdr?.GetNextWaypoints(PositionPopupWaypointCount) ?? [];
+    }
+
     UplinkMessageTemplateViewModel ResolveMessageReference(UplinkMessageReference reference)
     {
         var definition = UplinkElements.Get(reference.ElementId);
@@ -756,9 +791,11 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         var content = Regex.Replace(definition.Template, @"\[[^\]]+\]", placeholder =>
         {
             var parameter = definition.Parameters[parameterIndex++];
-            return reference.DefaultParameters?.TryGetValue(parameter.Name, out var defaultValue) == true
-                ? defaultValue
-                : placeholder.Value;
+            if (reference.DefaultParameters?.TryGetValue(parameter.Name, out var defaultValue) != true)
+                return placeholder.Value;
+
+            var value = FdrDefaultValues.Resolve(defaultValue!, Callsign, _uplinkMessagesConfiguration.TransitionLevel);
+            return string.IsNullOrEmpty(value) ? placeholder.Value : value;
         });
 
         return new UplinkMessageTemplateViewModel(content, definition.Id, reference);

@@ -30,4 +30,10 @@ public class UplinkMessagesConfiguration
 {
     public required UplinkMessageReference[] QuickAccessMessages { get; init; } = [];
     public required UplinkMessageGroup[] Groups { get; init; } = [];
+
+    // The values that the controller can select for an [icao unit name] parameter
+    public string[] IcaoUnitNames { get; init; } = [];
+
+    // The transition level in feet. The level variables below this level are altitudes, for example "A090".
+    public int TransitionLevel { get; init; } = 11000;
 }

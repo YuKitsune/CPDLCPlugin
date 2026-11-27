@@ -4,6 +4,19 @@ namespace CPDLCPlugin.Extensions;
 
 public static class FdrExtensionMethods
 {
+    // Returns the names of the next waypoints in the route, up to the count
+    public static string[] GetNextWaypoints(this FDP2.FDR fdr, int count)
+    {
+        var overflownIndex = Math.Max(fdr.ParsedRoute.OverflownIndex, 0);
+
+        return fdr.ParsedRoute.ToList()
+            .Skip(overflownIndex + 1)
+            .Where(s => s.Type == FDP2.FDR.ExtractedRoute.Segment.SegmentTypes.WAYPOINT)
+            .Select(s => s.Intersection.Name)
+            .Take(count)
+            .ToArray();
+    }
+
     public static IReadOnlyList<SectorEntry> GetSectorEntries(this FDP2.FDR fdr)
     {
         var results = new List<SectorEntry>();
