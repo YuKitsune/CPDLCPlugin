@@ -1,10 +1,7 @@
 ﻿using System.Text;
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CPDLCPlugin.Extensions;
 using CPDLCServer.Contracts;
-using vatsys;
-using vatSysToolbox;
 
 namespace CPDLCPlugin.ViewModels;
 
@@ -59,10 +56,10 @@ public partial class HistoryMessageViewModel : ObservableObject
     bool isExtended;
 
     [ObservableProperty]
-    SolidColorBrush foregroundColor = VatSysColours.GetColour(Colours.Identities.GenericText);
+    MessageColour foregroundColor;
 
     [ObservableProperty]
-    SolidColorBrush backgroundColor = VatSysColours.GetColour(Colours.Identities.WindowBackground);
+    MessageColour backgroundColor;
 
     string GetCallsignFromMessage(CpdlcMessageDto message)
     {

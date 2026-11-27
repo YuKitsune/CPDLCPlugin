@@ -5,13 +5,11 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CPDLC.Messages;
 using CPDLCPlugin.Configuration;
-using CPDLCPlugin.Extensions;
 using CPDLCPlugin.Messages;
 using CPDLCServer.Contracts;
 using MediatR;
 using Serilog;
 using Serilog.Core;
-using vatsys;
 using vatSysToolbox;
 using vatSysToolbox.Windows;
 
@@ -28,6 +26,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
     readonly UplinkMessagesConfiguration _uplinkMessagesConfiguration;
     readonly DialogueStore _dialogueStore;
     readonly SuspendedMessageStore _suspendedMessageStore;
+    readonly IFlightDataProvider _flightDataProvider;
     readonly IMediator _mediator;
     readonly IErrorReporter _errorReporter;
     readonly IGuiInvoker _guiInvoker;
@@ -103,9 +102,15 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
     }
 
     // For testing in the designer
-    public EditorViewModel() : this("QFA1", null!,CreateTestConfiguration(), null!, null!, null!, null!, null!, Logger.None)
+    public EditorViewModel() : this("QFA1", null!,CreateTestConfiguration(), null!, new DesignerFlightDataProvider(), null!, null!, null!, null!, Logger.None)
     {
         DownlinkMessages = _testDownlinkMessages;
+    }
+
+    // The designer has no FDRs
+    class DesignerFlightDataProvider : IFlightDataProvider
+    {
+        public FlightData? Find(string callsign) => null;
     }
 
 #endif
@@ -115,6 +120,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         DialogueStore dialogueStore,
         UplinkMessagesConfiguration uplinkMessagesConfiguration,
         SuspendedMessageStore suspendedMessageStore,
+        IFlightDataProvider flightDataProvider,
         IMediator mediator,
         IErrorReporter errorReporter,
         IGuiInvoker guiInvoker,
@@ -124,6 +130,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         _uplinkMessagesConfiguration = uplinkMessagesConfiguration;
         _dialogueStore = dialogueStore;
         _suspendedMessageStore = suspendedMessageStore;
+        _flightDataProvider = flightDataProvider;
         _mediator = mediator;
         _errorReporter = errorReporter;
         _guiInvoker = guiInvoker;
@@ -615,6 +622,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
     IUplinkMessageElementComponentViewModel[] ConvertToViewModel(UplinkMessageReference reference)
     {
         var definition = UplinkElements.Get(reference.ElementId);
+        var flightData = _flightDataProvider.Find(Callsign);
 
         var parts = new List<IUplinkMessageElementComponentViewModel>();
         var currentText = new StringBuilder();
@@ -641,7 +649,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                 {
                     var parameter = definition.Parameters[parameterIndex];
                     var fixedValues = parameter.Type == ParameterType.Position
-                        ? GetNextWaypoints()
+                        ? flightData?.NextWaypoints.Take(PositionPopupWaypointCount).ToArray() ?? []
                         : ParameterInputRules.FixedValues(parameter.Type, _uplinkMessagesConfiguration.IcaoUnitNames);
 
                     var templateElement = new UplinkMessageTemplateElementComponentViewModel(
@@ -651,7 +659,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
 
                     if (reference.DefaultParameters?.TryGetValue(parameter.Name, out var defaultValue) == true)
                     {
-                        templateElement.Value = FdrDefaultValues.Resolve(defaultValue, Callsign);
+                        templateElement.Value = FdrDefaultValues.Resolve(defaultValue, flightData);
                     }
 
                     parts.Add(templateElement);
@@ -791,22 +799,14 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
 
     public SpeedPopupViewModel CreateSpeedPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart, Action close)
     {
-        var fdr = FDP2.GetFDRs.FirstOrDefault(f => f.Callsign == Callsign);
-        int? clearedLevel = fdr is not null && fdr.TryGetClearedLevel(out var feet) ? feet : null;
-
+        var clearedLevel = _flightDataProvider.Find(Callsign)?.ClearedLevel;
         return new SpeedPopupViewModel(templatePart, Callsign, clearedLevel, close);
-    }
-
-    // The next waypoints in the route of the aircraft, for the position popup
-    string[] GetNextWaypoints()
-    {
-        var fdr = FDP2.GetFDRs.FirstOrDefault(f => f.Callsign == Callsign);
-        return fdr?.GetNextWaypoints(PositionPopupWaypointCount) ?? [];
     }
 
     UplinkMessageTemplateViewModel ResolveMessageReference(UplinkMessageReference reference)
     {
         var definition = UplinkElements.Get(reference.ElementId);
+        var flightData = _flightDataProvider.Find(Callsign);
 
         // Show the default values in place of the placeholders.
         // The placeholders have the same sequence as the parameters of the element.
@@ -817,7 +817,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
             if (reference.DefaultParameters?.TryGetValue(parameter.Name, out var defaultValue) != true)
                 return placeholder.Value;
 
-            var value = FdrDefaultValues.Resolve(defaultValue!, Callsign);
+            var value = FdrDefaultValues.Resolve(defaultValue!, flightData);
             return string.IsNullOrEmpty(value) ? placeholder.Value : value;
         });
 

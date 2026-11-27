@@ -126,10 +126,10 @@ public class Plugin : ILabelPlugin, IStripPlugin, IRecipient<DialogueChangedNoti
             .AddSingleton(this) // TODO: Ick... Whatever we're relying on this for, move it into a separate service please.
             .AddSingleton(pluginConfiguration)
             .AddSingleton<IServerConnection, PluginServerConnection>()
-            .AddSingleton<TokenStore>()
+            .AddSingleton<AuthenticationStore>()
             .AddSingleton<PluginAuthenticator>()
-            .AddSingleton<AuthenticationState>()
             .AddSingleton<IJurisdictionChecker, JurisdictionChecker>()
+            .AddSingleton<IFlightDataProvider, VatSysFlightDataProvider>()
             .AddSingleton<AircraftConnectionStore>()
             .AddSingleton<AcarsStationStore>()
             .AddSingleton<AdscContractStore>()

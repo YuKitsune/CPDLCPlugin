@@ -11,8 +11,7 @@ public record CheckAuthenticationRequest(string ServerEndpoint) : IRequest<strin
 
 public class CheckAuthenticationRequestHandler(
     PluginAuthenticator authenticator,
-    TokenStore tokenStore,
-    AuthenticationState authenticationState,
+    AuthenticationStore authenticationStore,
     ILogger logger)
     : IRequestHandler<CheckAuthenticationRequest, string?>
 {
@@ -20,19 +19,19 @@ public class CheckAuthenticationRequestHandler(
     {
         var server = ServerAddress.GetBaseUri(request.ServerEndpoint);
 
-        var token = tokenStore.Get(server);
-        var user = token is null ? null : await authenticator.GetUser(server, token, cancellationToken);
+        // The store does not return an expired token, so the server gets only a token that is not expired
+        var token = authenticationStore.Get(server);
+        if (token is null)
+            return null;
 
-        if (token is not null && user is null)
-        {
-            logger.Information("The server {Server} did not accept the saved token. Deleting it", server);
-            tokenStore.Delete(server);
-            token = null;
-        }
+        var user = await authenticator.GetUser(server, token.AccessToken, cancellationToken);
+        if (user is not null)
+            return token.AccessToken;
 
-        authenticationState.Set(server, user);
+        logger.Information("The server {Server} did not accept the saved token. Deleting it", server);
+        authenticationStore.Delete(server);
         WeakReferenceMessenger.Default.Send(new AuthenticationChangedNotification());
 
-        return token;
+        return null;
     }
 }

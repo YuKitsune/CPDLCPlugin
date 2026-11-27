@@ -10,8 +10,7 @@ public record LogOutRequest(string ServerEndpoint) : IRequest;
 
 public class LogOutRequestHandler(
     PluginAuthenticator authenticator,
-    TokenStore tokenStore,
-    AuthenticationState authenticationState,
+    AuthenticationStore authenticationStore,
     ILogger logger)
     : IRequestHandler<LogOutRequest>
 {
@@ -19,9 +18,8 @@ public class LogOutRequestHandler(
     {
         var server = ServerAddress.GetBaseUri(request.ServerEndpoint);
 
-        var token = tokenStore.Get(server);
-        tokenStore.Delete(server);
-        authenticationState.Set(server, null);
+        var token = authenticationStore.Get(server);
+        authenticationStore.Delete(server);
         WeakReferenceMessenger.Default.Send(new AuthenticationChangedNotification());
 
         if (token is null)
@@ -29,7 +27,7 @@ public class LogOutRequestHandler(
 
         try
         {
-            await authenticator.Logout(server, token, cancellationToken);
+            await authenticator.Logout(server, token.AccessToken, cancellationToken);
         }
         catch (Exception ex)
         {

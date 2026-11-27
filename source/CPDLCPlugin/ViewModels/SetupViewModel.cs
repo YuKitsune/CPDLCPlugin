@@ -17,7 +17,7 @@ public partial class SetupViewModel : ObservableObject,
     readonly IMediator _mediator;
     readonly IErrorReporter _errorReporter;
     readonly IWindowHandle _windowHandle;
-    readonly AuthenticationState _authenticationState;
+    readonly AuthenticationStore _authenticationStore;
     readonly IGuiInvoker _guiInvoker;
 
     [ObservableProperty] string serverEndpoint;
@@ -32,7 +32,7 @@ public partial class SetupViewModel : ObservableObject,
         IMediator mediator,
         IErrorReporter errorReporter,
         IWindowHandle windowHandle,
-        AuthenticationState authenticationState,
+        AuthenticationStore authenticationStore,
         IGuiInvoker guiInvoker,
         string serverEndpoint,
         string[] availableStationIdentifiers,
@@ -42,7 +42,7 @@ public partial class SetupViewModel : ObservableObject,
         _mediator = mediator;
         _errorReporter = errorReporter;
         _windowHandle = windowHandle;
-        _authenticationState = authenticationState;
+        _authenticationStore = authenticationStore;
         _guiInvoker = guiInvoker;
         ServerEndpoint = serverEndpoint;
         AvailableStationIdentifiers = availableStationIdentifiers;
@@ -128,11 +128,11 @@ public partial class SetupViewModel : ObservableObject,
             return;
         }
 
-        var user = _authenticationState.GetUser(server);
-        Authenticated = user is not null;
-        AuthenticationStatus = user is null
+        var token = _authenticationStore.Get(server);
+        Authenticated = token is not null;
+        AuthenticationStatus = token is null
             ? "Not authenticated"
-            : $"Authenticated as {user.Cid}";
+            : $"Authenticated as {token.Cid}";
     }
 
     public void Receive(ConnectedNotification message)
