@@ -16,13 +16,11 @@
                   ItemsSource="{Binding Options, RelativeSource={RelativeSource AncestorType=popups:ScrollList}}"
                   Height="{x:Static popups:ScrollList.ListHeight}"
                   VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.ScrollUnit="Item"
-                  ScrollViewer.CanContentScroll="True">
+                  VirtualizingPanel.ScrollUnit="Item">
         <ItemsControl.Template>
             <ControlTemplate TargetType="ItemsControl">
                 <ScrollViewer x:Name="ListScrollViewer"
                               Style="{StaticResource CustomScrollViewerStyle}"
-                              CanContentScroll="True"
                               Padding="0"
                               Focusable="False">
                     <ItemsPresenter/>

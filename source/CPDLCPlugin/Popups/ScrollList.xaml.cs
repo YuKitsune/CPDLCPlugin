@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Threading;
 using CPDLCPlugin.ViewModels;
+using vatSysToolbox.Controls;
 
 namespace CPDLCPlugin.Popups;
 
@@ -10,7 +11,9 @@ public partial class ScrollList : UserControl
 {
     public const double ItemHeight = 20;
     public const int ItemCount = 9;
-    public const double ListHeight = ItemHeight * ItemCount;
+
+    // The scroll viewer style puts the items in a sunken bevel, so the list is higher than the items
+    public static readonly double ListHeight = ItemHeight * ItemCount + Bevel.BorderThickness.Top + Bevel.BorderThickness.Bottom;
 
     public static readonly DependencyProperty OptionsProperty = DependencyProperty.Register(
         nameof(Options),
@@ -39,8 +42,15 @@ public partial class ScrollList : UserControl
         // The items are made after the layout, so scroll after the layout is complete
         Dispatcher.InvokeAsync(() =>
         {
-            if (List.Template.FindName("ListScrollViewer", List) is not ScrollViewer scrollViewer)
+            // The scroll viewer style shows the items in an internal scroll viewer, so scroll that one
+            if (List.Template.FindName("ListScrollViewer", List) is not ScrollViewer listScrollViewer ||
+                listScrollViewer.Template.FindName("PART_InternalScrollViewer", listScrollViewer) is not ScrollViewer scrollViewer)
                 return;
+
+            // The style does not pass CanContentScroll to the internal scroll viewer.
+            // Without it, the list scrolls by pixels, and the scroll bar buttons do not move one item at a time.
+            scrollViewer.CanContentScroll = true;
+            scrollViewer.UpdateLayout();
 
             var count = Options.Length;
             var defaultIndex = Array.FindIndex(Options, o => o.IsDefault);
