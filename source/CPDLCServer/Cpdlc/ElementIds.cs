@@ -17,7 +17,12 @@ public static class UplinkElementIds
 /// </summary>
 public static class DownlinkElementIds
 {
+    public const int Wilco = 0;
+    public const int Unable = 1;
     public const int Standby = 2;
+    public const int Roger = 3;
+    public const int Affirm = 4;
+    public const int Negative = 5;
     public const int Error = 62;
     public const int NotCurrentDataAuthority = 63;
     public const int FreeText = 67;

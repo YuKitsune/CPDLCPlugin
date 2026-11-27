@@ -6,6 +6,7 @@ using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.MessageLog;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Downlinks;
+using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Logging;
 using CPDLCServer.Persistence;
@@ -276,6 +277,7 @@ public class AcarsConnectionManager(
             configuration,
             httpClient,
             clock,
+            new UnitOfWorkMessageIdProvider(mediator),
             adscMessageLogRepository,
             trafficLog,
             _logger.ForContext<HoppieAcarsConnection>());

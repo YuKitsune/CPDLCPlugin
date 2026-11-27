@@ -8,6 +8,7 @@ using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.MessageLog;
 using CPDLCServer.AdscContracts.Reports;
 using CPDLCServer.Cpdlc;
+using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
@@ -23,6 +24,7 @@ public class HoppieAcarsConnection : IAcarsConnection
     readonly HoppiesConfiguration _configuration;
     readonly HttpClient _httpClient;
     readonly IClock _clock;
+    readonly IMessageIdProvider _messageIdProvider;
     readonly IAdscMessageLogRepository _adscMessageLogRepository;
     readonly AcarsTrafficLog _trafficLog;
     readonly ILogger _logger;
@@ -33,6 +35,9 @@ public class HoppieAcarsConnection : IAcarsConnection
 
     // The message ID of the last logon request from each aircraft. The reply to the logon request refers to it.
     readonly ConcurrentDictionary<string, int> _logonRequestMessageIds = new();
+
+    // The message ID of the END SERVICE uplink to each aircraft that gets a LOGOFF after the response
+    readonly ConcurrentDictionary<string, int> _queuedLogoffs = new();
     readonly Random _random = Random.Shared;
 
     CancellationTokenSource? _pollCancellationTokenSource;
@@ -50,6 +55,7 @@ public class HoppieAcarsConnection : IAcarsConnection
         HoppiesConfiguration configuration,
         HttpClient httpClient,
         IClock clock,
+        IMessageIdProvider messageIdProvider,
         IAdscMessageLogRepository adscMessageLogRepository,
         AcarsTrafficLog trafficLog,
         ILogger logger)
@@ -58,6 +64,7 @@ public class HoppieAcarsConnection : IAcarsConnection
         _httpClient = httpClient;
         _httpClient.Timeout = TimeSpan.FromSeconds(15);
         _clock = clock;
+        _messageIdProvider = messageIdProvider;
         _adscMessageLogRepository = adscMessageLogRepository;
         _trafficLog = trafficLog;
         _logger = logger
@@ -83,8 +90,23 @@ public class HoppieAcarsConnection : IAcarsConnection
         if (_disposed)
             throw new ObjectDisposedException(nameof(HoppieAcarsConnection));
 
-        var packet = SerializeCpdlcMessage(message);
-        await SendPacket(message.Recipient, "cpdlc", packet, cancellationToken);
+        // Hoppie has no END SERVICE. The aircraft ends the connection when it receives LOGOFF.
+        // If the END SERVICE is with other elements that need a response, remove it, and send the LOGOFF after the
+        // response, so that the pilot can respond to the other elements. If not, the END SERVICE element is LOGOFF.
+        var logoffIsQueued = ControlMessages.NeedsLogoffAfterResponse(message);
+        if (logoffIsQueued)
+            _queuedLogoffs[message.Recipient] = message.MessageId;
+
+        try
+        {
+            var packet = SerializeCpdlcMessage(message, logoffIsQueued);
+            await SendPacket(message.Recipient, "cpdlc", packet, cancellationToken);
+        }
+        catch
+        {
+            _queuedLogoffs.TryRemove(message.Recipient, out _);
+            throw;
+        }
     }
 
     public async Task SendConnectionRequest(string callsign, int messageId, CancellationToken cancellationToken)
@@ -115,6 +137,53 @@ public class HoppieAcarsConnection : IAcarsConnection
             : string.Empty;
 
         await SendPacket(callsign, "cpdlc", $"/data2/{messageId}/{replyToId}/NE/{text}", cancellationToken);
+    }
+
+    // Sends the queued LOGOFF when the aircraft responds to the END SERVICE uplink. A negative response keeps the
+    // connection, so the logoff is removed and not sent.
+    async Task SendQueuedLogoff(ReceivedDownlink downlink, CancellationToken cancellationToken)
+    {
+        if (!_queuedLogoffs.TryGetValue(downlink.Sender, out var endServiceMessageId) ||
+            downlink.MessageReference != endServiceMessageId)
+            return;
+
+        var elementIds = downlink.Elements.Select(e => e.Id).ToArray();
+        var isPositive = elementIds.Any(id => id is DownlinkElementIds.Wilco or DownlinkElementIds.Roger or DownlinkElementIds.Affirm);
+        var isNegative = elementIds.Any(id => id is DownlinkElementIds.Unable or DownlinkElementIds.Negative);
+
+        // For example, STANDBY. The aircraft responds again later.
+        if (!isPositive && !isNegative)
+            return;
+
+        if (!_queuedLogoffs.TryRemove(downlink.Sender, out _))
+            return;
+
+        if (isNegative)
+        {
+            _logger.Information("{Callsign} did not accept END SERVICE {MessageId}, so the connection stays open", downlink.Sender, endServiceMessageId);
+            return;
+        }
+
+        _logger.Information("Sending LOGOFF to {Callsign} after the response to END SERVICE {MessageId}", downlink.Sender, endServiceMessageId);
+
+        // A failure must not stop the other received messages
+        try
+        {
+            var logoffMessageId = await _messageIdProvider.GetNextMessageId(
+                _configuration.AcarsConnectionId,
+                downlink.Sender,
+                cancellationToken);
+
+            await SendPacket(
+                downlink.Sender,
+                "cpdlc",
+                $"/data2/{logoffMessageId}//NE/LOGOFF",
+                cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.Error(ex, "Failed to send LOGOFF to {Callsign}", downlink.Sender);
+        }
     }
 
     public async Task RequestPeriodicAdscContract(string callsign, TimeSpan reportingInterval, CancellationToken cancellationToken)
@@ -409,6 +478,8 @@ public class HoppieAcarsConnection : IAcarsConnection
                         var downlink = ParseCpdlcDownlink(from, packet);
                         _logger.Information("Received {MessageType} from {From}", type, from);
                         _messageChannel.Writer.TryWrite(downlink);
+
+                        await SendQueuedLogoff(downlink, cancellationToken);
                         break;
 
                     case "ads-c":
@@ -505,11 +576,17 @@ public class HoppieAcarsConnection : IAcarsConnection
         if (text.Contains("REQUEST LOGON") || text.Contains("REQUEST LOG ON"))
         {
             _logonRequestMessageIds[from] = messageId;
+
+            // The message IDs start again with a new connection, so a queued logoff of the old connection must not match
+            _queuedLogoffs.TryRemove(from, out _);
             return new ReceivedLogonRequest(from, _clock.UtcNow());
         }
 
         if (text.Contains("LOGOFF") || text.Contains("LOG OFF"))
+        {
+            _queuedLogoffs.TryRemove(from, out _);
             return new ReceivedLogoff(from, _clock.UtcNow());
+        }
 
         return null;
     }
@@ -680,7 +757,8 @@ public class HoppieAcarsConnection : IAcarsConnection
         return TimeSpan.FromSeconds(_random.Next(45, 76));
     }
 
-    string SerializeCpdlcMessage(UplinkMessage uplinkMessage)
+    // If a logoff is queued, the END SERVICE element is not in the text. If not, the END SERVICE element is LOGOFF.
+    string SerializeCpdlcMessage(UplinkMessage uplinkMessage, bool logoffIsQueued)
     {
         var responseType = uplinkMessage.ResponseType switch
         {
@@ -695,7 +773,11 @@ public class HoppieAcarsConnection : IAcarsConnection
             ? uplinkMessage.MessageReference.ToString()
             : string.Empty;
 
-        var text = HoppieUplinkFormatter.Format(uplinkMessage.Elements);
+        var elements = logoffIsQueued
+            ? uplinkMessage.Elements.Where(e => e.Id != UplinkElementIds.EndService).ToArray()
+            : uplinkMessage.Elements;
+
+        var text = HoppieUplinkFormatter.Format(elements);
 
         return $"/data2/{uplinkMessage.MessageId}/{replyToId}/{responseType}/{text}";
     }

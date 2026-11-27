@@ -25,6 +25,7 @@ public class HoppieAcarsConnectionTests : IDisposable
     private readonly List<HoppieAcarsConnection> _connections = new();
     private readonly TestAdscMessageLogRepository _adscMessageLogRepository = new();
     private readonly AcarsTrafficLog _trafficLog = new();
+    private readonly TestMessageIdProvider _messageIdProvider = new();
 
     public void Dispose()
     {
@@ -52,6 +53,7 @@ public class HoppieAcarsConnectionTests : IDisposable
             _configuration,
             httpClient,
             clock ?? new TestClock(),
+            _messageIdProvider,
             _adscMessageLogRepository,
             _trafficLog,
             Logger.None);
@@ -178,7 +180,7 @@ public class HoppieAcarsConnectionTests : IDisposable
     }
 
     [Fact]
-    public async Task Send_CpdlcMessage_TranslatesEndServiceToLogoff()
+    public async Task Send_EndServiceWithElementThatNeedsNoResponse_TranslatesEndServiceToLogoff()
     {
         // Arrange
         var httpHandler = new TestHttpMessageHandler();
@@ -194,7 +196,7 @@ public class HoppieAcarsConnectionTests : IDisposable
             null,
             "UAL123",
             "BN-TSN_FSS",
-            [new UplinkMessageElement(120, ["ML CEN", "123.450"]), new UplinkMessageElement(161, [])],
+            [new UplinkMessageElement(159, ["TEST"]), new UplinkMessageElement(161, [])],
             false,
             clock.UtcNow());
 
@@ -210,7 +212,33 @@ public class HoppieAcarsConnectionTests : IDisposable
 
         Assert.NotNull(sendRequest);
         var formData = await ParseFormDataFromRequest(sendRequest);
-        Assert.Equal("/data2/1//WU/MONITOR+@ML+CEN@+@123.450@.+LOGOFF", formData["packet"]);
+        Assert.Equal("/data2/1//NE/ERROR+@TEST@.+LOGOFF", formData["packet"]);
+    }
+
+    [Fact]
+    public async Task Send_EndServiceAlone_TranslatesEndServiceToLogoff()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        var message = new UplinkMessage(
+            Guid.NewGuid(),
+            1,
+            null,
+            "UAL123",
+            "BN-TSN_FSS",
+            [new UplinkMessageElement(161, [])],
+            false,
+            DateTimeOffset.UtcNow);
+
+        // Act
+        await connection.Send(message, CancellationToken.None);
+
+        // Assert
+        var packet = Assert.Single(await SentCpdlcPackets(httpHandler));
+        Assert.Equal("/data2/1//NE/LOGOFF", packet);
     }
 
     [Fact]
@@ -900,6 +928,185 @@ public class HoppieAcarsConnectionTests : IDisposable
 
         Assert.Equal("DAL456", entries[0].Callsign);
         Assert.Equal("REJECT", entries[0].Packet);
+    }
+
+    [Fact]
+    public async Task Send_EndServiceWithQueuedLogoff_RemovesEndService()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        // Act
+        await SendEndServiceWithFreeText(connection);
+
+        // Assert
+        var packet = Assert.Single(await SentCpdlcPackets(httpHandler));
+        Assert.Equal("/data2/1//R/@MONITOR+UNICOM@", packet);
+    }
+
+    // A positive response to the END SERVICE uplink sends the queued LOGOFF
+    [Theory]
+    [InlineData("ROGER")]
+    [InlineData("WILCO")]
+    [InlineData("AFFIRM")]
+    public async Task Poll_PositiveResponseToEndService_SendsQueuedLogoff(string response)
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        await SendEndServiceWithFreeText(connection);
+        httpHandler.QueueResponse(HttpStatusCode.OK, $"ok {{UAL123 cpdlc {{/data2/3/1/N/{response}}}}}");
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+
+        // Assert
+        await WaitForPacket(httpHandler, "/data2/2//NE/LOGOFF");
+    }
+
+    // A negative response to the END SERVICE uplink keeps the connection
+    [Theory]
+    [InlineData("UNABLE")]
+    [InlineData("NEGATIVE")]
+    public async Task Poll_NegativeResponseToEndService_DoesNotSendLogoff(string response)
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        await SendEndServiceWithFreeText(connection);
+
+        // The second ROGER shows that the negative response removed the queued logoff
+        httpHandler.QueueResponse(
+            HttpStatusCode.OK,
+            $"ok {{UAL123 cpdlc {{/data2/3/1/N/{response}}}}} {{UAL123 cpdlc {{/data2/4/1/N/ROGER}}}}");
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await ReadDownlinks(connection, 2);
+
+        // Assert
+        Assert.DoesNotContain("/data2/2//NE/LOGOFF", await SentCpdlcPackets(httpHandler));
+    }
+
+    [Fact]
+    public async Task Poll_StandbyThenRogerToEndService_SendsLogoffAfterRoger()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        await SendEndServiceWithFreeText(connection);
+        httpHandler.QueueResponse(
+            HttpStatusCode.OK,
+            "ok {UAL123 cpdlc {/data2/3/1/N/STANDBY}} {UAL123 cpdlc {/data2/4/1/N/ROGER}}");
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await ReadDownlinks(connection, 2);
+
+        // Assert
+        await WaitForPacket(httpHandler, "/data2/2//NE/LOGOFF");
+        Assert.Single(await SentCpdlcPackets(httpHandler), p => p.EndsWith("LOGOFF"));
+    }
+
+    [Fact]
+    public async Task Poll_ResponseToAnotherUplink_DoesNotSendLogoff()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        await SendEndServiceWithFreeText(connection);
+        httpHandler.QueueResponse(HttpStatusCode.OK, "ok {UAL123 cpdlc {/data2/3/5/N/ROGER}}");
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await ReadDownlinks(connection, 1);
+
+        // Assert
+        Assert.DoesNotContain("/data2/2//NE/LOGOFF", await SentCpdlcPackets(httpHandler));
+    }
+
+    [Fact]
+    public async Task Poll_LogonRequestAfterEndService_RemovesQueuedLogoff()
+    {
+        // Arrange
+        var httpHandler = new TestHttpMessageHandler();
+        httpHandler.SetResponse(HttpStatusCode.OK, "ok");
+        var connection = CreateConnection(httpHandler);
+
+        await SendEndServiceWithFreeText(connection);
+
+        // The message IDs start again with the new connection, so the ROGER refers to a different uplink
+        httpHandler.QueueResponse(
+            HttpStatusCode.OK,
+            "ok {UAL123 cpdlc {/data2/1//Y/REQUEST LOGON}} {UAL123 cpdlc {/data2/2/1/N/ROGER}}");
+
+        // Act
+        await connection.Connect(CancellationToken.None);
+        await ReadDownlinks(connection, 1);
+
+        // Assert
+        Assert.DoesNotContain("/data2/2//NE/LOGOFF", await SentCpdlcPackets(httpHandler));
+    }
+
+    // Sends END SERVICE with free text (R) to UAL123 as message 1. The LOGOFF gets message 2.
+    private async Task SendEndServiceWithFreeText(HoppieAcarsConnection connection)
+    {
+        var message = new UplinkMessage(
+            Guid.NewGuid(),
+            1,
+            null,
+            "UAL123",
+            "BN-TSN_FSS",
+            [new UplinkMessageElement(161, []), new UplinkMessageElement(169, ["MONITOR UNICOM"])],
+            false,
+            DateTimeOffset.UtcNow);
+
+        _messageIdProvider.SetNextId(2);
+        await connection.Send(message, CancellationToken.None);
+    }
+
+    // The connection handles the received messages in sequence. When the last downlink is read, the connection has
+    // handled the queued logoff of the downlinks before it.
+    private static async Task ReadDownlinks(HoppieAcarsConnection connection, int count)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        for (var i = 0; i < count; i++)
+            await connection.MessageReader.ReadAsync(cts.Token);
+    }
+
+    // Waits until the connection sends the packet. Fails if the packet is not sent in 5 seconds.
+    private async Task WaitForPacket(TestHttpMessageHandler httpHandler, string packet)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (!(await SentCpdlcPackets(httpHandler)).Contains(packet))
+            await Task.Delay(10, cts.Token);
+    }
+
+    // The CPDLC packets that the connection sent, in sequence
+    private async Task<string[]> SentCpdlcPackets(TestHttpMessageHandler httpHandler)
+    {
+        var packets = new List<string>();
+        foreach (var request in httpHandler.Requests.ToArray())
+        {
+            if (request.Content is null)
+                continue;
+
+            var formData = await ParseFormDataFromRequest(request);
+            if (formData.TryGetValue("type", out var type) && type == "cpdlc" && formData.TryGetValue("packet", out var packet))
+                packets.Add(packet);
+        }
+
+        return packets.ToArray();
     }
 
     private async Task<Dictionary<string, string>> ParseFormDataFromRequest(HttpRequestMessage request)
