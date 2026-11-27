@@ -1,23 +1,20 @@
-﻿<Popup x:Class="CPDLCPlugin.Popups.LevelPopup"
-       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-       xmlns:toolbox="clr-namespace:vatSysToolbox;assembly=vatSysToolbox"
-       xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
-       xmlns:popups="clr-namespace:CPDLCPlugin.Popups"
-       d:DataContext="{d:DesignInstance Type=viewModels:LevelPopupViewModel}"
-       mc:Ignorable="d"
-       Placement="Bottom"
-       StaysOpen="False"
-       AllowsTransparency="True">
-    <Popup.Resources>
+﻿<UserControl x:Class="CPDLCPlugin.Popups.LevelPopup"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:toolbox="clr-namespace:vatSysToolbox;assembly=vatSysToolbox"
+             xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
+             xmlns:popups="clr-namespace:CPDLCPlugin.Popups"
+             d:DataContext="{d:DesignInstance Type=viewModels:LevelPopupViewModel}"
+             mc:Ignorable="d">
+    <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/vatSysToolbox;component/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
-    </Popup.Resources>
+    </UserControl.Resources>
 
     <StackPanel Width="80" Background="{toolbox:VatSysColour WindowBackground}">
         <!-- ACID -->
@@ -32,4 +29,4 @@
 
         <popups:ScrollList Options="{Binding Options}" OptionSelected="ScrollList_OptionSelected"/>
     </StackPanel>
-</Popup>
+</UserControl>

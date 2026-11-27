@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CPDLC.Messages;
@@ -115,7 +116,8 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
         switch (templatePart.ParameterType)
         {
             case ParameterType.Altitude:
-                LevelPopup.Open(viewModel.CreateLevelPopupViewModel(templatePart), placementTarget);
+                LevelPopup.DataContext = viewModel.CreateLevelPopupViewModel(templatePart);
+                OpenPopup(LevelPopupHost, placementTarget);
                 return true;
 
             case ParameterType.Time:
@@ -125,16 +127,31 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
                 return true;
 
             case ParameterType.Speed:
-                SpeedPopup.Open(viewModel.CreateSpeedPopupViewModel(templatePart), placementTarget);
+                SpeedPopup.DataContext = viewModel.CreateSpeedPopupViewModel(templatePart);
+                OpenPopup(SpeedPopupHost, placementTarget);
                 return true;
 
             case ParameterType.Position or ParameterType.ToFrom or ParameterType.Direction or ParameterType.IcaoUnitName:
-                FixedValuesPopup.Open(templatePart, placementTarget);
+                FixedValuesPopup.DataContext = templatePart;
+                OpenPopup(FixedValuesPopupHost, placementTarget);
                 return true;
 
             default:
                 return false;
         }
+    }
+
+    static void OpenPopup(Popup popup, UIElement placementTarget)
+    {
+        popup.PlacementTarget = placementTarget;
+        popup.IsOpen = true;
+    }
+
+    void ParameterPopup_ValueSelected(object? sender, EventArgs e)
+    {
+        FixedValuesPopupHost.IsOpen = false;
+        LevelPopupHost.IsOpen = false;
+        SpeedPopupHost.IsOpen = false;
     }
 
     void TemplatePartTextBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)

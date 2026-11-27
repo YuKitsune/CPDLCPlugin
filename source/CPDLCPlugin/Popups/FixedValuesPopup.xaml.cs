@@ -1,22 +1,18 @@
 ﻿using System.Windows;
-using System.Windows.Controls.Primitives;
+using System.Windows.Controls;
 using CPDLCPlugin.ViewModels;
 
 namespace CPDLCPlugin.Popups;
 
 // Shows the fixed values of a parameter. The controller can select only one of these values.
-public partial class FixedValuesPopup : Popup
+public partial class FixedValuesPopup : UserControl
 {
+    // Occurs when the controller selects a value
+    public event EventHandler? ValueSelected;
+
     public FixedValuesPopup()
     {
         InitializeComponent();
-    }
-
-    public void Open(UplinkMessageTemplateElementComponentViewModel templatePart, UIElement placementTarget)
-    {
-        DataContext = templatePart;
-        PlacementTarget = placementTarget;
-        IsOpen = true;
     }
 
     void ValueButton_Click(object sender, RoutedEventArgs e)
@@ -27,6 +23,6 @@ public partial class FixedValuesPopup : Popup
             templatePart.Value = value;
         }
 
-        IsOpen = false;
+        ValueSelected?.Invoke(this, EventArgs.Empty);
     }
 }

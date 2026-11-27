@@ -446,8 +446,26 @@
         </Border>
         </Grid>
 
-        <popups:FixedValuesPopup x:Name="FixedValuesPopup"/>
-        <popups:LevelPopup x:Name="LevelPopup"/>
-        <popups:SpeedPopup x:Name="SpeedPopup"/>
+        <!-- Parameter Popups -->
+        <Popup x:Name="FixedValuesPopupHost"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True">
+            <popups:FixedValuesPopup x:Name="FixedValuesPopup" ValueSelected="ParameterPopup_ValueSelected"/>
+        </Popup>
+
+        <Popup x:Name="LevelPopupHost"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True">
+            <popups:LevelPopup x:Name="LevelPopup" ValueSelected="ParameterPopup_ValueSelected"/>
+        </Popup>
+
+        <Popup x:Name="SpeedPopupHost"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True">
+            <popups:SpeedPopup x:Name="SpeedPopup" ValueSelected="ParameterPopup_ValueSelected"/>
+        </Popup>
     </Grid>
 </UserControl>
