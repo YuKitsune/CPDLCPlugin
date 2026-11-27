@@ -97,6 +97,7 @@ UplinkMessages:
     - WEST ASIA CTL
     - SOUTH EAST ASIA CTL
     - SOUTH AFRICA CTL
+    - ADVISORY
 
   QuickAccessMessages:
     - Element: UM147  # REQUEST POSITION REPORT
