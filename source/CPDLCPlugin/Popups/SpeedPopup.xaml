@@ -19,7 +19,7 @@
     <StackPanel Width="80" Background="{toolbox:VatSysColour WindowBackground}">
         <!-- ACID -->
         <Border BorderBrush="{toolbox:VatSysColour GenericText}"
-                BorderThickness="1"
+                BorderThickness="2"
                 Height="{x:Static popups:ScrollList.ItemHeight}">
             <TextBlock Text="{Binding Callsign}"
                        Style="{StaticResource GenericTextStyle}"
