@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CPDLC.Messages;
 
 namespace CPDLCPlugin.ViewModels;
 
@@ -34,6 +35,14 @@ public partial class SpeedPopupViewModel : ObservableObject
     ScrollListOption[] options = [];
 
     public string UnitText => IsMach ? "MACH" : "KNOTS";
+
+#if DEBUG
+    // For testing in the designer
+    public SpeedPopupViewModel()
+        : this(new UplinkMessageTemplateElementComponentViewModel("[speed]", ParameterType.Speed, []) { Value = "280" }, "QFA1", 35000)
+    {
+    }
+#endif
 
     // clearedLevel is in feet. It is null if the aircraft has no cleared level.
     public SpeedPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart, string callsign, int? clearedLevel)

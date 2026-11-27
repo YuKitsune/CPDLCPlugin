@@ -36,6 +36,14 @@ public partial class UplinkMessageTemplateElementComponentViewModel : Observable
     // The values in the popup menu. An empty list means that there is no popup menu.
     public string[] FixedValues { get; }
 
+#if DEBUG
+    // For testing in the designer
+    public UplinkMessageTemplateElementComponentViewModel()
+        : this("[to/from]", ParameterType.ToFrom, ["TO", "FROM"])
+    {
+    }
+#endif
+
     public UplinkMessageTemplateElementComponentViewModel(string placeholder, ParameterType parameterType, string[] fixedValues)
     {
         Placeholder = placeholder;

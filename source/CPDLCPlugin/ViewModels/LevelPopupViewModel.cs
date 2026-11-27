@@ -1,3 +1,5 @@
+using CPDLC.Messages;
+
 namespace CPDLCPlugin.ViewModels;
 
 // The levels in the level popup, with the highest level at the top, the same as the vatSys CFL menu.
@@ -13,6 +15,14 @@ public class LevelPopupViewModel
     public string Callsign { get; }
 
     public ScrollListOption[] Options { get; }
+
+#if DEBUG
+    // For testing in the designer
+    public LevelPopupViewModel()
+        : this(new UplinkMessageTemplateElementComponentViewModel("[altitude]", ParameterType.Altitude, []) { Value = "350" }, "QFA1")
+    {
+    }
+#endif
 
     public LevelPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart, string callsign)
     {
