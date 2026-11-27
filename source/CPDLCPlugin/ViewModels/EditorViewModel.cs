@@ -261,8 +261,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         {
             // Send the "STANDBY" uplink message
             await _mediator.Send(new SendStandbyUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign));
-            SelectedDownlinkMessage = null;
-            ClearUplinkMessage();
+            _windowHandle.Close();
         }
         catch (Exception ex)
         {
@@ -277,8 +276,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         {
             // Send the "REQUEST DEFERRED" uplink message
             await _mediator.Send(new SendDeferredUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign));
-            SelectedDownlinkMessage = null;
-            ClearUplinkMessage();
+            _windowHandle.Close();
         }
         catch (Exception ex)
         {
@@ -306,13 +304,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         {
             // Send the "UNABLE" and "DUE TO TRAFFIC" uplink messages
             await _mediator.Send(new SendUnableUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign, UplinkElementIds.DueToTraffic));
-
-            // TODO: Do we need to do this? DialogueChanged will kick-in and remove it anyway
-            var newDownlinkMessages = DownlinkMessages.Where(m => m != SelectedDownlinkMessage);
-            DownlinkMessages = newDownlinkMessages.ToArray();
-            SelectedDownlinkMessage = null;
-
-            ClearUplinkMessage();
+            _windowHandle.Close();
         }
         catch (Exception ex)
         {
@@ -327,13 +319,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         {
             // Send the "UNABLE" and "DUE TO AIRSPACE RESTRICTION" uplink messages
             await _mediator.Send(new SendUnableUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign, UplinkElementIds.DueToAirspaceRestriction));
-
-            // TODO: Do we need to do this? DialogueChanged will kick-in and remove it anyway
-            var newDownlinkMessages = DownlinkMessages.Where(m => m != SelectedDownlinkMessage);
-            DownlinkMessages = newDownlinkMessages.ToArray();
-            SelectedDownlinkMessage = null;
-
-            ClearUplinkMessage();
+            _windowHandle.Close();
         }
         catch (Exception ex)
         {
@@ -553,6 +539,9 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
     [RelayCommand]
     async Task SendUplinkMessage()
     {
+        if (!CanSend())
+            return;
+
         try
         {
             var uplinkMessageElements = ConstructUplinkMessage();
@@ -609,6 +598,17 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         {
             _errorReporter.ReportError(ex);
         }
+    }
+
+    // The message can be sent if it has at least one element, and each parameter of the elements has a valid value
+    bool CanSend()
+    {
+        var elements = UplinkMessageElements.Where(e => e.ElementId is not null).ToArray();
+
+        return elements.Length > 0 &&
+               elements
+                   .SelectMany(e => e.Parts.OfType<UplinkMessageTemplateElementComponentViewModel>())
+                   .All(p => !string.IsNullOrEmpty(p.Value) && ParameterInputRules.TryValidate(p.ParameterType, p.Value!, out _));
     }
 
     void ClearUplinkMessage()
@@ -712,9 +712,6 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
             var values = new List<string>();
             foreach (var templatePart in uplinkMessageElement.Parts.OfType<UplinkMessageTemplateElementComponentViewModel>())
             {
-                if (string.IsNullOrEmpty(templatePart.Value))
-                    throw new Exception("Uplink message is invalid");
-
                 values.Add(ToUplinkValue(templatePart));
             }
 
