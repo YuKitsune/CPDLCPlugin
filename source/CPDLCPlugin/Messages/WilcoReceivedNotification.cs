@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
 using CPDLCServer.Contracts;
 using HarmonyLib;
 using MediatR;
@@ -17,10 +16,6 @@ public record WilcoReceivedNotification(DialogueDto Dialogue, UplinkMessageDto U
 public class WilcoReceivedNotificationHandler(IMediator mediator, IGuiInvoker guiInvoker, ILogger logger)
     : INotificationHandler<WilcoReceivedNotification>
 {
-    // Three digits are hundreds of feet, for example "350", "F350" and "FL350" are 35000 ft
-    static readonly Regex HundredsOfFeetRegex = new(@"^(?:FL|F|A)?\s?(\d{3})$");
-    static readonly Regex FeetRegex = new(@"^(\d{4,5})\s?(?:FT)?$");
-
     // The vatSys method that the Direct To menu uses. It changes the route to go direct from the present position.
     const string DirectToMethodName = "vatsys.MMI:DirectToMenuModifyRoute";
 
@@ -76,8 +71,8 @@ public class WilcoReceivedNotificationHandler(IMediator mediator, IGuiInvoker gu
         int upperLevel;
         if (ActionableElements.BlockLevel.Contains(element.Id))
         {
-            if (!TryParseAltitude(element.Parameters[0], out lowerLevel) ||
-                !TryParseAltitude(element.Parameters[1], out upperLevel))
+            if (!Levels.TryParse(element.Parameters[0], out lowerLevel) ||
+                !Levels.TryParse(element.Parameters[1], out upperLevel))
             {
                 logger.Warning("Cannot read the block level {Lower} to {Upper}", element.Parameters[0], element.Parameters[1]);
                 return false;
@@ -85,7 +80,7 @@ public class WilcoReceivedNotificationHandler(IMediator mediator, IGuiInvoker gu
         }
         else
         {
-            if (!TryParseAltitude(element.Parameters[0], out upperLevel))
+            if (!Levels.TryParse(element.Parameters[0], out upperLevel))
             {
                 logger.Warning("Cannot read the level {Level}", element.Parameters[0]);
                 return false;
@@ -122,28 +117,5 @@ public class WilcoReceivedNotificationHandler(IMediator mediator, IGuiInvoker gu
 
         // A null "from" segment makes vatSys start the new route at the present position
         method.Invoke(null, [fdr, null, waypoint]);
-    }
-
-    // Gets the altitude in feet, for example "350" and "FL350" are 35000, and "5000FT" is 5000
-    static bool TryParseAltitude(string altitude, out int feet)
-    {
-        var text = altitude.Trim().ToUpperInvariant();
-
-        var hundredsOfFeetMatch = HundredsOfFeetRegex.Match(text);
-        if (hundredsOfFeetMatch.Success)
-        {
-            feet = int.Parse(hundredsOfFeetMatch.Groups[1].Value) * 100;
-            return true;
-        }
-
-        var feetMatch = FeetRegex.Match(text);
-        if (feetMatch.Success)
-        {
-            feet = int.Parse(feetMatch.Groups[1].Value);
-            return true;
-        }
-
-        feet = -1;
-        return false;
     }
 }

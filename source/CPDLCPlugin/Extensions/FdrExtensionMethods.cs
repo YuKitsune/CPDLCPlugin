@@ -4,6 +4,13 @@ namespace CPDLCPlugin.Extensions;
 
 public static class FdrExtensionMethods
 {
+    // Returns false if the FDR has no cleared level, or if the cleared level is a block level
+    public static bool TryGetClearedLevel(this FDP2.FDR fdr, out int feet)
+    {
+        feet = fdr.CFLUpper;
+        return fdr.CFLLower == FDP2.FDR.LEVEL_NONE && fdr.CFLUpper > FDP2.FDR.LEVEL_VSA;
+    }
+
     // Returns the names of the next waypoints in the route, up to the count
     public static string[] GetNextWaypoints(this FDP2.FDR fdr, int count)
     {

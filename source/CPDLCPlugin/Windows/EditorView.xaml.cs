@@ -4,6 +4,7 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using CPDLC.Messages;
 using CPDLCPlugin.Messages;
+using CPDLCPlugin.Popups;
 using CPDLCPlugin.ViewModels;
 using vatSysToolbox.Windows;
 
@@ -108,18 +109,23 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
     // Returns false if the type has no popup
     bool TryOpenPopup(UplinkMessageTemplateElementComponentViewModel templatePart, UIElement placementTarget)
     {
+        if (DataContext is not EditorViewModel viewModel)
+            return false;
+
         switch (templatePart.ParameterType)
         {
             case ParameterType.Altitude:
-                AltitudePopup.Open(templatePart, placementTarget);
+                LevelPopup.Open(viewModel.CreateLevelPopupViewModel(templatePart), placementTarget);
                 return true;
 
             case ParameterType.Time:
-                TimePopup.Open(templatePart, placementTarget);
+                var screenPoint = placementTarget.PointToScreen(new Point(0, placementTarget.RenderSize.Height));
+                if (VatSysTimeMenu.TryShow(templatePart.Value, new System.Drawing.Point((int)screenPoint.X, (int)screenPoint.Y), out var time))
+                    templatePart.Value = time;
                 return true;
 
             case ParameterType.Speed:
-                SpeedPopup.Open(templatePart, placementTarget);
+                SpeedPopup.Open(viewModel.CreateSpeedPopupViewModel(templatePart), placementTarget);
                 return true;
 
             case ParameterType.Position or ParameterType.ToFrom or ParameterType.Direction or ParameterType.IcaoUnitName:

@@ -10,22 +10,21 @@ public static class FdrDefaultValues
 {
     static readonly Regex VariableRegex = new(@"\$([A-Za-z]+)");
 
-    // The int is the transition level in feet
-    static readonly Dictionary<string, Func<FDP2.FDR, int, string>> Variables = new()
+    static readonly Dictionary<string, Func<FDP2.FDR, string>> Variables = new()
     {
-        { "Callsign", (fdr, _) => fdr.Callsign ?? string.Empty },
-        { "AircraftType", (fdr, _) => fdr.AircraftType ?? string.Empty },
-        { "Departure", (fdr, _) => fdr.DepAirport ?? string.Empty },
-        { "Destination", (fdr, _) => fdr.DesAirport ?? string.Empty },
-        { "AssignedSsrCode", (fdr, _) => AssignedSsrCode(fdr) },
-        { "RequestedLevel", (fdr, transitionLevel) => Level(fdr.RFL, transitionLevel) },
+        { "Callsign", fdr => fdr.Callsign ?? string.Empty },
+        { "AircraftType", fdr => fdr.AircraftType ?? string.Empty },
+        { "Departure", fdr => fdr.DepAirport ?? string.Empty },
+        { "Destination", fdr => fdr.DesAirport ?? string.Empty },
+        { "AssignedSsrCode", AssignedSsrCode },
+        { "RequestedLevel", fdr => Level(fdr.RFL) },
         { "ClearedLevel", ClearedLevel },
-        { "NextWaypoint", (fdr, _) => fdr.GetNextWaypoints(1).FirstOrDefault() ?? string.Empty }
+        { "NextWaypoint", fdr => fdr.GetNextWaypoints(1).FirstOrDefault() ?? string.Empty }
     };
 
     // A variable is empty if the FDR is not found, or if the FDR has no value for it.
     // A name that is not a variable stays in the value.
-    public static string Resolve(string value, string callsign, int transitionLevel)
+    public static string Resolve(string value, string callsign)
     {
         if (!VariableRegex.IsMatch(value))
             return value;
@@ -37,7 +36,7 @@ public static class FdrDefaultValues
             if (!Variables.TryGetValue(match.Groups[1].Value, out var getValue))
                 return match.Value;
 
-            return fdr is null ? string.Empty : getValue(fdr, transitionLevel);
+            return fdr is null ? string.Empty : getValue(fdr);
         });
     }
 
@@ -49,22 +48,18 @@ public static class FdrDefaultValues
     }
 
     // A block level has no single value, so it is empty
-    static string ClearedLevel(FDP2.FDR fdr, int transitionLevel)
+    static string ClearedLevel(FDP2.FDR fdr)
     {
-        return fdr.CFLLower == FDP2.FDR.LEVEL_NONE
-            ? Level(fdr.CFLUpper, transitionLevel)
+        return fdr.TryGetClearedLevel(out var feet)
+            ? Level(feet)
             : string.Empty;
     }
 
-    // A level below the transition level is an altitude, for example 9000 is "A090".
-    // A level at or above the transition level is a flight level, for example 35000 is "FL350".
-    // The special values (no level, 000 and VSA) and a level that is not set are empty.
-    static string Level(int feet, int transitionLevel)
+    // The special values (no level, 000 and VSA) and a level that is not set are empty
+    static string Level(int feet)
     {
-        if (feet <= FDP2.FDR.LEVEL_VSA)
-            return string.Empty;
-
-        var prefix = feet < transitionLevel ? "A" : "FL";
-        return $"{prefix}{feet / 100:000}";
+        return feet <= FDP2.FDR.LEVEL_VSA
+            ? string.Empty
+            : Levels.FormatHundredsOfFeet(feet);
     }
 }

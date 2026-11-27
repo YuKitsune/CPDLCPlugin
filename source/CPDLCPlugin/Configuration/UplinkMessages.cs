@@ -34,6 +34,6 @@ public class UplinkMessagesConfiguration
     // The values that the controller can select for an [icao unit name] parameter
     public string[] IcaoUnitNames { get; init; } = [];
 
-    // The transition level in feet. The level variables below this level are altitudes, for example "A090".
+    // The transition level in feet. In the uplink text, a level below it is an altitude, for example "A095", and a level at or above it is a flight level, for example "F350".
     public int TransitionLevel { get; init; } = 11000;
 }

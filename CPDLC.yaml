@@ -69,12 +69,14 @@ AtsuCodes:
 #   $Departure        The departure airport, for example "YSSY"
 #   $Destination      The destination airport, for example "WSSS"
 #   $AssignedSsrCode  The assigned SSR code, for example "3000"
-#   $RequestedLevel   The requested level, for example "FL350", or "A090" below the transition level
-#   $ClearedLevel     The cleared level, for example "FL350", or "A090" below the transition level.
+#   $RequestedLevel   The requested level in hundreds of feet, for example "350" or "095"
+#   $ClearedLevel     The cleared level in hundreds of feet, for example "350" or "095".
 #                     It is empty for a block level.
 #   $NextWaypoint     The next waypoint in the route, for example "TAXEG"
 UplinkMessages:
-  # The transition level in feet. The level variables below this level are altitudes, for example "A090".
+  # The transition level in feet. The editor shows levels as three digits, for example "350".
+  # In the uplink text, a level below the transition level is an altitude, for example "A095",
+  # and a level at or above it is a flight level, for example "F350".
   TransitionLevel: 11000
 
   # The values that the controller can select for an [icao unit name] parameter

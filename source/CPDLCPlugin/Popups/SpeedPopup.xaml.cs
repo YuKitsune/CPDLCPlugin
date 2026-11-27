@@ -4,8 +4,7 @@ using CPDLCPlugin.ViewModels;
 
 namespace CPDLCPlugin.Popups;
 
-// Shows the speeds that the controller can select.
-// TODO: This is a stub. Add the values, and set the value of the parameter when the controller selects one.
+// Shows the speeds that the controller can select, in knots or in Mach
 public partial class SpeedPopup : Popup
 {
     public SpeedPopup()
@@ -13,10 +12,18 @@ public partial class SpeedPopup : Popup
         InitializeComponent();
     }
 
-    public void Open(UplinkMessageTemplateElementComponentViewModel templatePart, UIElement placementTarget)
+    public void Open(SpeedPopupViewModel viewModel, UIElement placementTarget)
     {
-        DataContext = templatePart;
+        DataContext = viewModel;
         PlacementTarget = placementTarget;
         IsOpen = true;
+    }
+
+    void ScrollList_OptionSelected(object sender, ScrollListOption option)
+    {
+        if (DataContext is SpeedPopupViewModel viewModel)
+            viewModel.Select(option);
+
+        IsOpen = false;
     }
 }

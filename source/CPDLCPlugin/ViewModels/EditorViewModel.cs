@@ -651,7 +651,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
 
                     if (reference.DefaultParameters?.TryGetValue(parameter.Name, out var defaultValue) == true)
                     {
-                        templateElement.Value = FdrDefaultValues.Resolve(defaultValue, Callsign, _uplinkMessagesConfiguration.TransitionLevel);
+                        templateElement.Value = FdrDefaultValues.Resolve(defaultValue, Callsign);
                     }
 
                     parts.Add(templateElement);
@@ -682,6 +682,16 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         return parts.ToArray();
     }
 
+    // The editor shows levels as three digits, for example "350". The uplink text must have the prefix, for example "F350".
+    // A level that is not in a known format is sent as the controller wrote it.
+    string ToUplinkValue(UplinkMessageTemplateElementComponentViewModel templatePart)
+    {
+        if (templatePart.ParameterType == ParameterType.Altitude && Levels.TryParse(templatePart.Value, out var feet))
+            return Levels.FormatForUplink(feet, _uplinkMessagesConfiguration.TransitionLevel);
+
+        return templatePart.Value!;
+    }
+
     UplinkMessageElement[] ConstructUplinkMessage()
     {
         var elements = new List<UplinkMessageElement>();
@@ -697,7 +707,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                 if (string.IsNullOrEmpty(templatePart.Value))
                     throw new Exception("Uplink message is invalid");
 
-                values.Add(templatePart.Value!);
+                values.Add(ToUplinkValue(templatePart));
             }
 
             elements.Add(new UplinkMessageElement(uplinkMessageElement.ElementId.Value, values.ToArray()));
@@ -774,6 +784,19 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         WeakReferenceMessenger.Default.Unregister<DialogueChangedNotification>(this);
     }
 
+    public LevelPopupViewModel CreateLevelPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart)
+    {
+        return new LevelPopupViewModel(templatePart, Callsign);
+    }
+
+    public SpeedPopupViewModel CreateSpeedPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart)
+    {
+        var fdr = FDP2.GetFDRs.FirstOrDefault(f => f.Callsign == Callsign);
+        int? clearedLevel = fdr is not null && fdr.TryGetClearedLevel(out var feet) ? feet : null;
+
+        return new SpeedPopupViewModel(templatePart, Callsign, clearedLevel);
+    }
+
     // The next waypoints in the route of the aircraft, for the position popup
     string[] GetNextWaypoints()
     {
@@ -794,7 +817,7 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
             if (reference.DefaultParameters?.TryGetValue(parameter.Name, out var defaultValue) != true)
                 return placeholder.Value;
 
-            var value = FdrDefaultValues.Resolve(defaultValue!, Callsign, _uplinkMessagesConfiguration.TransitionLevel);
+            var value = FdrDefaultValues.Resolve(defaultValue!, Callsign);
             return string.IsNullOrEmpty(value) ? placeholder.Value : value;
         });
 

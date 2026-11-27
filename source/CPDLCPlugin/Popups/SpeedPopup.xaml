@@ -4,9 +4,9 @@
        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
        xmlns:toolbox="clr-namespace:vatSysToolbox;assembly=vatSysToolbox"
-       xmlns:toolboxControls="clr-namespace:vatSysToolbox.Controls;assembly=vatSysToolbox"
        xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
-       d:DataContext="{d:DesignInstance Type=viewModels:UplinkMessageTemplateElementComponentViewModel}"
+       xmlns:popups="clr-namespace:CPDLCPlugin.Popups"
+       d:DataContext="{d:DesignInstance Type=viewModels:SpeedPopupViewModel}"
        mc:Ignorable="d"
        Placement="Bottom"
        StaysOpen="False"
@@ -19,10 +19,26 @@
         </ResourceDictionary>
     </Popup.Resources>
 
-    <Border Background="{toolbox:VatSysColour WindowBackground}">
-        <toolboxControls:BeveledBorder BorderThickness="{x:Static toolboxControls:Bevel.BorderThickness}" BevelType="Outline">
-            <!-- TODO: SPEED popup -->
-            <TextBlock Text="SPEED" Margin="4"/>
-        </toolboxControls:BeveledBorder>
-    </Border>
+    <StackPanel Width="80" Background="{toolbox:VatSysColour WindowBackground}">
+        <!-- ACID -->
+        <Border BorderBrush="{toolbox:VatSysColour GenericText}"
+                BorderThickness="1"
+                Height="{x:Static popups:ScrollList.ItemHeight}">
+            <TextBlock Text="{Binding Callsign}"
+                       Style="{StaticResource GenericTextStyle}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Border>
+
+        <popups:ScrollList Options="{Binding Options}" OptionSelected="ScrollList_OptionSelected"/>
+
+        <!-- Unit. It is depressed when the speeds are in Mach. -->
+        <ToggleButton Content="{Binding UnitText}"
+                      IsChecked="{Binding IsMach}"
+                      Style="{StaticResource ToggleButtonBaseStyle}"
+                      Height="{x:Static popups:ScrollList.ItemHeight}"
+                      Margin="0"
+                      Padding="0"
+                      FocusVisualStyle="{x:Null}"/>
+    </StackPanel>
 </Popup>

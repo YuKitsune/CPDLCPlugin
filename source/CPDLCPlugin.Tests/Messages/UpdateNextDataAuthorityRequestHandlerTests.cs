@@ -341,7 +341,6 @@ public class UpdateNextDataAuthorityRequestHandlerTests
             Stations = [],
             UplinkMessages = new UplinkMessagesConfiguration
             {
-                MasterMessages = [],
                 QuickAccessMessages = [],
                 Groups = []
             },

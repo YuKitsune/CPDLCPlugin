@@ -447,8 +447,7 @@
         </Grid>
 
         <popups:FixedValuesPopup x:Name="FixedValuesPopup"/>
-        <popups:AltitudePopup x:Name="AltitudePopup"/>
-        <popups:TimePopup x:Name="TimePopup"/>
+        <popups:LevelPopup x:Name="LevelPopup"/>
         <popups:SpeedPopup x:Name="SpeedPopup"/>
     </Grid>
 </UserControl>
