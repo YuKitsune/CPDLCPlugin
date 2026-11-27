@@ -234,7 +234,6 @@ public class Dialogue
         }
 
         TryClose(message.Time);
-        TryArchive(message);
     }
 
     public void TryClose(DateTimeOffset now)
@@ -242,15 +241,6 @@ public class Dialogue
         if (_messages.All(m => m.IsClosed))
         {
             Closed = now;
-        }
-    }
-
-    void TryArchive(CpdlcMessage message)
-    {
-        // Immediately archive when certain uplinks are added
-        if (message is UplinkMessage uplink && ShouldAutoArchive(uplink))
-        {
-            Archive(uplink.Sent);
         }
     }
 
@@ -264,13 +254,5 @@ public class Dialogue
     {
         // STANDBY and REQUEST DEFERRED responses do not close downlinks
         return !uplinkMessage.HasElement(UplinkElementIds.Standby) && !uplinkMessage.HasElement(UplinkElementIds.RequestDeferred);
-    }
-
-    bool ShouldAutoArchive(UplinkMessage uplinkMessage)
-    {
-        // Auto-archive dialogues with UNABLE DUE TO TRAFFIC or UNABLE DUE TO AIRSPACE RESTRICTION
-        var elementIds = uplinkMessage.Elements.Select(e => e.Id).ToArray();
-        return elementIds.SequenceEqual([UplinkElementIds.Unable, UplinkElementIds.DueToTraffic]) ||
-               elementIds.SequenceEqual([UplinkElementIds.Unable, UplinkElementIds.DueToAirspaceRestriction]);
     }
 }

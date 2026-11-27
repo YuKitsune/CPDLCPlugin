@@ -354,7 +354,7 @@ public class DialogueTests
     }
 
     [Fact]
-    public void Dialogue_UnableDueToTrafficClosesAndArchivesImmediately()
+    public void Dialogue_UnableDueToTrafficClosesImmediately()
     {
         // Arrange
         var time = DateTimeOffset.UtcNow;
@@ -387,8 +387,7 @@ public class DialogueTests
         Assert.True(unable.IsClosed);
         Assert.True(dialogue.IsClosed); // Dialogue closes immediately
         Assert.Equal(unable.Sent, dialogue.Closed);
-        Assert.True(dialogue.IsArchived); // Dialogue is auto-archived with UNABLE DUE TO TRAFFIC
-        Assert.Equal(unable.Sent, dialogue.Archived);
+        Assert.False(dialogue.IsArchived); // The controller archives the dialogue
     }
 
     [Fact]

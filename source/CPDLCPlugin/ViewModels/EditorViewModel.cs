@@ -260,8 +260,11 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         try
         {
             // Send the "STANDBY" uplink message
-            await _mediator.Send(new SendStandbyUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign));
-            _windowHandle.Close();
+            var downlinkMessage = SelectedDownlinkMessage!;
+            SelectNextDownlinkMessage();
+
+            await _mediator.Send(new SendStandbyUplinkRequest(downlinkMessage.Dialogue.Id, downlinkMessage.OriginalMessage.MessageId, Callsign));
+            CloseIfNoDownlinkSelected();
         }
         catch (Exception ex)
         {
@@ -275,8 +278,11 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         try
         {
             // Send the "REQUEST DEFERRED" uplink message
-            await _mediator.Send(new SendDeferredUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign));
-            _windowHandle.Close();
+            var downlinkMessage = SelectedDownlinkMessage!;
+            SelectNextDownlinkMessage();
+
+            await _mediator.Send(new SendDeferredUplinkRequest(downlinkMessage.Dialogue.Id, downlinkMessage.OriginalMessage.MessageId, Callsign));
+            CloseIfNoDownlinkSelected();
         }
         catch (Exception ex)
         {
@@ -302,9 +308,12 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
     {
         try
         {
-            // Send the "UNABLE" and "DUE TO TRAFFIC" uplink messages
-            await _mediator.Send(new SendUnableUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign, UplinkElementIds.DueToTraffic));
-            _windowHandle.Close();
+            // Send the "UNABLE" and "DUE TO TRAFFIC" uplink elements
+            var downlinkMessage = SelectedDownlinkMessage!;
+            SelectNextDownlinkMessage();
+
+            await _mediator.Send(new SendUnableUplinkRequest(downlinkMessage.Dialogue.Id, downlinkMessage.OriginalMessage.MessageId, Callsign, UplinkElementIds.DueToTraffic));
+            CloseIfNoDownlinkSelected();
         }
         catch (Exception ex)
         {
@@ -317,9 +326,12 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
     {
         try
         {
-            // Send the "UNABLE" and "DUE TO AIRSPACE RESTRICTION" uplink messages
-            await _mediator.Send(new SendUnableUplinkRequest(SelectedDownlinkMessage!.Dialogue.Id, SelectedDownlinkMessage!.OriginalMessage.MessageId, Callsign, UplinkElementIds.DueToAirspaceRestriction));
-            _windowHandle.Close();
+            // Send the "UNABLE" and "DUE TO AIRSPACE RESTRICTION" uplink elements
+            var downlinkMessage = SelectedDownlinkMessage!;
+            SelectNextDownlinkMessage();
+
+            await _mediator.Send(new SendUnableUplinkRequest(downlinkMessage.Dialogue.Id, downlinkMessage.OriginalMessage.MessageId, Callsign, UplinkElementIds.DueToAirspaceRestriction));
+            CloseIfNoDownlinkSelected();
         }
         catch (Exception ex)
         {
@@ -547,7 +559,6 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
             var uplinkMessageElements = ConstructUplinkMessage();
             var canAction = uplinkMessageElements.Any(e => ActionableElements.Contains(e.Id));
 
-            // Remove the selected downlink message and select the most recent one
             var downlinkMessage = SelectedDownlinkMessage;
 
             _logger.Debug("[{Callsign}] Sending uplink from editor - SelectedDownlinkMessage: {HasSelection}, MessageId: {MessageId}, Elements: {@Elements}",
@@ -556,18 +567,10 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                 downlinkMessage?.OriginalMessage?.MessageId,
                 uplinkMessageElements);
 
-            if (SelectedDownlinkMessage is not null)
-            {
-                _logger.Debug("[{Callsign}] Removing downlink {DownlinkId} from selection after sending reply",
-                    Callsign, SelectedDownlinkMessage.OriginalMessage.MessageId);
-                var newDownlinkMessages = new List<DownlinkMessageViewModel>();
-                newDownlinkMessages.AddRange(DownlinkMessages.Where(d => d != SelectedDownlinkMessage));
-                SelectedDownlinkMessage = newDownlinkMessages.LastOrDefault();
-            }
-            else
-            {
+            if (downlinkMessage is null)
                 _logger.Debug("[{Callsign}] No downlink selected - sending uplink without MessageReference", Callsign);
-            }
+
+            SelectNextDownlinkMessage();
 
             if (downlinkMessage is not null)
             {
@@ -586,18 +589,32 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
                     canAction));
             }
 
-            ClearUplinkMessage();
-
-            if (SelectedDownlinkMessage is not null)
-                return;
-
-            // Close the window if there are no more downlink messages remaining
-            _windowHandle.Close();
+            CloseIfNoDownlinkSelected();
         }
         catch (Exception ex)
         {
             _errorReporter.ReportError(ex);
         }
+    }
+
+    // Removes the selected downlink message from the selection, and selects the most recent one
+    void SelectNextDownlinkMessage()
+    {
+        if (SelectedDownlinkMessage is null)
+            return;
+
+        _logger.Debug("[{Callsign}] Removing downlink {DownlinkId} from selection after sending reply",
+            Callsign, SelectedDownlinkMessage.OriginalMessage.MessageId);
+        SelectedDownlinkMessage = DownlinkMessages.LastOrDefault(d => d != SelectedDownlinkMessage);
+    }
+
+    // Clears the uplink message after it is sent. Closes the window if there are no more downlink messages remaining.
+    void CloseIfNoDownlinkSelected()
+    {
+        ClearUplinkMessage();
+
+        if (SelectedDownlinkMessage is null)
+            _windowHandle.Close();
     }
 
     // The message can be sent if it has at least one element, and each parameter of the elements has a valid value
