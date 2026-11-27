@@ -192,7 +192,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <toolboxControls:BeveledLine Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Height="{x:Static toolboxControls:Bevel.LineWidth}" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Height="2"/>
 
             <!-- Delay Response section -->
             <Grid Grid.Row="1" Grid.Column="0">
@@ -209,7 +209,7 @@
                 </WrapPanel>
             </Grid>
 
-            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="1" Width="{x:Static toolboxControls:Bevel.LineWidth}" Orientation="Vertical" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="1" Width="2" Orientation="Vertical"/>
 
             <!-- To Editor section -->
             <Grid Grid.Row="1" Grid.Column="2">
@@ -225,7 +225,7 @@
                 </WrapPanel>
             </Grid>
 
-            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="3" Width="{x:Static toolboxControls:Bevel.LineWidth}" Orientation="Vertical" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="3" Width="2" Orientation="Vertical"/>
 
             <!-- Unable section -->
             <Grid Grid.Row="1" Grid.Column="4">
@@ -242,7 +242,7 @@
                 </WrapPanel>
             </Grid>
 
-            <toolboxControls:BeveledLine Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Height="{x:Static toolboxControls:Bevel.LineWidth}" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Height="2"/>
         </Grid>
 
         <!-- Class Elements Display Area -->
