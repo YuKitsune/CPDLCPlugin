@@ -27,7 +27,7 @@
                        VerticalAlignment="Center"/>
         </Border>
 
-        <popups:ScrollList Options="{Binding Options}" OptionSelected="ScrollList_OptionSelected"/>
+        <popups:ScrollList Options="{Binding Options}" SelectCommand="{Binding SelectCommand}"/>
 
         <!-- Unit. It is depressed when the speeds are in Mach. -->
         <ToggleButton Content="{Binding UnitText}"

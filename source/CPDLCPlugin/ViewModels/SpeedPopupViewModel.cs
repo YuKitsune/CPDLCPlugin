@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CPDLC.Messages;
 
 namespace CPDLCPlugin.ViewModels;
@@ -21,6 +22,7 @@ public partial class SpeedPopupViewModel : ObservableObject
 
     readonly UplinkMessageTemplateElementComponentViewModel _templatePart;
     readonly int? _clearedLevel;
+    readonly Action _close;
 
     // The default speed in the unit that the parameter value uses
     readonly int? _defaultSpeed;
@@ -39,16 +41,18 @@ public partial class SpeedPopupViewModel : ObservableObject
 #if DEBUG
     // For testing in the designer
     public SpeedPopupViewModel()
-        : this(new UplinkMessageTemplateElementComponentViewModel("[speed]", ParameterType.Speed, []) { Value = "280" }, "QFA1", 35000)
+        : this(new UplinkMessageTemplateElementComponentViewModel("[speed]", ParameterType.Speed, []) { Value = "280" }, "QFA1", 35000, () => { })
     {
     }
 #endif
 
     // clearedLevel is in feet. It is null if the aircraft has no cleared level.
-    public SpeedPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart, string callsign, int? clearedLevel)
+    // close closes the popup after the controller selects a speed.
+    public SpeedPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart, string callsign, int? clearedLevel, Action close)
     {
         _templatePart = templatePart;
         _clearedLevel = clearedLevel;
+        _close = close;
         Callsign = callsign;
 
         if (TryParseSpeed(templatePart.Value, out var speed, out var speedIsMach))
@@ -67,9 +71,11 @@ public partial class SpeedPopupViewModel : ObservableObject
         Options = CreateOptions();
     }
 
-    public void Select(ScrollListOption option)
+    [RelayCommand]
+    void Select(ScrollListOption option)
     {
         _templatePart.Value = option.Text;
+        _close();
     }
 
     ScrollListOption[] CreateOptions()

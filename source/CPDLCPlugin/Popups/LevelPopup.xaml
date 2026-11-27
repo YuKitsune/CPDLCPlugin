@@ -27,6 +27,6 @@
                        VerticalAlignment="Center"/>
         </Border>
 
-        <popups:ScrollList Options="{Binding Options}" OptionSelected="ScrollList_OptionSelected"/>
+        <popups:ScrollList Options="{Binding Options}" SelectCommand="{Binding SelectCommand}"/>
     </StackPanel>
 </UserControl>

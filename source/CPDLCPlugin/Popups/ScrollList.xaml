@@ -42,7 +42,8 @@
                               Margin="0"
                               Padding="0"
                               FocusVisualStyle="{x:Null}"
-                              Click="OptionButton_Click"/>
+                              Command="{Binding SelectCommand, RelativeSource={RelativeSource AncestorType=popups:ScrollList}}"
+                              CommandParameter="{Binding}"/>
             </DataTemplate>
         </ItemsControl.ItemTemplate>
     </ItemsControl>

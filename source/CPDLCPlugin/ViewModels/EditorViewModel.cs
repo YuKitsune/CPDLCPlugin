@@ -784,17 +784,17 @@ public partial class EditorViewModel : ObservableObject, IRecipient<DialogueChan
         WeakReferenceMessenger.Default.Unregister<DialogueChangedNotification>(this);
     }
 
-    public LevelPopupViewModel CreateLevelPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart)
+    public LevelPopupViewModel CreateLevelPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart, Action close)
     {
-        return new LevelPopupViewModel(templatePart, Callsign);
+        return new LevelPopupViewModel(templatePart, Callsign, close);
     }
 
-    public SpeedPopupViewModel CreateSpeedPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart)
+    public SpeedPopupViewModel CreateSpeedPopupViewModel(UplinkMessageTemplateElementComponentViewModel templatePart, Action close)
     {
         var fdr = FDP2.GetFDRs.FirstOrDefault(f => f.Callsign == Callsign);
         int? clearedLevel = fdr is not null && fdr.TryGetClearedLevel(out var feet) ? feet : null;
 
-        return new SpeedPopupViewModel(templatePart, Callsign, clearedLevel);
+        return new SpeedPopupViewModel(templatePart, Callsign, clearedLevel, close);
     }
 
     // The next waypoints in the route of the aircraft, for the position popup

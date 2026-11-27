@@ -3,10 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:toolbox="clr-namespace:vatSysToolbox;assembly=vatSysToolbox"
-             xmlns:toolboxControls="clr-namespace:vatSysToolbox.Controls;assembly=vatSysToolbox"
              xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
-             d:DataContext="{d:DesignInstance Type=viewModels:UplinkMessageTemplateElementComponentViewModel}"
+             d:DataContext="{d:DesignInstance Type=viewModels:FixedValuesPopupViewModel}"
              mc:Ignorable="d">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -16,17 +14,14 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Border Background="{toolbox:VatSysColour WindowBackground}">
-        <toolboxControls:BeveledBorder BorderThickness="{x:Static toolboxControls:Bevel.BorderThickness}" BevelType="Outline">
-            <ItemsControl ItemsSource="{Binding FixedValues}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Content="{Binding}"
-                                Style="{StaticResource ButtonBaseStyle}"
-                                Click="ValueButton_Click"/>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </toolboxControls:BeveledBorder>
-    </Border>
+    <ItemsControl ItemsSource="{Binding Values}">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <Button Content="{Binding}"
+                        Style="{StaticResource ButtonBaseStyle}"
+                        Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                        CommandParameter="{Binding}"/>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
 </UserControl>

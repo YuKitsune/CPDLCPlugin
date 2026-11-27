@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Threading;
 using CPDLCPlugin.ViewModels;
 using vatSysToolbox.Controls;
@@ -27,8 +28,17 @@ public partial class ScrollList : UserControl
         set => SetValue(OptionsProperty, value);
     }
 
-    // Occurs when the controller selects an option
-    public event EventHandler<ScrollListOption>? OptionSelected;
+    public static readonly DependencyProperty SelectCommandProperty = DependencyProperty.Register(
+        nameof(SelectCommand),
+        typeof(ICommand),
+        typeof(ScrollList));
+
+    // Runs when the controller selects an option. The parameter is the ScrollListOption.
+    public ICommand? SelectCommand
+    {
+        get => (ICommand?)GetValue(SelectCommandProperty);
+        set => SetValue(SelectCommandProperty, value);
+    }
 
     public ScrollList()
     {
@@ -59,11 +69,5 @@ public partial class ScrollList : UserControl
 
             scrollViewer.ScrollToVerticalOffset(firstIndex);
         }, DispatcherPriority.Loaded);
-    }
-
-    void OptionButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: ScrollListOption option })
-            OptionSelected?.Invoke(this, option);
     }
 }

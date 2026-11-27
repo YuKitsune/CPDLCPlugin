@@ -451,21 +451,21 @@
                Placement="Bottom"
                StaysOpen="False"
                AllowsTransparency="True">
-            <popups:FixedValuesPopup x:Name="FixedValuesPopup" ValueSelected="ParameterPopup_ValueSelected"/>
+            <popups:FixedValuesPopup x:Name="FixedValuesPopup"/>
         </Popup>
 
         <Popup x:Name="LevelPopupHost"
                Placement="Bottom"
                StaysOpen="False"
                AllowsTransparency="True">
-            <popups:LevelPopup x:Name="LevelPopup" ValueSelected="ParameterPopup_ValueSelected"/>
+            <popups:LevelPopup x:Name="LevelPopup"/>
         </Popup>
 
         <Popup x:Name="SpeedPopupHost"
                Placement="Bottom"
                StaysOpen="False"
                AllowsTransparency="True">
-            <popups:SpeedPopup x:Name="SpeedPopup" ValueSelected="ParameterPopup_ValueSelected"/>
+            <popups:SpeedPopup x:Name="SpeedPopup"/>
         </Popup>
     </Grid>
 </UserControl>

@@ -116,7 +116,7 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
         switch (templatePart.ParameterType)
         {
             case ParameterType.Altitude:
-                LevelPopup.DataContext = viewModel.CreateLevelPopupViewModel(templatePart);
+                LevelPopup.DataContext = viewModel.CreateLevelPopupViewModel(templatePart, () => LevelPopupHost.IsOpen = false);
                 OpenPopup(LevelPopupHost, placementTarget);
                 return true;
 
@@ -127,12 +127,12 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
                 return true;
 
             case ParameterType.Speed:
-                SpeedPopup.DataContext = viewModel.CreateSpeedPopupViewModel(templatePart);
+                SpeedPopup.DataContext = viewModel.CreateSpeedPopupViewModel(templatePart, () => SpeedPopupHost.IsOpen = false);
                 OpenPopup(SpeedPopupHost, placementTarget);
                 return true;
 
             case ParameterType.Position or ParameterType.ToFrom or ParameterType.Direction or ParameterType.IcaoUnitName:
-                FixedValuesPopup.DataContext = templatePart;
+                FixedValuesPopup.DataContext = new FixedValuesPopupViewModel(templatePart, () => FixedValuesPopupHost.IsOpen = false);
                 OpenPopup(FixedValuesPopupHost, placementTarget);
                 return true;
 
@@ -145,13 +145,6 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
     {
         popup.PlacementTarget = placementTarget;
         popup.IsOpen = true;
-    }
-
-    void ParameterPopup_ValueSelected(object? sender, EventArgs e)
-    {
-        FixedValuesPopupHost.IsOpen = false;
-        LevelPopupHost.IsOpen = false;
-        SpeedPopupHost.IsOpen = false;
     }
 
     void TemplatePartTextBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
