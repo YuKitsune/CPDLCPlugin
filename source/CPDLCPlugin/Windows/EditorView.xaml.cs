@@ -72,6 +72,18 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
         // Don't mark as handled so button gets visual feedback
     }
 
+    // Left click: Show the popup for the type, or start editing if the type has no popup.
+    // The popup opens when the mouse button is released. A popup that opens when the button is pressed closes when
+    // the button is released, because the popup loses the mouse capture.
+    void TemplatePartButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: UplinkMessageTemplateElementComponentViewModel templatePart } element)
+            return;
+
+        if (!TryOpenPopup(templatePart, element))
+            templatePart.IsEditing = true;
+    }
+
     void TemplatePartButton_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is not FrameworkElement element ||
@@ -80,19 +92,6 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
 
         switch (e.ChangedButton)
         {
-            // Left click: Show the popup for the type, or start editing if the type has no popup
-            case MouseButton.Left:
-                if (TryOpenPopup(templatePart, element))
-                {
-                    e.Handled = true;
-                }
-                else
-                {
-                    templatePart.IsEditing = true;
-                }
-
-                break;
-
             // Middle click: Clear the value
             case MouseButton.Middle:
                 templatePart.Value = null;

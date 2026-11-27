@@ -379,6 +379,7 @@
                                                 <!-- Button shown when not editing -->
                                                 <Button Style="{StaticResource TemplateButton}"
                                                         PreviewMouseDown="TemplatePartButton_MouseDown"
+                                                        Click="TemplatePartButton_Click"
                                                         Visibility="{Binding IsEditing, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                                                     <TextBlock>
                                                         <TextBlock.Style>
