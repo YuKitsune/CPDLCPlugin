@@ -1,14 +1,14 @@
 # Configuration for the CPDLC plugin.
 
 # The address of the hub on the CPDLC server
-ServerEndpoint: "https://vatpac-cpdlc.eoinmotherway.dev/hubs/controller"
+ServerEndpoint: "https://cpdlc-dev.eoinmotherway.dev/hubs/controller"
 
 # When true, the plugin connects to the CPDLC server when vatSys connects to VATSIM.
 # It uses the first station in Stations.
 AutoConnect: false
 
 # The stations that the controller can select
-Stations: [YBBB, YMMM, NFFF, AYPM]
+Stations: [YBBZ, YMMZ]
 
 LogLevel: Verbose
 MaxCurrentMessages: 50
