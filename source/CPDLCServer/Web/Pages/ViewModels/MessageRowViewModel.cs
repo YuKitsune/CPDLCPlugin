@@ -25,7 +25,7 @@ public record MessageRowViewModel(
     {
         var aircraft = aircraftLookup.GetValueOrDefault(dialogue.AircraftCallsign);
         var acarsNetwork = aircraft?.AcarsConnectionId ?? "Unknown";
-        var stationId = aircraft?.StationId ?? "Unknown";
+        var stationId = dialogue.StationId;
 
         return message switch
         {
