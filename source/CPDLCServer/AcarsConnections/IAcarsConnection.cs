@@ -27,8 +27,13 @@ public interface IAcarsConnection : IAsyncDisposable
     ChannelReader<ReceivedAdscMessage> AdscMessageReader { get; }
 
     /// <summary>
+    ///     A <see cref="ChannelReader{T}"/> where logon requests and logoffs can be read.
+    /// </summary>
+    ChannelReader<ReceivedControlMessage> ControlMessageReader { get; }
+
+    /// <summary>
     ///     Initiates the connection to the ACARS network, and starts reading messages.
-    ///     Use <see cref="MessageReader"/> and <see cref="AdscMessageReader"/> to read the received messages.
+    ///     Use <see cref="MessageReader"/>, <see cref="AdscMessageReader"/> and <see cref="ControlMessageReader"/> to read the received messages.
     /// </summary>
     Task Connect(CancellationToken cancellationToken);
 
@@ -36,6 +41,24 @@ public interface IAcarsConnection : IAsyncDisposable
     ///     Transmits a CPDLC uplink message.
     /// </summary>
     Task Send(UplinkMessage message, CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Asks the aircraft to send a logon request to this station.
+    ///     <paramref name="messageId"/> is the ID of the request.
+    /// </summary>
+    Task SendConnectionRequest(string callsign, int messageId, CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Accepts the last logon request from the aircraft.
+    ///     <paramref name="messageId"/> is the ID of the reply.
+    /// </summary>
+    Task AcceptLogon(string callsign, int messageId, CancellationToken cancellationToken);
+
+    /// <summary>
+    ///     Rejects the last logon request from the aircraft, because no controller is online.
+    ///     <paramref name="messageId"/> is the ID of the reply.
+    /// </summary>
+    Task RejectLogon(string callsign, int messageId, CancellationToken cancellationToken);
 
     /// <summary>
     ///     Transmits a request for a periodic ADS contract.

@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Configuration
 
-The plugin is configured via `CPDLC.json` in the plugin directory.
+The plugin is configured via `CPDLC.yaml` in the plugin directory. The keys are the same as the setting names on this page, for example `ServerEndpoint`. You can add comments to the file with `#`.
 
 ## Connection Settings
 
@@ -13,8 +13,8 @@ The plugin is configured via `CPDLC.json` in the plugin directory.
 URL of the CPDLC server WebSocket endpoint.
 
 **Example:**
-```json
-"ServerEndpoint": "http://localhost:5261/hubs/controller"
+```yaml
+ServerEndpoint: "http://localhost:5261/hubs/controller"
 ```
 
 ### AutoConnect
@@ -22,8 +22,8 @@ URL of the CPDLC server WebSocket endpoint.
 When `true`, the plugin connects to the CPDLC server when vatSys connects to VATSIM. It uses the first station in `Stations`. The plugin must be authenticated (see [Connecting to the CPDLC Server](plugin.md#connecting-to-the-cpdlc-server)). Default: `false`.
 
 **Example:**
-```json
-"AutoConnect": true
+```yaml
+AutoConnect: true
 ```
 
 ### Stations
@@ -31,8 +31,8 @@ When `true`, the plugin connects to the CPDLC server when vatSys connects to VAT
 List of station identifiers this controller position will use. The plugin will connect to the server using these callsigns.
 
 **Example:**
-```json
-"Stations": ["YZZZ", "YXXX"]
+```yaml
+Stations: [YZZZ, YXXX]
 ```
 
 ## Logging
@@ -42,8 +42,8 @@ List of station identifiers this controller position will use. The plugin will c
 Controls the verbosity of plugin logs. Valid values: `Verbose`, `Debug`, `Information`, `Warning`, `Error`.
 
 **Example:**
-```json
-"LogLevel": "Verbose"
+```yaml
+LogLevel: Verbose
 ```
 
 ## Message Display
@@ -53,8 +53,8 @@ Controls the verbosity of plugin logs. Valid values: `Verbose`, `Debug`, `Inform
 Maximum number of current (active) messages to display per aircraft.
 
 **Example:**
-```json
-"MaxCurrentMessages": 50
+```yaml
+MaxCurrentMessages: 50
 ```
 
 ### MaxArchivedMessages
@@ -62,8 +62,8 @@ Maximum number of current (active) messages to display per aircraft.
 Maximum number of archived messages to display per aircraft.
 
 **Example:**
-```json
-"MaxArchivedMessages": 50
+```yaml
+MaxArchivedMessages: 50
 ```
 
 ### MaxDisplayMessageLength
@@ -71,8 +71,8 @@ Maximum number of archived messages to display per aircraft.
 Maximum character length for messages shown in the label items. Messages exceeding this length will be truncated with "...".
 
 **Example:**
-```json
-"MaxDisplayMessageLength": 40
+```yaml
+MaxDisplayMessageLength: 40
 ```
 
 ### MaxExtendedMessageLength
@@ -80,8 +80,8 @@ Maximum character length for messages shown in the label items. Messages exceedi
 Maximum character length for messages shown in the extended message view. Messages exceeding this length will be truncated with "...".
 
 **Example:**
-```json
-"MaxExtendedMessageLength": 80
+```yaml
+MaxExtendedMessageLength: 80
 ```
 
 ## Next Data Authority
@@ -95,20 +95,23 @@ Each entry has an `AtsuCode` (the code aircraft logon to) and a `Sectors` array 
 When calculating the NDA, the plugin walks the sector hierarchy from most-specific to least-specific (subsector to parent to grandparent). For each level it collects ATSU code candidates, then selects the first candidate that is currently connected to the ACARS network. This allows FIRs that use individual Hoppie logon codes per controller position to be mapped at the subsector level.
 
 **Example (FIR using a single logon code):**
-```json
-"AtsuCodes": [
-  { "AtsuCode": "YBBB", "Sectors": ["ARL", "INL", "KPL", "TSN"] },
-  { "AtsuCode": "YMMM", "Sectors": ["GUN", "BLA", "IND"] }
-]
+```yaml
+AtsuCodes:
+  - AtsuCode: YBBB
+    Sectors: [ARL, INL, KPL, TSN]
+  - AtsuCode: YMMM
+    Sectors: [GUN, BLA, IND]
 ```
 
 **Example (FIR using per-position logon codes):**
-```json
-"AtsuCodes": [
-  { "AtsuCode": "WIIF",   "Sectors": ["WIIF"] },
-  { "AtsuCode": "WIIFSG", "Sectors": ["WIIFSG", "WIIFBD"] },
-  { "AtsuCode": "WIIFMN", "Sectors": ["WIIFMN", "WIIFIS"] }
-]
+```yaml
+AtsuCodes:
+  - AtsuCode: WIIF
+    Sectors: [WIIF]
+  - AtsuCode: WIIFSG
+    Sectors: [WIIFSG, WIIFBD]
+  - AtsuCode: WIIFMN
+    Sectors: [WIIFMN, WIIFIS]
 ```
 
 In the per-position example, an aircraft entering `WIIFBD` airspace will have `WIIFSG` set as its NDA if that controller is online, falling back to `WIIF` if not.
@@ -122,8 +125,8 @@ How often (in minutes) the plugin recalculates the NDA for all tracked aircraft 
 Default: `1`
 
 **Example:**
-```json
-"NdaRecalculationIntervalMinutes": 1
+```yaml
+NdaRecalculationIntervalMinutes: 1
 ```
 
 ### ShowInstallationMenuItems
@@ -133,8 +136,8 @@ Controls whether the `Install label & strip items` and `Uninstall label & strip 
 Default: `true`
 
 **Example:**
-```json
-"ShowInstallationMenuItems": false
+```yaml
+ShowInstallationMenuItems: false
 ```
 
 ### ADSCTrackExtrapolationThreshold
@@ -144,136 +147,124 @@ The minimum time (in seconds) that an ADS-C track shows the reported position wi
 Default: `10`
 
 **Example:**
-```json
-"ADSCTrackExtrapolationThreshold": 10
+```yaml
+ADSCTrackExtrapolationThreshold: 10
+```
+
+## Flagged Downlinks
+
+### FlaggedElementIds
+
+The FANS 1/A downlink elements that are "flagged". The Current Messages window shows `!` next to a downlink that has one of these elements. If the downlink also has a free text element, the window shows `P` in place of `!`.
+
+Default: none
+
+**Example:**
+```yaml
+FlaggedElementIds:
+  - DM29  # CLIMBING TO [altitude]
+  - DM30  # DESCENDING TO [altitude]
+  - DM80  # DEVIATING [distance offset] [direction] OF ROUTE
 ```
 
 ## Uplink Messages
 
-The `UplinkMessages` object defines the available CPDLC messages for the controller to send.
+`UplinkMessages` sets the uplink elements that the controller can select in the editor. The plugin contains the full FANS 1/A uplink message set (UM0 to UM182), so the configuration only refers to the elements. The text, the parameters, the response type and the alert of each element come from the message set. You cannot change them.
 
-### MasterMessages
+### Element references
 
-Array of all available message templates. Each message has:
+Each reference has:
 
-- `Id`: Unique identifier matching ICAO Doc 10037
-- `Template`: Message text with parameter placeholders in brackets (e.g., `[lev]`, `[pos]`)
-- `Parameters`: Array of parameter definitions with `Name` and `Type`
-- `ResponseType`: Expected pilot response (`WilcoUnable`, `Roger`, `AffirmativeNegative`, `NoResponse`)
+- `Element`: The FANS 1/A uplink element, for example `UM20`.
+- `DefaultParameters` (optional): Values for the parameters of the element. The key is the name of the parameter.
+
+The name of a parameter is the name of its type, in camel case, for example `altitude`, `position` or `freeText`. If a type occurs more than one time in an element, the names have a number, for example `altitude1` and `altitude2`.
 
 **Example:**
-```json
-{
-  "Id": 20,
-  "Template": "CLIMB TO [lev]",
-  "Parameters": [
-    { "Name": "lev", "Type": "Level" }
-  ],
-  "ResponseType": "WilcoUnable"
-}
+```yaml
+- Element: UM169  # [free text]
+  DefaultParameters:
+    freeText: "REQUEST RECEIVED, RESPONSE WILL BE VIA VOICE"
 ```
 
 #### Parameter Types
 
-- `Level`: Flight level or altitude
-- `Position`: Waypoint or fix
-- `Time`: Time in HHMM format
-- `Speed`: Airspeed (knots or Mach)
-- `Degree`: Heading or track in degrees
-- `Direction`: LEFT or RIGHT
-- `DistanceOffset`: Distance in nautical miles
-- `RouteClearance`: Route string
-- `ProcedureName`: SID, STAR, or approach name
-- `UnitName`: ATC unit name
-- `Frequency`: Radio frequency
-- `Code`: Transponder code
-- `Altimeter`: Altimeter setting
-- `AtisCode`: ATIS identifier
-- `FacilityDesignation`: ICAO facility code
-- `VerticalRate`: Vertical rate in feet per minute
-- `ToFrom`: TO or FROM
-- `FreeText`: Arbitrary text
+- `altitude`: Flight level or altitude
+- `time`: Time in HHMM format
+- `position`: Waypoint, fix, or latitude and longitude
+- `speed`: Airspeed (knots or Mach)
+- `distanceOffset`: Lateral offset distance
+- `distance`: Distance
+- `direction`: LEFT, RIGHT, or a compass direction
+- `degrees`: Heading or track in degrees
+- `legType`: Holding leg distance or time
+- `routeClearance`: Route string
+- `procedureName`: SID, STAR, or approach name
+- `icaoUnitName`: ATC unit name
+- `frequency`: Radio frequency
+- `beaconCode`: Transponder code
+- `altimeter`: Altimeter setting
+- `atisCode`: ATIS identifier
+- `errorInformation`: Error text
+- `icaoFacilityDesignation`: ICAO facility code
+- `tp4Table`: TP4 table
+- `freeText`: Arbitrary text
+- `verticalRate`: Vertical rate
+- `toFrom`: TO or FROM
+- `predepartureClearance`: Pre-departure clearance
 
 ### QuickAccessMessages
 
-Array of messages shown in the quick access panel. Each entry references a `MessageId` from `MasterMessages`. Optionally includes `DefaultParameters` to pre-fill values and override `ResponseType`.
+The element references that show in the quick access panel.
 
 **Example:**
-```json
-{
-  "MessageId": 169,
-  "DefaultParameters": {
-    "freetext": "REQUEST RECEIVED, RESPONSE WILL BE VIA VOICE"
-  },
-  "ResponseType": "Roger"
-}
+```yaml
+QuickAccessMessages:
+  - Element: UM147  # REQUEST POSITION REPORT
+  - Element: UM20   # CLIMB TO AND MAINTAIN [altitude]
 ```
 
 ### Groups
 
-Array of message groups for organizing messages in the editor. Each group has:
+The message groups in the editor. Each group has:
 
 - `Name`: Group label shown in the UI
-- `Messages`: Array of message references (with optional `DefaultParameters` and `ResponseType` overrides)
+- `Messages`: The element references in the group
 
 **Example:**
-```json
-{
-  "Name": "LEVEL",
-  "Messages": [
-    { "MessageId": 19 },
-    { "MessageId": 20 },
-    { "MessageId": 23 }
-  ]
-}
+```yaml
+Groups:
+  - Name: LEVEL
+    Messages:
+      - Element: UM19  # MAINTAIN [altitude]
+      - Element: UM20  # CLIMB TO AND MAINTAIN [altitude]
+      - Element: UM23  # DESCEND TO AND MAINTAIN [altitude]
 ```
 
 ## Complete Example
 
-```json
-{
-  "ServerEndpoint": "http://localhost:5261/hubs/controller",
-  "AutoConnect": false,
-  "Stations": ["YZZZ", "YXXX"],
-  "LogLevel": "Verbose",
-  "MaxCurrentMessages": 50,
-  "MaxArchivedMessages": 50,
-  "MaxDisplayMessageLength": 40,
-  "MaxExtendedMessageLength": 80,
-  "AtsuCodes": [
-    { "AtsuCode": "YBBB", "Sectors": ["ARL", "INL", "KPL", "TSN"] },
-    { "AtsuCode": "YMMM", "Sectors": ["GUN", "BLA", "IND"] }
-  ],
-  "NdaRecalculationIntervalMinutes": 1,
-  "ADSCTrackExtrapolationThreshold": 10,
-  "UplinkMessages": {
-    "MasterMessages": [
-      {
-        "Id": 0,
-        "Template": "UNABLE",
-        "Parameters": [],
-        "ResponseType": "NoResponse"
-      },
-      {
-        "Id": 20,
-        "Template": "CLIMB TO [lev]",
-        "Parameters": [
-          { "Name": "lev", "Type": "Level" }
-        ],
-        "ResponseType": "WilcoUnable"
-      }
-    ],
-    "QuickAccessMessages": [
-      { "MessageId": 20 }
-    ],
-    "Groups": [
-      {
-        "Name": "LEVEL",
-        "Messages": [
-          { "MessageId": 20 }
-        ]
-      }
-    ]
-  }
-}
+```yaml
+ServerEndpoint: "http://localhost:5261/hubs/controller"
+AutoConnect: false
+Stations: [YZZZ, YXXX]
+LogLevel: Verbose
+MaxCurrentMessages: 50
+MaxArchivedMessages: 50
+MaxDisplayMessageLength: 40
+MaxExtendedMessageLength: 80
+FlaggedElementIds: [DM29, DM30, DM80]
+AtsuCodes:
+  - AtsuCode: YBBB
+    Sectors: [ARL, INL, KPL, TSN]
+  - AtsuCode: YMMM
+    Sectors: [GUN, BLA, IND]
+NdaRecalculationIntervalMinutes: 1
+ADSCTrackExtrapolationThreshold: 10
+UplinkMessages:
+  QuickAccessMessages:
+    - Element: UM20  # CLIMB TO AND MAINTAIN [altitude]
+  Groups:
+    - Name: LEVEL
+      Messages:
+        - Element: UM20  # CLIMB TO AND MAINTAIN [altitude]
 ```

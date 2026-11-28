@@ -1,8 +1,11 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CPDLC.Messages;
 using CPDLCPlugin.Messages;
+using CPDLCPlugin.Popups;
 using CPDLCPlugin.ViewModels;
 using vatSysToolbox.Windows;
 
@@ -69,6 +72,18 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
         // Don't mark as handled so button gets visual feedback
     }
 
+    // Left click: Show the popup for the type, or start editing if the type has no popup.
+    // The popup opens when the mouse button is released. A popup that opens when the button is pressed closes when
+    // the button is released, because the popup loses the mouse capture.
+    void TemplatePartButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: UplinkMessageTemplateElementComponentViewModel templatePart } element)
+            return;
+
+        if (!TryOpenPopup(templatePart, element))
+            templatePart.IsEditing = true;
+    }
+
     void TemplatePartButton_MouseDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is not FrameworkElement element ||
@@ -77,23 +92,58 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
 
         switch (e.ChangedButton)
         {
-            // Left click: Start editing
-            // TODO: Type-specific popup
-            case MouseButton.Left:
-                templatePart.IsEditing = true;
-                break;
-
             // Middle click: Clear the value
             case MouseButton.Middle:
                 templatePart.Value = null;
                 e.Handled = true;
                 break;
 
-            // Right-click for manual text entry
+            // Right-click for manual text entry, if the type accepts it
             case MouseButton.Right:
-                templatePart.IsEditing = true;
+                if (templatePart.AllowsManualEntry)
+                    templatePart.IsEditing = true;
                 break;
         }
+    }
+
+    // Returns false if the type has no popup
+    bool TryOpenPopup(UplinkMessageTemplateElementComponentViewModel templatePart, UIElement placementTarget)
+    {
+        if (DataContext is not EditorViewModel viewModel)
+            return false;
+
+        switch (templatePart.ParameterType)
+        {
+            case ParameterType.Altitude:
+                LevelPopup.DataContext = viewModel.CreateLevelPopupViewModel(templatePart, () => LevelPopupHost.IsOpen = false);
+                OpenPopup(LevelPopupHost, placementTarget);
+                return true;
+
+            case ParameterType.Time:
+                var screenPoint = placementTarget.PointToScreen(new Point(0, placementTarget.RenderSize.Height));
+                if (VatSysTimeMenu.TryShow(templatePart.Value, new System.Drawing.Point((int)screenPoint.X, (int)screenPoint.Y), out var time))
+                    templatePart.Value = time;
+                return true;
+
+            case ParameterType.Speed:
+                SpeedPopup.DataContext = viewModel.CreateSpeedPopupViewModel(templatePart, () => SpeedPopupHost.IsOpen = false);
+                OpenPopup(SpeedPopupHost, placementTarget);
+                return true;
+
+            case ParameterType.Position or ParameterType.ToFrom or ParameterType.Direction or ParameterType.IcaoUnitName:
+                FixedValuesPopup.DataContext = new FixedValuesPopupViewModel(templatePart, () => FixedValuesPopupHost.IsOpen = false);
+                OpenPopup(FixedValuesPopupHost, placementTarget);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    static void OpenPopup(Popup popup, UIElement placementTarget)
+    {
+        popup.PlacementTarget = placementTarget;
+        popup.IsOpen = true;
     }
 
     void TemplatePartTextBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -117,30 +167,53 @@ public partial class EditorView : UserControl, IRecipient<DisconnectedNotificati
 
     void TemplatePartTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: UplinkMessageTemplateElementComponentViewModel templatePart })
+        if (sender is not FrameworkElement { DataContext: UplinkMessageTemplateElementComponentViewModel templatePart } ||
+            DataContext is not EditorViewModel viewModel)
             return;
 
         switch (e.Key)
         {
             // Enter: Save and exit editing
             case Key.Enter:
-                templatePart.IsEditing = false;
+                viewModel.EndEditingTemplatePartCommand.Execute(templatePart);
                 e.Handled = true;
                 break;
             // Escape: Cancel editing (revert to original value would require storing it)
             case Key.Escape:
-                templatePart.IsEditing = false;
+                viewModel.EndEditingTemplatePartCommand.Execute(templatePart);
                 e.Handled = true;
                 break;
         }
     }
 
-    void TemplatePartTextBox_LostFocus(object sender, RoutedEventArgs e)
+    // Stops the characters that the parameter type does not accept
+    void TemplatePartTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
         if (sender is not FrameworkElement { DataContext: UplinkMessageTemplateElementComponentViewModel templatePart })
             return;
 
-        templatePart.IsEditing = false;
+        if (!e.Text.All(c => ParameterInputRules.IsAllowedCharacter(templatePart.ParameterType, c)))
+            e.Handled = true;
+    }
+
+    // Stops pasted text that has characters that the parameter type does not accept
+    void TemplatePartTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: UplinkMessageTemplateElementComponentViewModel templatePart })
+            return;
+
+        if (e.DataObject.GetData(typeof(string)) is not string text ||
+            !text.All(c => ParameterInputRules.IsAllowedCharacter(templatePart.ParameterType, c)))
+            e.CancelCommand();
+    }
+
+    void TemplatePartTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: UplinkMessageTemplateElementComponentViewModel templatePart } ||
+            DataContext is not EditorViewModel viewModel)
+            return;
+
+        viewModel.EndEditingTemplatePartCommand.Execute(templatePart);
     }
 
     void DownlinkMessage_Click(object sender, MouseButtonEventArgs e)

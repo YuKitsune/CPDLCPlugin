@@ -1,0 +1,423 @@
+# Configuration for the CPDLC plugin.
+
+# The address of the hub on the CPDLC server
+ServerEndpoint: "https://cpdlc-dev.eoinmotherway.dev/hubs/controller"
+
+# When true, the plugin connects to the CPDLC server when vatSys connects to VATSIM.
+# It uses the first station in Stations.
+AutoConnect: false
+
+# The stations that the controller can select
+Stations: [YBBZ, YMMZ]
+
+LogLevel: Verbose
+MaxCurrentMessages: 50
+MaxArchivedMessages: 50
+MaxDisplayMessageLength: 40
+MaxExtendedMessageLength: 80
+
+# The Current Messages window shows "!" for a downlink that has one of these elements
+FlaggedElementIds:
+  - DM29  # CLIMBING TO [altitude]
+  - DM30  # DESCENDING TO [altitude]
+  - DM80  # DEVIATING [distance offset] [direction] OF ROUTE
+
+# Maps ATSU codes to the sectors they cover (as reported by vatSys SectorsVolumes).
+# Used to find the Next Data Authority along the FDR route.
+AtsuCodes:
+  - AtsuCode: YBBB
+    Sectors: [INL, DOS, SDY, BUR, GOL, NSA, ARL, MDE, MLD, OCN, MNN, CNK, KPL, CVN, SWY, KEN, BAR, TBP, WIL, ISA, WEG, ARA, STR, TRT, KIY, ASH, TRS, TSN, HWE, FLD, COL]
+  - AtsuCode: YMMM
+    Sectors: [GUN, KAT, BIK, WOL, SNO, BLA, ELW, HUO, WON, MUN, YWE, OXL, GTH, TBD, AUG, ASP, FOR, WAR, ASW, WRA, BKE, ESP, HYD, JAR, PIY, SCR, GVE, GEL, LEA, OLW, POT, PAR, MEK, MTK, NEW, MZI, IND, INE, INS]
+  - AtsuCode: NZZO
+    Sectors: [NZZO, NZZOT]
+  - AtsuCode: NZCM
+    Sectors: [NZCM]
+  - AtsuCode: FAJO
+    Sectors: [FAJO]
+  - AtsuCode: FIMM
+    Sectors: [FIMM, FIMMU]
+  - AtsuCode: VRMF
+    Sectors: [VRMF]
+  - AtsuCode: VCCF
+    Sectors: [VCCF]
+  - AtsuCode: WIIF
+    Sectors: [WIIF, WIIFSG, WIIFBD, WIIFMN, WIIFIS]
+  - AtsuCode: WAAF
+    Sectors: [WAAF, UBLI, WAAFNA, WAAFAN, WAAFPA]
+  - AtsuCode: NFFF
+    Sectors: [NFFF]
+  - AtsuCode: AYPM
+    Sectors: [AYPM]
+  - AtsuCode: KZAK
+    Sectors: [KZAK, KZAKE, KZAKW, KZAK3, KZAK5, KZAK6, KZAK9]
+  - AtsuCode: ASIW
+    Sectors: [ASIAW]
+  - AtsuCode: ASEA
+    Sectors: [ASEA]
+  - AtsuCode: AFRS
+    Sectors: [AFRS]
+
+# The uplink elements that the editor shows.
+# Element is the FANS 1/A uplink element, for example UM20.
+# DefaultParameters gives values for the parameters. The names come from the element, for example "altitude".
+# If a type occurs more than one time in an element, the names have a number, for example "altitude1" and "altitude2".
+# A default value can use these variables from the FDR of the aircraft.
+# A variable is empty if the FDR has no value for it.
+#   $Callsign         The callsign, for example "QFA1"
+#   $AircraftType     The aircraft type, for example "B744"
+#   $Departure        The departure airport, for example "YSSY"
+#   $Destination      The destination airport, for example "WSSS"
+#   $AssignedSsrCode  The assigned SSR code, for example "3000"
+#   $RequestedLevel   The requested level in hundreds of feet, for example "350" or "095"
+#   $ClearedLevel     The cleared level in hundreds of feet, for example "350" or "095".
+#                     It is empty for a block level.
+#   $NextWaypoint     The next waypoint in the route, for example "TAXEG"
+UplinkMessages:
+  # The transition level in feet. The editor shows levels as three digits, for example "350".
+  # In the uplink text, a level below the transition level is an altitude, for example "A095",
+  # and a level at or above it is a flight level, for example "F350".
+  TransitionLevel: 11000
+
+  # The values that the controller can select for an [icao unit name] parameter
+  IcaoUnitNames:
+    - BRISBANE CTR
+    - MELBOURNE CTR
+    - NADI CTL
+    - MORESBY CTL
+    - AUCKLAND RDO
+    - MCMURDO RDO
+    - JOHANNESBURG CTL
+    - MAURITIUS CTL
+    - MALE CTL
+    - COLOMBO CTL
+    - JAKARTA CTR
+    - MAKASSAR CTR
+    - OAKLAND CTR
+    - WEST ASIA CTL
+    - SOUTH EAST ASIA CTL
+    - SOUTH AFRICA CTL
+    - ADVISORY
+
+  QuickAccessMessages:
+    - Element: UM147  # REQUEST POSITION REPORT
+    - Element: UM123  # SQUAWK [beacon code]
+      DefaultParameters:
+        beaconCode: "$AssignedSsrCode"
+    - Element: UM169  # [free text]
+      DefaultParameters:
+        freeText: "REQUEST RECEIVED, RESPONSE WILL BE VIA VOICE"
+    - Element: UM121  # AT [position] MONITOR [icao unit name] [frequency]
+    - Element: UM118  # AT [position] CONTACT [icao unit name] [frequency]
+    - Element: UM161  # END SERVICE
+    - Element: UM20  # CLIMB TO AND MAINTAIN [altitude]
+      DefaultParameters:
+        altitude: "$ClearedLevel"
+    - Element: UM129  # REPORT LEVEL [altitude]
+
+  Groups:
+    - Name: "LEVEL"
+      Messages:
+        - Element: UM19  # MAINTAIN [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM20  # CLIMB TO AND MAINTAIN [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM164  # WHEN READY
+        - Element: UM26  # CLIMB TO REACH [altitude] BY [time]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM27  # CLIMB TO REACH [altitude] BY [position]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM129  # REPORT LEVEL [altitude]
+        - Element: UM23  # DESCEND TO AND MAINTAIN [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM28  # DESCEND TO REACH [altitude] BY [time]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM29  # DESCEND TO REACH [altitude] BY [position]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM128  # REPORT LEAVING [altitude]
+        - Element: UM135  # CONFIRM ASSIGNED ALTITUDE
+        - Element: UM171  # CLIMB AT [vertical rate] MINIMUM
+        - Element: UM172  # CLIMB AT [vertical rate] MAXIMUM
+        - Element: UM173  # DESCEND AT [vertical rate] MINIMUM
+        - Element: UM174  # DESCEND AT [vertical rate] MAXIMUM
+        - Element: UM36  # EXPEDITE CLIMB TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM37  # EXPEDITE DESCENT TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM38  # IMMEDIATELY CLIMB TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM39  # IMMEDIATELY DESCEND TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+    - Name: "ROUTE"
+      Messages:
+        - Element: UM137  # CONFIRM ASSIGNED ROUTE
+        - Element: UM74  # PROCEED DIRECT TO [position]
+        - Element: UM77  # AT [position] PROCEED DIRECT TO [position]
+        - Element: UM79  # CLEARED TO [position] VIA [route clearance]
+        - Element: UM83  # AT [position] CLEARED [route clearance]
+        - Element: UM167  # DUE TO AIRSPACE RESTRICTION
+        - Element: UM80  # CLEARED [route clearance]
+        - Element: UM72  # RESUME OWN NAVIGATION
+        - Element: UM76  # AT [time] PROCEED DIRECT TO [position]
+        - Element: UM78  # AT [altitude] PROCEED DIRECT TO [position]
+        - Element: UM92  # HOLD AT [position] AS PUBLISHED MAINTAIN [altitude]
+        - Element: UM91  # HOLD AT [position] MAINTAIN [altitude] INBOUND TRACK [degrees] [direction] TURNS [leg type]
+        - Element: UM81  # CLEARED [procedure name]
+        - Element: UM84  # AT [position] CLEARED [procedure name]
+    - Name: "TRANSFR"
+      Messages:
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "CHECK AND RESPOND TO OPEN CPDLC Messages"
+        - Element: UM160  # NEXT DATA AUTHORITY [icao facility designation]
+        - Element: UM118  # AT [position] CONTACT [icao unit name] [frequency]
+        - Element: UM121  # AT [position] MONITOR [icao unit name] [frequency]
+        - Element: UM117  # CONTACT [icao unit name] [frequency]
+        - Element: UM120  # MONITOR [icao unit name] [frequency]
+        - Element: UM119  # AT [time] CONTACT [icao unit name] [frequency]
+        - Element: UM122  # AT [time] MONITOR [icao unit name] [frequency]
+        - Element: UM161  # END SERVICE
+    - Name: "CROSS"
+      Messages:
+        - Element: UM47  # CROSS [position] AT OR ABOVE [altitude]
+        - Element: UM48  # CROSS [position] AT OR BELOW [altitude]
+        - Element: UM51  # CROSS [position] AT [time]
+        - Element: UM52  # CROSS [position] AT OR BEFORE [time]
+        - Element: UM53  # CROSS [position] AT OR AFTER [time]
+        - Element: UM55  # CROSS [position] AT [speed]
+        - Element: UM56  # CROSS [position] AT OR LESS THAN [speed]
+        - Element: UM57  # CROSS [position] AT OR GREATER THAN [speed]
+        - Element: UM50  # CROSS [position] BETWEEN [altitude] AND [altitude]
+        - Element: UM54  # CROSS [position] BETWEEN [time] AND [time]
+        - Element: UM62  # AT [time] CROSS [position] AT AND MAINTAIN [altitude]
+        - Element: UM58  # CROSS [position] AT [time] AT [altitude]
+        - Element: UM59  # CROSS [position] AT OR BEFORE [time] AT [altitude]
+        - Element: UM60  # CROSS [position] AT OR AFTER [time] AT [altitude]
+        - Element: UM61  # CROSS [position] AT AND MAINTAIN [altitude] AT [speed]
+        - Element: UM62  # AT [time] CROSS [position] AT AND MAINTAIN [altitude]
+        - Element: UM63  # AT [time] CROSS [position] AT AND MAINTAIN [altitude] AT [speed]
+    - Name: "ENQ/TXT"
+      Messages:
+        - Element: UM169  # [free text]
+        - Element: UM148  # WHEN CAN YOU ACCEPT [altitude]
+        - Element: UM149  # CAN YOU ACCEPT [altitude] AT [position]
+        - Element: UM150  # CAN YOU ACCEPT [altitude] AT [time]
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "ADVISE PREFERRED LEVEL"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "ADVISE PREFERRED LEVEL TO CROSS $NextWaypoint"
+        - Element: UM151  # WHEN CAN YOU ACCEPT [speed]
+    - Name: "SURV"
+      Messages:
+        - Element: UM123  # SQUAWK [beacon code]
+          DefaultParameters:
+            beaconCode: "$AssignedSsrCode"
+        - Element: UM144  # CONFIRM SQUAWK
+        - Element: UM179  # SQUAWK IDENT
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "IDENTIFIED"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "RE-ENTER ADS-B IDENTIFICATION $Callsign"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "IDENTIFICATION TERMINATED"
+        - Element: UM125  # SQUAWK ALTITUDE
+        - Element: UM126  # STOP ALTITUDE SQUAWK
+        - Element: UM124  # STOP SQUAWK
+    - Name: "EXPECT"
+      Messages:
+        - Element: UM7  # EXPECT CLIMB AT [time]
+        - Element: UM8  # EXPECT CLIMB AT [position]
+        - Element: UM9  # EXPECT DESCENT AT [time]
+        - Element: UM10  # EXPECT DESCENT AT [position]
+        - Element: UM99  # EXPECT [procedure name]
+        - Element: UM93  # EXPECT FURTHER CLEARANCE AT [time]
+        - Element: UM70  # EXPECT BACK ON ROUTE BY [position]
+        - Element: UM71  # EXPECT BACK ON ROUTE BY [time]
+        - Element: UM100  # AT [time] EXPECT [speed]
+        - Element: UM101  # AT [position] EXPECT [speed]
+        - Element: UM102  # AT [altitude] EXPECT [speed]
+    - Name: "WX/OFF"
+      Messages:
+        - Element: UM82  # CLEARED TO DEVIATE UP TO [distance offset] [direction] OF ROUTE
+        - Element: UM127  # REPORT BACK ON ROUTE
+        - Element: UM75  # WHEN ABLE PROCEED DIRECT TO [position]
+        - Element: UM68  # REJOIN ROUTE BY [position]
+        - Element: UM69  # REJOIN ROUTE BY [time]
+        - Element: UM64  # OFFSET [distance offset] [direction] OF ROUTE
+        - Element: UM65  # AT [position] OFFSET [distance offset] [direction] OF ROUTE
+        - Element: UM66  # AT [time] OFFSET [distance offset] [direction] OF ROUTE
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "REPORT HEADING"
+        - Element: UM96  # FLY PRESENT HEADING
+        - Element: UM94  # TURN [direction] HEADING [degrees]
+        - Element: UM97  # AT [position] FLY HEADING [degrees]
+        - Element: UM167  # DUE TO AIRSPACE RESTRICTION
+        - Element: UM74  # PROCEED DIRECT TO [position]
+        - Element: UM72  # RESUME OWN NAVIGATION
+        - Element: UM146  # CONFIRM GROUND TRACK
+        - Element: UM95  # TURN [direction] GROUND TRACK [degrees]
+        - Element: UM98  # IMMEDIATELY TURN [direction] HEADING [degrees]
+    - Name: "COMM"
+      Messages:
+        - Element: UM117  # CONTACT [icao unit name] [frequency]
+        - Element: UM120  # MONITOR [icao unit name] [frequency]
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "CHECK AND RESPOND TO OPEN CPDLC Messages"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "RELAY TO [rtf callsign] ON [freq] [callsign + instruction]"
+        - Element: UM157  # CHECK STUCK MICROPHONE [frequency]
+    - Name: "SPEED"
+      Messages:
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "CONFIRM SPEED"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "REPORT GROUND SPEED"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "NO SPEED RESTRICTION"
+        - Element: UM136  # CONFIRM ASSIGNED SPEED
+        - Element: UM106  # MAINTAIN [speed]
+        - Element: UM108  # MAINTAIN [speed] OR GREATER
+        - Element: UM109  # MAINTAIN [speed] OR LESS
+        - Element: UM116  # RESUME NORMAL SPEED
+        - Element: UM55  # CROSS [position] AT [speed]
+        - Element: UM151  # WHEN CAN YOU ACCEPT [speed]
+        - Element: UM107  # MAINTAIN PRESENT SPEED
+        - Element: UM110  # MAINTAIN [speed] TO [speed]
+        - Element: UM111  # INCREASE SPEED TO [speed]
+        - Element: UM112  # INCREASE SPEED TO [speed] OR GREATER
+        - Element: UM113  # REDUCE SPEED TO [speed]
+        - Element: UM114  # REDUCE SPEED TO [speed] OR LESS
+    - Name: "CFM/RPT"
+      Messages:
+        - Element: UM147  # REQUEST POSITION REPORT
+        - Element: UM133  # CONFIRM ALTITUDE
+        - Element: UM135  # CONFIRM ASSIGNED ALTITUDE
+        - Element: UM136  # CONFIRM ASSIGNED SPEED
+        - Element: UM137  # CONFIRM ASSIGNED ROUTE
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "CONFIRM SPEED"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "REPORT SIGHTING AND PASSING OPPOSITE DIRECTION [tfc desc]"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "REPORT ETA $NextWaypoint"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "REPORT GROUND SPEED"
+        - Element: UM141  # CONFIRM NEXT WAYPOINT ETA
+        - Element: UM181  # REPORT DISTANCE [to/from] [position]
+        - Element: UM140  # CONFIRM NEXT WAYPOINT
+        - Element: UM142  # CONFIRM ENSUING WAYPOINT
+        - Element: UM138  # CONFIRM TIME OVER REPORTED WAYPOINT
+        - Element: UM129  # REPORT LEVEL [altitude]
+        - Element: UM127  # REPORT BACK ON ROUTE
+        - Element: UM139  # CONFIRM REPORTED WAYPOINT
+        - Element: UM143  # CONFIRM REQUEST
+        - Element: UM144  # CONFIRM SQUAWK
+        - Element: UM130  # REPORT PASSING [position]
+        - Element: UM131  # REPORT REMAINING FUEL AND SOULS ON BOARD
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "REPORT HEADING"
+        - Element: UM146  # CONFIRM GROUND TRACK
+    - Name: "MISC"
+      Messages:
+        - Element: UM0  # UNABLE
+        - Element: UM166  # DUE TO TRAFFIC
+        - Element: UM167  # DUE TO AIRSPACE RESTRICTION
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "CHECK AND RESPOND TO OPEN CPDLC Messages"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "CRUISE CLIMB PROCEDURE NOT AVAILABLE IN AUSTRALIAN ADMINISTERED AIRSPACE"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "MELBOURNE CTR AT REDUCED SYSTEM CAPACITY"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "BRISBANE CTR AT REDUCED SYSTEM CAPACITY"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "DISCONNECT CPDLC"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "TRAFFIC IS [tfc desc]"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "ADS-C REPORTS NOT RECEIVED, REQUEST CPDLC POSITION REPORTS"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "REPORT SIGHTING AND PASSING OPPOSITE DIRECTION [tfc desc]"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "ADVISE PREFERRED LEVEL"
+        - Element: UM164  # WHEN READY
+        - Element: UM1  # STANDBY
+        - Element: UM3  # ROGER
+        - Element: UM4  # AFFIRM
+        - Element: UM5  # NEGATIVE
+        - Element: UM2  # REQUEST DEFERRED
+        - Element: UM158  # ATIS [atis code]
+        - Element: UM153  # ALTIMETER [altimeter]
+        - Element: UM131  # REPORT REMAINING FUEL AND SOULS ON BOARD
+    - Name: "EMERG"
+      Messages:
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "ROGER MAYDAY"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "ROGER PAN"
+        - Element: UM38  # IMMEDIATELY CLIMB TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM39  # IMMEDIATELY DESCEND TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM36  # EXPEDITE CLIMB TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM37  # EXPEDITE DESCENT TO [altitude]
+          DefaultParameters:
+            altitude: "$ClearedLevel"
+        - Element: UM157  # CHECK STUCK MICROPHONE [frequency]
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "REPORT SPEED"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "CONFIRM ADS-C EMERGENCY"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "[freetext urgent]"
+        - Element: UM169  # [free text]
+          DefaultParameters:
+            freeText: "TRAFFIC IS [tfc desc]"
+        - Element: UM131  # REPORT REMAINING FUEL AND SOULS ON BOARD
+        - Element: UM117  # CONTACT [icao unit name] [frequency]
+        - Element: UM98  # IMMEDIATELY TURN [direction] HEADING [degrees]

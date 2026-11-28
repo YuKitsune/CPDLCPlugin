@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.AcarsConnections.Stations;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -173,8 +174,9 @@ public class TransmitPendingNdaUplinksCommandHandlerTests
             Arg.Is<BeginDialogueCommand>(c =>
                 c.Sender == "YBBB" &&
                 c.Recipient == "UAL123" &&
-                c.Content == "NEXT DATA AUTHORITY @YMMM@" &&
-                c.ResponseType == CpdlcUplinkResponseType.NoResponse),
+                c.Elements.Single().Id == 160 &&
+                c.Elements.Single().Parameters.Single() == "YMMM" &&
+                !c.CanAction),
             Arg.Any<CancellationToken>());
     }
 

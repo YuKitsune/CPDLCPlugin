@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Controllers;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
@@ -124,8 +125,8 @@ public class AircraftConnectionLostNotificationHandlerTests
 
         var errorMessage = dialogueNotification.Dialogue.Messages.First() as DownlinkMessage;
         Assert.NotNull(errorMessage);
-        Assert.Equal("ERROR CONNECTION TIMED OUT", errorMessage.Content);
-        Assert.Equal(AlertType.Medium, errorMessage.AlertType);
+        Assert.Equal("ERROR CONNECTION TIMED OUT", MessageText.Format(errorMessage.Elements));
+        Assert.Equal(AlertType.None, errorMessage.AlertType);
         Assert.Equal("UAL123", errorMessage.Sender);
     }
 
@@ -218,7 +219,7 @@ public class AircraftConnectionLostNotificationHandlerTests
         var clock = new TestClock();
         var dialogueRepository = new TestDialogueRepository();
         var openDialogue = new Dialogue("UAL123", "YBBB");
-        openDialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", clock.UtcNow());
+        openDialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, clock.UtcNow());
         await dialogueRepository.Add(openDialogue, CancellationToken.None);
 
         var messageIdProvider = new TestMessageIdProvider();
@@ -237,7 +238,7 @@ public class AircraftConnectionLostNotificationHandlerTests
 
         // Assert - the dialogue is closed with the error message, and the message IDs are removed
         Assert.True(openDialogue.IsClosed);
-        Assert.Equal("ERROR CONNECTION TIMED OUT", Assert.IsType<DownlinkMessage>(openDialogue.Messages.Last()).Content);
+        Assert.Equal("ERROR CONNECTION TIMED OUT", MessageText.Format(Assert.IsType<DownlinkMessage>(openDialogue.Messages.Last()).Elements));
         Assert.Equal([("hoppies-ybbb", "UAL123")], messageIdProvider.Removed);
     }
 
@@ -270,8 +271,7 @@ public class AircraftConnectionLostNotificationHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT TO FL350",
+            [new DownlinkMessageElement(10, ["FL350"])],
             clock.UtcNow());
         await dialogueRepository.Add(existingDialogue, CancellationToken.None);
 
@@ -305,8 +305,8 @@ public class AircraftConnectionLostNotificationHandlerTests
         Assert.Equal(2, dialogueNotification.Dialogue.Messages.Count);
         var errorMessage = dialogueNotification.Dialogue.Messages.Last() as DownlinkMessage;
         Assert.NotNull(errorMessage);
-        Assert.Equal("ERROR CONNECTION TIMED OUT", errorMessage.Content);
-        Assert.Equal(AlertType.Medium, errorMessage.AlertType);
+        Assert.Equal("ERROR CONNECTION TIMED OUT", MessageText.Format(errorMessage.Elements));
+        Assert.Equal(AlertType.None, errorMessage.AlertType);
         Assert.Equal(1, errorMessage.MessageReference); // References the open downlink
 
         // Assert - the message IDs of the connection are removed after the error message
@@ -342,8 +342,7 @@ public class AircraftConnectionLostNotificationHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT TO FL350",
+            [new DownlinkMessageElement(10, ["FL350"])],
             clock.UtcNow());
         await dialogueRepository.Add(existingDialogue, CancellationToken.None);
 

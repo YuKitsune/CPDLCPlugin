@@ -1,13 +1,12 @@
 using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using vatSysToolbox.Configuration;
+using YamlDotNet.Serialization;
 
 namespace CPDLCPlugin.Configuration;
 
 public static class ConfigurationLoader
 {
-    const string ConfigFileName = "CPDLC.json";
+    const string ConfigFileName = "CPDLC.yaml";
 
     public static PluginConfiguration Load()
     {
@@ -18,14 +17,10 @@ public static class ConfigurationLoader
             "CPDLCPlugin",
             "CPDLC");
 
-        var configurationJson = File.ReadAllText(configFilePath);
-        var configuration = JsonSerializer.Deserialize<PluginConfiguration>(configurationJson, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            ReadCommentHandling = JsonCommentHandling.Skip,
-            Converters = { new JsonStringEnumConverter() },
-            AllowTrailingCommas = true
-        })!;
+        // The keys in the file are the same as the property names, for example "ServerEndpoint"
+        var configurationYaml = File.ReadAllText(configFilePath);
+        var deserializer = new DeserializerBuilder().Build();
+        var configuration = deserializer.Deserialize<PluginConfiguration>(configurationYaml);
 
         return configuration;
     }

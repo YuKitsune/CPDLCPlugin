@@ -1,7 +1,5 @@
 using CPDLCServer.AcarsConnections;
-using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Uplinks;
-using CPDLCServer.Infrastructure;
 using CPDLCServer.Persistence;
 using MediatR;
 
@@ -10,7 +8,6 @@ namespace CPDLCServer.Cpdlc.Connections;
 public class SendConnectionRequestCommandHandler(
     IAcarsConnectionManager acarsConnectionManager,
     IMessageIdProvider messageIdProvider,
-    IClock clock,
     IUnitOfWork unitOfWork,
     ILogger logger)
     : IRequestHandler<SendConnectionRequestCommand>
@@ -28,21 +25,10 @@ public class SendConnectionRequestCommandHandler(
             request.Callsign,
             cancellationToken);
 
-        // This is a system message. It does not start a dialogue.
-        var uplinkMessage = new UplinkMessage(
-            Guid.Empty,
-            messageId,
-            null,
-            request.Callsign,
-            "SYSTEM",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            $"CONNECTION REQUESTED @{request.StationId}@",
-            clock.UtcNow());
-
+        // This is a control message. It does not start a dialogue.
         unitOfWork.AfterCommit(async ct =>
         {
-            await acarsConnection.Send(uplinkMessage, ct);
+            await acarsConnection.SendConnectionRequest(request.Callsign, messageId, ct);
             logger.Information("Sent connection request for {StationId} to {Callsign}", request.StationId, request.Callsign);
         });
     }

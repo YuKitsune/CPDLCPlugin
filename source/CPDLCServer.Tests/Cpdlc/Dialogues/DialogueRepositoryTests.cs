@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -15,9 +16,9 @@ public class DialogueRepositoryTests
         // Arrange
         using var database = new TestDatabase();
         var dialogue = new Dialogue("UAL123", "YBBB");
-        dialogue.AddDownlink(7, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, AlertType.None, "REQUEST DESCENT FL350", Start);
-        dialogue.AddUplink(1, 7, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "DESCEND TO FL350", Start.AddMinutes(1));
-        dialogue.AddDownlink(8, 1, "UAL123", CpdlcDownlinkResponseType.NoResponse, AlertType.None, "WILCO", Start.AddMinutes(2));
+        dialogue.AddDownlink(7, null, "UAL123", CpdlcDownlinkResponseType.ResponseRequired, [new DownlinkMessageElement(10, ["FL350"])], Start);
+        dialogue.AddUplink(1, 7, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(23, ["FL350"])], false, Start.AddMinutes(1));
+        dialogue.AddDownlink(8, 1, "UAL123", CpdlcDownlinkResponseType.NoResponse, [new DownlinkMessageElement(0, [])], Start.AddMinutes(2));
 
         await using (var dbContext = database.CreateDbContext())
         {
@@ -38,12 +39,12 @@ public class DialogueRepositoryTests
         Assert.Equal([7, 1, 8], saved.Messages.Select(m => m.MessageId));
 
         var request = Assert.IsType<DownlinkMessage>(saved.Messages[0]);
-        Assert.Equal("REQUEST DESCENT FL350", request.Content);
+        Assert.Equal("REQUEST DESCENT TO FL350", MessageText.Format(request.Elements));
         Assert.Equal(CpdlcDownlinkResponseType.ResponseRequired, request.ResponseType);
         Assert.True(request.IsAcknowledged);
 
         var clearance = Assert.IsType<UplinkMessage>(saved.Messages[1]);
-        Assert.Equal("DESCEND TO FL350", clearance.Content);
+        Assert.Equal("DESCEND TO AND MAINTAIN FL350", MessageText.Format(clearance.Elements));
         Assert.Equal("BN-TSN_FSS", clearance.SenderCallsign);
         Assert.Equal(CpdlcUplinkResponseType.WilcoUnable, clearance.ResponseType);
         Assert.Equal(7, clearance.MessageReference);
@@ -56,7 +57,7 @@ public class DialogueRepositoryTests
         // Arrange
         using var database = new TestDatabase();
         var dialogue = new Dialogue("UAL123", "YBBB");
-        dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
+        dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, Start);
 
         await using (var dbContext = database.CreateDbContext())
         {
@@ -68,7 +69,7 @@ public class DialogueRepositoryTests
         await using (var dbContext = database.CreateDbContext())
         {
             var saved = await new DialogueRepository(dbContext).FindById(dialogue.Id, CancellationToken.None);
-            saved!.AddDownlink(5, 1, "UAL123", CpdlcDownlinkResponseType.NoResponse, AlertType.None, "WILCO", Start.AddMinutes(1));
+            saved!.AddDownlink(5, 1, "UAL123", CpdlcDownlinkResponseType.NoResponse, [new DownlinkMessageElement(0, [])], Start.AddMinutes(1));
             await dbContext.SaveChangesAsync();
         }
 
@@ -89,7 +90,7 @@ public class DialogueRepositoryTests
         var repository = new DialogueRepository(dbContext);
 
         var dialogue = new Dialogue("UAL123", "YBBB");
-        dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
+        dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, Start);
         await repository.Add(dialogue, CancellationToken.None);
 
         // Act
@@ -144,7 +145,7 @@ public class DialogueRepositoryTests
         var repository = new DialogueRepository(dbContext);
 
         var dialogue = new Dialogue("UAL123", "YMMM");
-        dialogue.AddUplink(1, null, "UAL123", "ML-IND_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
+        dialogue.AddUplink(1, null, "UAL123", "ML-IND_FSS", [new UplinkMessageElement(20, ["FL410"])], false, Start);
         await repository.Add(dialogue, CancellationToken.None);
 
         // Act
@@ -163,7 +164,7 @@ public class DialogueRepositoryTests
         var closed = CreateClosedDialogue("UAL123", Start);
         var otherAircraft = CreateOpenDialogue("QFA1", Start);
         var otherStation = new Dialogue("UAL123", "YMMM");
-        otherStation.AddUplink(1, null, "UAL123", "ML-IND_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
+        otherStation.AddUplink(1, null, "UAL123", "ML-IND_FSS", [new UplinkMessageElement(20, ["FL410"])], false, Start);
         await AddAndSave(database, open, closed, otherAircraft, otherStation);
 
         // Act
@@ -204,7 +205,7 @@ public class DialogueRepositoryTests
         // Arrange
         using var database = new TestDatabase();
         var dialogue = new Dialogue("UAL123", "YBBB");
-        dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", Start);
+        dialogue.AddUplink(1, null, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, Start);
 
         await using (var dbContext = database.CreateDbContext())
         {
@@ -241,14 +242,14 @@ public class DialogueRepositoryTests
     static Dialogue CreateOpenDialogue(string callsign, DateTimeOffset time)
     {
         var dialogue = new Dialogue(callsign, "YBBB");
-        dialogue.AddUplink(1, null, callsign, "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB TO FL410", time);
+        dialogue.AddUplink(1, null, callsign, "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, time);
         return dialogue;
     }
 
     static Dialogue CreateClosedDialogue(string callsign, DateTimeOffset time)
     {
         var dialogue = new Dialogue(callsign, "YBBB");
-        dialogue.AddUplink(1, null, callsign, "BN-TSN_FSS", CpdlcUplinkResponseType.NoResponse, AlertType.None, "MONITOR BRISBANE CENTRE 128.6", time);
+        dialogue.AddUplink(1, null, callsign, "BN-TSN_FSS", [new UplinkMessageElement(3, [])], false, time); // ROGER needs no response
         return dialogue;
     }
 }

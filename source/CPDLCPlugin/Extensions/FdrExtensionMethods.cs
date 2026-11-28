@@ -4,6 +4,25 @@ namespace CPDLCPlugin.Extensions;
 
 public static class FdrExtensionMethods
 {
+    // Returns false if the FDR has no cleared level, or if the cleared level is a block level
+    public static bool TryGetClearedLevel(this FDP2.FDR fdr, out int feet)
+    {
+        feet = fdr.CFLUpper;
+        return fdr.CFLLower == FDP2.FDR.LEVEL_NONE && fdr.CFLUpper > FDP2.FDR.LEVEL_VSA;
+    }
+
+    // Returns the names of the waypoints in the route after the last waypoint that the aircraft overflew
+    public static string[] GetNextWaypoints(this FDP2.FDR fdr)
+    {
+        var overflownIndex = Math.Max(fdr.ParsedRoute.OverflownIndex, 0);
+
+        return fdr.ParsedRoute.ToList()
+            .Skip(overflownIndex + 1)
+            .Where(s => s.Type == FDP2.FDR.ExtractedRoute.Segment.SegmentTypes.WAYPOINT)
+            .Select(s => s.Intersection.Name)
+            .ToArray();
+    }
+
     public static IReadOnlyList<SectorEntry> GetSectorEntries(this FDP2.FDR fdr)
     {
         var results = new List<SectorEntry>();

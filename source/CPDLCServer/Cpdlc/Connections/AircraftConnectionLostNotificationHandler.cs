@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Controllers;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
@@ -62,7 +63,7 @@ public class AircraftConnectionLostNotificationHandler(
                     notification.Callsign,
                     cancellationToken);
 
-                dialogue.AbortWithError(messageId, "ERROR CONNECTION TIMED OUT", clock.UtcNow());
+                dialogue.AbortWithError(messageId, "CONNECTION TIMED OUT", clock.UtcNow());
 
                 // Publish DialogueChangedNotification
                 await publisher.Publish(new DialogueChangedNotification(dialogue), cancellationToken);
@@ -87,8 +88,7 @@ public class AircraftConnectionLostNotificationHandler(
                 null,
                 notification.Callsign,
                 CpdlcDownlinkResponseType.NoResponse,
-                AlertType.Medium,
-                "ERROR CONNECTION TIMED OUT",
+                [new DownlinkMessageElement(DownlinkElementIds.Error, ["CONNECTION TIMED OUT"])],
                 clock.UtcNow());
 
             await dialogueRepository.Add(dialogue, cancellationToken);

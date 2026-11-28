@@ -1,4 +1,4 @@
-using CPDLCServer.Contracts;
+using CPDLC.Messages;
 using MediatR;
 using Serilog;
 
@@ -6,7 +6,9 @@ namespace CPDLCPlugin.Messages;
 
 public record SendStandbyUplinkRequest(Guid DialogueId, int DownlinkMessageId, string Recipient) : IRequest;
 public record SendDeferredUplinkRequest(Guid DialogueId, int DownlinkMessageId, string Recipient) : IRequest;
-public record SendUnableUplinkRequest(Guid DialogueId, int DownlinkMessageId, string Recipient, string Reason = "") : IRequest;
+
+// ReasonElementId is the ID of a "DUE TO ..." element that follows UNABLE, for example DUE TO TRAFFIC
+public record SendUnableUplinkRequest(Guid DialogueId, int DownlinkMessageId, string Recipient, int? ReasonElementId = null) : IRequest;
 
 public class SendStandbyUplinkRequestHandler(IMediator mediator, ILogger logger)
     : IRequestHandler<SendStandbyUplinkRequest>
@@ -21,8 +23,8 @@ public class SendStandbyUplinkRequestHandler(IMediator mediator, ILogger logger)
                 request.Recipient,
                 request.DialogueId,
                 request.DownlinkMessageId,
-                CpdlcUplinkResponseType.NoResponse, // TODO: Is this the correct response type?
-                "STANDBY"),
+                [new UplinkMessageElement(UplinkElementIds.Standby, [])],
+                false),
             cancellationToken);
     }
 }
@@ -40,8 +42,8 @@ public class SendDeferredUplinkRequestHandler(IMediator mediator, ILogger logger
                 request.Recipient,
                 request.DialogueId,
                 request.DownlinkMessageId,
-                CpdlcUplinkResponseType.NoResponse, // TODO: Is this the correct response type?
-                "REQUEST DEFERRED"),
+                [new UplinkMessageElement(UplinkElementIds.RequestDeferred, [])],
+                false),
             cancellationToken);
     }
 }
@@ -51,22 +53,22 @@ public class SendUnableUplinkRequestHandler(IMediator mediator, ILogger logger)
 {
     public async Task Handle(SendUnableUplinkRequest request, CancellationToken cancellationToken)
     {
-        var content = "UNABLE";
-        if (!string.IsNullOrEmpty(request.Reason))
+        var elements = new List<UplinkMessageElement> { new(UplinkElementIds.Unable, []) };
+        if (request.ReasonElementId is not null)
         {
-            content = "UNABLE. " + request.Reason;
+            elements.Add(new UplinkMessageElement(request.ReasonElementId.Value, []));
         }
 
-        logger.Information("Sending UNABLE response to {Recipient} for downlink {DownlinkMessageId} (Reason: {Reason})",
-            request.Recipient, request.DownlinkMessageId, request.Reason ?? "none");
+        logger.Information("Sending UNABLE response to {Recipient} for downlink {DownlinkMessageId} (Reason: {ReasonElementId})",
+            request.Recipient, request.DownlinkMessageId, request.ReasonElementId?.ToString() ?? "none");
 
         await mediator.Send(
             new ReplyToDownlinkRequest(
                 request.Recipient,
                 request.DialogueId,
                 request.DownlinkMessageId,
-                CpdlcUplinkResponseType.NoResponse, // TODO: Is this the correct response type?
-                content),
+                elements.ToArray(),
+                false),
             cancellationToken);
     }
 }

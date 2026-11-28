@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Contracts;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -157,23 +158,23 @@ public class SignalRConnectionManager(
     }
 
     public async Task BeginDialogue(string recipient,
-        CpdlcUplinkResponseType responseType,
-        string content,
+        UplinkMessageElement[] elements,
+        bool canAction,
         CancellationToken cancellationToken)
     {
         var connection = GetConnectedOrThrow();
         await connection.InvokeAsync<UplinkMessageDto>(
             "BeginDialogue",
             recipient,
-            responseType,
-            content,
+            elements,
+            canAction,
             cancellationToken: cancellationToken);
     }
 
     public async Task ReplyToDownlink(Guid dialogueId,
         int downlinkMessageId,
-        CpdlcUplinkResponseType responseType,
-        string content,
+        UplinkMessageElement[] elements,
+        bool canAction,
         CancellationToken cancellationToken)
     {
         var connection = GetConnectedOrThrow();
@@ -181,8 +182,8 @@ public class SignalRConnectionManager(
             "ReplyToDownlink",
             dialogueId,
             downlinkMessageId,
-            responseType,
-            content,
+            elements,
+            canAction,
             cancellationToken: cancellationToken);
     }
 
@@ -227,6 +228,16 @@ public class SignalRConnectionManager(
         var connection = GetConnectedOrThrow();
         await connection.InvokeAsync(
             "AcknowledgeUplink",
+            dialogueId,
+            uplinkMessageId,
+            cancellationToken);
+    }
+
+    public async Task MarkUplinkActioned(Guid dialogueId, int uplinkMessageId, CancellationToken cancellationToken)
+    {
+        var connection = GetConnectedOrThrow();
+        await connection.InvokeAsync(
+            "MarkUplinkActioned",
             dialogueId,
             uplinkMessageId,
             cancellationToken);

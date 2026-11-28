@@ -17,8 +17,11 @@ public partial class SetupViewModel : ObservableObject,
     readonly IMediator _mediator;
     readonly IErrorReporter _errorReporter;
     readonly IWindowHandle _windowHandle;
-    readonly AuthenticationState _authenticationState;
+    readonly AuthenticationStore _authenticationStore;
     readonly IGuiInvoker _guiInvoker;
+
+    // Cancels the authentication or the log out that is in progress
+    CancellationTokenSource? _authenticationCancellationTokenSource;
 
     [ObservableProperty] string serverEndpoint;
     [ObservableProperty] string[] availableStationIdentifiers;
@@ -32,7 +35,7 @@ public partial class SetupViewModel : ObservableObject,
         IMediator mediator,
         IErrorReporter errorReporter,
         IWindowHandle windowHandle,
-        AuthenticationState authenticationState,
+        AuthenticationStore authenticationStore,
         IGuiInvoker guiInvoker,
         string serverEndpoint,
         string[] availableStationIdentifiers,
@@ -42,7 +45,7 @@ public partial class SetupViewModel : ObservableObject,
         _mediator = mediator;
         _errorReporter = errorReporter;
         _windowHandle = windowHandle;
-        _authenticationState = authenticationState;
+        _authenticationStore = authenticationStore;
         _guiInvoker = guiInvoker;
         ServerEndpoint = serverEndpoint;
         AvailableStationIdentifiers = availableStationIdentifiers;
@@ -79,18 +82,25 @@ public partial class SetupViewModel : ObservableObject,
     [RelayCommand]
     async Task AuthenticateOrLogOut()
     {
+        using var cancellationTokenSource = new CancellationTokenSource();
+        _authenticationCancellationTokenSource = cancellationTokenSource;
+
         try
         {
             Authenticating = true;
 
             if (Authenticated)
             {
-                await _mediator.Send(new LogOutRequest(ServerEndpoint));
+                await _mediator.Send(new LogOutRequest(ServerEndpoint), cancellationTokenSource.Token);
             }
             else
             {
-                await _mediator.Send(new AuthenticateRequest(ServerEndpoint));
+                await _mediator.Send(new AuthenticateRequest(ServerEndpoint), cancellationTokenSource.Token);
             }
+        }
+        catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+        {
+            // The user changed the server URL
         }
         catch (Exception e)
         {
@@ -98,6 +108,7 @@ public partial class SetupViewModel : ObservableObject,
         }
         finally
         {
+            _authenticationCancellationTokenSource = null;
             Authenticating = false;
         }
     }
@@ -111,6 +122,10 @@ public partial class SetupViewModel : ObservableObject,
     // The status is for the server in the text box, so it changes when the URL changes
     partial void OnServerEndpointChanged(string value)
     {
+        // The login page of the old URL cannot send the login to the new URL, so stop the authentication.
+        // If not, the Authenticate button stays disabled until the authentication times out.
+        _authenticationCancellationTokenSource?.Cancel();
+
         UpdateAuthenticationStatus();
     }
 
@@ -128,11 +143,11 @@ public partial class SetupViewModel : ObservableObject,
             return;
         }
 
-        var user = _authenticationState.GetUser(server);
-        Authenticated = user is not null;
-        AuthenticationStatus = user is null
+        var token = _authenticationStore.Get(server);
+        Authenticated = token is not null;
+        AuthenticationStatus = token is null
             ? "Not authenticated"
-            : $"Authenticated as {user.Cid}";
+            : $"Authenticated as {token.Cid}";
     }
 
     public void Receive(ConnectedNotification message)

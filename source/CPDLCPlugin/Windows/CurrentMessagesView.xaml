@@ -19,6 +19,7 @@
             </ResourceDictionary.MergedDictionaries>
 
             <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+            <converters:MessageColourToBrushConverter x:Key="MessageColourToBrushConverter"/>
 
             <Style x:Key="PopupButtonStyle" TargetType="Button" BasedOn="{StaticResource ButtonBaseStyle}">
                 <Setter Property="MinWidth" Value="120"/>
@@ -55,7 +56,7 @@
                    Placement="Relative">
                 <Border Background="Transparent"
                         MouseRightButtonDown="ExtendedMessage_MouseRightButtonDown">
-                    <StackPanel Background="{Binding CurrentlyExtendedMessage.BackgroundColor}">
+                    <StackPanel Background="{Binding CurrentlyExtendedMessage.BackgroundColor, Converter={StaticResource MessageColourToBrushConverter}}">
                         <Grid Margin="2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/> <!-- Prefix -->
@@ -67,7 +68,7 @@
                         <!-- Prefix TextBlock -->
                         <TextBlock Grid.Column="0"
                                    Text="{Binding CurrentlyExtendedMessage.Prefix}"
-                                   Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor}"
+                                   Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor, Converter={StaticResource MessageColourToBrushConverter}}"
                                    FontFamily="{x:Static toolbox:VatSysFont.Family}"
                                    FontSize="{x:Static toolbox:VatSysFont.Size}"
                                    FontWeight="{x:Static toolbox:VatSysFont.Weight}"
@@ -76,7 +77,7 @@
                         <!-- Time TextBlock -->
                         <TextBlock Grid.Column="1"
                                    Text="{Binding CurrentlyExtendedMessage.Time}"
-                                   Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor}"
+                                   Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor, Converter={StaticResource MessageColourToBrushConverter}}"
                                    FontFamily="{x:Static toolbox:VatSysFont.Family}"
                                    FontSize="{x:Static toolbox:VatSysFont.Size}"
                                    FontWeight="{x:Static toolbox:VatSysFont.Weight}"
@@ -85,7 +86,7 @@
                         <!-- Callsign TextBlock (clickable) -->
                         <TextBlock Grid.Column="2"
                                    Text="{Binding CurrentlyExtendedMessage.Callsign}"
-                                   Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor}"
+                                   Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor, Converter={StaticResource MessageColourToBrushConverter}}"
                                    FontFamily="{x:Static toolbox:VatSysFont.Family}"
                                    FontSize="{x:Static toolbox:VatSysFont.Size}"
                                    FontWeight="{x:Static toolbox:VatSysFont.Weight}"
@@ -95,7 +96,7 @@
                         <!-- Full Content TextBlock (clickable, unlimited length) -->
                         <TextBlock Grid.Column="3"
                                    Text="{Binding CurrentlyExtendedMessage.FullContent}"
-                                   Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor}"
+                                   Foreground="{Binding CurrentlyExtendedMessage.ForegroundColor, Converter={StaticResource MessageColourToBrushConverter}}"
                                    FontFamily="{x:Static toolbox:VatSysFont.Family}"
                                    FontSize="{x:Static toolbox:VatSysFont.Size}"
                                    FontWeight="{x:Static toolbox:VatSysFont.Weight}"
@@ -120,7 +121,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type viewModels:CurrentMessageViewModel}">
                                             <Border x:Name="MessageBorder"
-                                                    Background="{Binding BackgroundColor}"
+                                                    Background="{Binding BackgroundColor, Converter={StaticResource MessageColourToBrushConverter}}"
                                                     HorizontalAlignment="Left"
                                                     MouseLeftButtonDown="Message_MouseLeftButtonDown"
                                                     MouseRightButtonDown="Message_MouseRightButtonDown">
@@ -136,7 +137,7 @@
 
                                                         <TextBlock Grid.Column="0"
                                                                    Text="{Binding Prefix}"
-                                                                   Foreground="{Binding ForegroundColor}"
+                                                                   Foreground="{Binding ForegroundColor, Converter={StaticResource MessageColourToBrushConverter}}"
                                                                    FontFamily="{x:Static toolbox:VatSysFont.Family}"
                                                                    FontSize="{x:Static toolbox:VatSysFont.Size}"
                                                                    FontWeight="{x:Static toolbox:VatSysFont.Weight}"
@@ -144,7 +145,7 @@
 
                                                         <TextBlock Grid.Column="1"
                                                                   Text="{Binding Time}"
-                                                                  Foreground="{Binding ForegroundColor}"
+                                                                  Foreground="{Binding ForegroundColor, Converter={StaticResource MessageColourToBrushConverter}}"
                                                                   FontFamily="{x:Static toolbox:VatSysFont.Family}"
                                                                   FontSize="{x:Static toolbox:VatSysFont.Size}"
                                                                   FontWeight="{x:Static toolbox:VatSysFont.Weight}"
@@ -152,7 +153,7 @@
 
                                                         <TextBlock Grid.Column="2"
                                                                   Text="{Binding Callsign}"
-                                                                  Foreground="{Binding ForegroundColor}"
+                                                                  Foreground="{Binding ForegroundColor, Converter={StaticResource MessageColourToBrushConverter}}"
                                                                   FontFamily="{x:Static toolbox:VatSysFont.Family}"
                                                                   FontSize="{x:Static toolbox:VatSysFont.Size}"
                                                                   FontWeight="{x:Static toolbox:VatSysFont.Weight}"
@@ -161,7 +162,7 @@
 
                                                         <TextBlock Grid.Column="3"
                                                                   Text="{Binding Content}"
-                                                                  Foreground="{Binding ForegroundColor}"
+                                                                  Foreground="{Binding ForegroundColor, Converter={StaticResource MessageColourToBrushConverter}}"
                                                                   FontFamily="{x:Static toolbox:VatSysFont.Family}"
                                                                   FontSize="{x:Static toolbox:VatSysFont.Size}"
                                                                   FontWeight="{x:Static toolbox:VatSysFont.Weight}"/>

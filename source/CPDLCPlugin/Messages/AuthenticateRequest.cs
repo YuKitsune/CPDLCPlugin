@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.Messaging;
 using CPDLCPlugin.Server;
-using CPDLCServer.Contracts;
 using MediatR;
 using Serilog;
 using vatsys;
@@ -12,8 +11,7 @@ public record AuthenticateRequest(string ServerEndpoint) : IRequest;
 
 public class AuthenticateRequestHandler(
     PluginAuthenticator authenticator,
-    TokenStore tokenStore,
-    AuthenticationState authenticationState,
+    AuthenticationStore authenticationStore,
     ILogger logger)
     : IRequestHandler<AuthenticateRequest>
 {
@@ -23,8 +21,7 @@ public class AuthenticateRequestHandler(
 
         // The CID from vatSys. It is empty if the user did not enter it.
         var response = await authenticator.Authenticate(server, Network.ControllerId, cancellationToken);
-        tokenStore.Save(server, response.AccessToken);
-        authenticationState.Set(server, new PluginUserDto(response.Cid, response.Expires));
+        authenticationStore.Save(server, new AuthenticationToken(response.AccessToken, response.Cid, response.Expires));
 
         logger.Information("Authenticated with {Server} as {Cid}", server, response.Cid);
         WeakReferenceMessenger.Default.Send(new AuthenticationChangedNotification());

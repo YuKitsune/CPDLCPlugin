@@ -1,4 +1,4 @@
-using CPDLCServer.Contracts;
+using CPDLC.Messages;
 using MediatR;
 using Serilog;
 
@@ -6,8 +6,8 @@ namespace CPDLCPlugin.Messages;
 
 public record BeginDialogueRequest(
     string Recipient,
-    CpdlcUplinkResponseType ResponseType,
-    string Content)
+    UplinkMessageElement[] Elements,
+    bool CanAction)
     : IRequest;
 
 public class BeginDialogueRequestHandler(Plugin plugin, ILogger logger)
@@ -25,8 +25,8 @@ public class BeginDialogueRequestHandler(Plugin plugin, ILogger logger)
 
         await plugin.ConnectionManager.BeginDialogue(
             request.Recipient,
-            request.ResponseType,
-            request.Content,
+            request.Elements,
+            request.CanAction,
             cancellationToken);
     }
 }

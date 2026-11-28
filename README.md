@@ -67,7 +67,7 @@ To revert, use `CPDLC > Uninstall label & strip items`, which restores the origi
 If your `Labels.xml` or `Strips.xml` files have been customised, the automatic installer will fail. Apply the changes manually using the diffs below.
 
 > [!NOTE]
-> When bundling the plugin in a vatSys profile, you can hide the install and uninstall menu items by setting `ShowInstallationMenuItems` to `false` in `CPDLC.json`.
+> When bundling the plugin in a vatSys profile, you can hide the install and uninstall menu items by setting `ShowInstallationMenuItems` to `false` in `CPDLC.yaml`.
 
 #### Manual
 

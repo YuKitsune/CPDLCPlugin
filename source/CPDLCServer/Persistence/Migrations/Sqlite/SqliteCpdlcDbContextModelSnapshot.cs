@@ -466,11 +466,11 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 {
                     b.HasBaseType("CPDLCServer.Cpdlc.Dialogues.CpdlcMessage");
 
-                    b.Property<string>("Content")
+                    b.Property<string>("Elements")
                         .IsRequired()
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("TEXT")
-                        .HasColumnName("Content");
+                        .HasColumnName("Elements");
 
                     b.Property<bool>("IsControllerLate")
                         .HasColumnType("INTEGER");
@@ -494,17 +494,23 @@ namespace CPDLCServer.Persistence.Migrations.Sqlite
                 {
                     b.HasBaseType("CPDLCServer.Cpdlc.Dialogues.CpdlcMessage");
 
+                    b.Property<bool>("Actioned")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("CanAction")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("ClosedManually")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Content")
+                    b.Property<bool>("DidTransmissionFail")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Elements")
                         .IsRequired()
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("TEXT")
-                        .HasColumnName("Content");
-
-                    b.Property<bool>("DidTransmissionFail")
-                        .HasColumnType("INTEGER");
+                        .HasColumnName("Elements");
 
                     b.Property<bool>("IsPilotLate")
                         .HasColumnType("INTEGER");

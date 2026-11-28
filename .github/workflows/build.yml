@@ -39,8 +39,14 @@ jobs:
             .fallout/temp
             ~/.nuget/packages
           key: ${{ runner.os }}-${{ hashFiles('**/global.json', '**/*.csproj', '**/Directory.Packages.props') }}
+      - name: 'Setup: .NET SDK'
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: 'Restore: dotnet tools'
+        run: dotnet tool restore
       - name: 'Run: AddNuGetSource, CompilePlugin, Test'
-        run: ./build.cmd AddNuGetSource CompilePlugin Test
+        run: dotnet fallout AddNuGetSource CompilePlugin Test
         env:
           NuGetUsername: ${{ secrets.NUGET_USERNAME }}
           NuGetToken: ${{ secrets.NUGET_TOKEN }}

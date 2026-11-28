@@ -15,6 +15,9 @@ public class PluginConfiguration
     public int MaxDisplayMessageLength { get; init; } = 40;
     public int MaxExtendedMessageLength { get; init; } = 80;
     public required UplinkMessagesConfiguration UplinkMessages { get; init; }
+
+    // The Current Messages window shows "!" for a downlink that has one of these elements, for example "DM29"
+    public string[] FlaggedElementIds { get; init; } = [];
     public int MaxLogFileAgeDays { get; init; } = 5;
     public LogEventLevel LogLevel { get; init; } = LogEventLevel.Information;
 

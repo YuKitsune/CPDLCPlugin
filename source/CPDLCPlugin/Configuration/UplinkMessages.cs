@@ -1,62 +1,18 @@
-﻿using System.Text.Json.Serialization;
-
-namespace CPDLCPlugin.Configuration;
-
-public enum ParameterType
-{
-    Altimeter,
-    AtisCode,
-    Code,
-    Degree,
-    Direction,
-    DistanceOffset,
-    FacilityDesignation,
-    FreeText,
-    Frequency,
-    LegType,
-    Level,
-    Position,
-    PreDepartureClearance,
-    ProcedureName,
-    RouteClearance,
-    Speed,
-    Time,
-    ToFrom,
-    UnitName,
-    VerticalRate
-}
-
-public class UplinkMessageParameter
-{
-    public required string Name { get; init; }
-
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public required ParameterType Type { get; init; }
-}
+﻿namespace CPDLCPlugin.Configuration;
 
 /// <summary>
-/// Master uplink message definition
+/// Root configuration for uplink messages
 /// </summary>
-public class UplinkMessageTemplate
+public class UplinkMessagesConfiguration
 {
-    public required int Id { get; init; }
-    public required string Template { get; init; }
-    public required UplinkMessageParameter[] Parameters { get; init; } = [];
+    public required UplinkMessageReference[] QuickAccessMessages { get; init; } = [];
+    public required UplinkMessageGroup[] Groups { get; init; } = [];
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public required UplinkResponseType ResponseType { get; init; }
-}
+    // The values that the controller can select for an [icao unit name] parameter
+    public string[] IcaoUnitNames { get; init; } = [];
 
-/// <summary>
-/// Reference to an uplink message with optional default parameter values and response type override
-/// </summary>
-public class UplinkMessageReference
-{
-    public required int MessageId { get; init; }
-    public Dictionary<string, string>? DefaultParameters { get; init; }
-
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public UplinkResponseType? ResponseType { get; init; }
+    // The transition level in feet. In the uplink text, a level below it is an altitude, for example "A095", and a level at or above it is a flight level, for example "F350".
+    public int TransitionLevel { get; init; } = 11000;
 }
 
 /// <summary>
@@ -69,19 +25,15 @@ public class UplinkMessageGroup
 }
 
 /// <summary>
-/// Root configuration for uplink messages
+/// Reference to an uplink element with optional default parameter values
 /// </summary>
-public class UplinkMessagesConfiguration
+public class UplinkMessageReference
 {
-    public required UplinkMessageTemplate[] MasterMessages { get; init; } = [];
-    public required UplinkMessageReference[] QuickAccessMessages { get; init; } = [];
-    public required UplinkMessageGroup[] Groups { get; init; } = [];
-}
+    // The FANS 1/A uplink element, for example "UM20"
+    public required string Element { get; init; }
 
-public enum UplinkResponseType
-{
-    NoResponse,
-    WilcoUnable,
-    AffirmativeNegative,
-    Roger
+    // The key is the name of the parameter in the element, for example "altitude"
+    public Dictionary<string, string>? DefaultParameters { get; init; }
+
+    public int ElementId => ElementReference.ParseUplink(Element);
 }

@@ -16,6 +16,7 @@ public class OpenEditorWindowRequestHandler(
     IMediator mediator,
     DialogueStore dialogueStore,
     SuspendedMessageStore suspendedMessageStore,
+    IFlightDataProvider flightDataProvider,
     IErrorReporter errorReporter,
     IGuiInvoker guiInvoker,
     ILogger logger)
@@ -37,6 +38,7 @@ public class OpenEditorWindowRequestHandler(
                     dialogueStore,
                     pluginConfiguration.UplinkMessages,
                     suspendedMessageStore,
+                    flightDataProvider,
                     mediator,
                     errorReporter,
                     guiInvoker,

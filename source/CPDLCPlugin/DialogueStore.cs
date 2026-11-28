@@ -31,6 +31,14 @@ public class DialogueStore
         }
     }
 
+    public async Task<DialogueDto?> Find(Guid id, CancellationToken cancellationToken)
+    {
+        using (await _semaphoreSlim.Lock(cancellationToken))
+        {
+            return _dialogues.FirstOrDefault(d => d.Id == id);
+        }
+    }
+
     public async Task<DialogueDto[]> All(CancellationToken cancellationToken)
     {
         using (await _semaphoreSlim.Lock(cancellationToken))

@@ -326,7 +326,7 @@ class Build : FalloutBuild
                 Log.Information("Plugin uninstalled from {Directory}", pluginDirectory);
             }
 
-            var configFilePath = pluginsDirectory / "Configs" / "CPDLCPlugin" / "CPDLC.json";
+            var configFilePath = pluginsDirectory / "Configs" / "CPDLCPlugin" / "CPDLC.yaml";
             if (configFilePath.FileExists())
             {
                 configFilePath.DeleteFile();
@@ -356,7 +356,7 @@ class Build : FalloutBuild
             }
 
             // Copy config
-            var configFile = RootDirectory / "CPDLC.json";
+            var configFile = RootDirectory / "CPDLC.yaml";
             var configDestinationDirectory = pluginsDirectory / "Configs" / "CPDLC";
             configDestinationDirectory.CreateOrCleanDirectory();
 
@@ -377,7 +377,7 @@ class Build : FalloutBuild
         {
             var dpiAwareFixScript = RootDirectory / "dpiawarefix.bat";
             var unblockDllsScript = RootDirectory / "unblock-dlls.bat";
-            var configFile = RootDirectory / "CPDLC.json";
+            var configFile = RootDirectory / "CPDLC.yaml";
 
             PluginPackageDirectory.CreateOrCleanDirectory();
 

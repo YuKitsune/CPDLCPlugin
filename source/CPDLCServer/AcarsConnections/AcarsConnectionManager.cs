@@ -4,7 +4,9 @@ using CPDLCServer.AcarsConnections.Hoppie;
 using CPDLCServer.AcarsConnections.Traffic;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.MessageLog;
+using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Downlinks;
+using CPDLCServer.Cpdlc.Uplinks;
 using CPDLCServer.Infrastructure;
 using CPDLCServer.Logging;
 using CPDLCServer.Persistence;
@@ -245,6 +247,11 @@ public class AcarsConnectionManager(
                 stationId,
                 acarsConnection,
                 mediator,
+                subscribeTaskCancellationSource.Token),
+            SubscribeControl(
+                acarsConnectionId,
+                acarsConnection,
+                mediator,
                 subscribeTaskCancellationSource.Token));
 
         var acarsConnectionHandle = new AcarsConnectionHandle(
@@ -270,6 +277,7 @@ public class AcarsConnectionManager(
             configuration,
             httpClient,
             clock,
+            new UnitOfWorkMessageIdProvider(mediator),
             adscMessageLogRepository,
             trafficLog,
             _logger.ForContext<HoppieAcarsConnection>());
@@ -364,6 +372,49 @@ public class AcarsConnectionManager(
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             subscriptionLogger.Information("ADS-C subscription canceled");
+        }
+    }
+
+    async Task SubscribeControl(string acarsConnectionId, IAcarsConnection acarsConnection, IUnitOfWorkMediator mediator, CancellationToken cancellationToken)
+    {
+        var subscriptionLogger = _logger.ForContext(LogArea.AcarsConnectionIdPropertyName, acarsConnectionId);
+
+        try
+        {
+            await foreach (var controlMessage in acarsConnection.ControlMessageReader.ReadAllAsync(cancellationToken))
+            {
+                // TODO: Make this configurable
+                // Linked to the subscription, so that a stopped connection does not wait for the timeout
+                using var publishTimeoutCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                publishTimeoutCancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(10));
+
+                // The handlers of the message write the ACARS connection ID in their log entries
+                using var _ = LogContext.PushProperty(LogArea.AcarsConnectionIdPropertyName, acarsConnectionId);
+
+                try
+                {
+                    await mediator.Publish(
+                        new ControlMessageReceivedNotification(acarsConnectionId, controlMessage),
+                        publishTimeoutCancellationTokenSource.Token);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    subscriptionLogger.Information("Control message subscription canceled");
+                    return;
+                }
+                catch (OperationCanceledException) when (publishTimeoutCancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    subscriptionLogger.Warning("Timeout handling control message {ControlMessage}", controlMessage);
+                }
+                catch (Exception ex)
+                {
+                    subscriptionLogger.Error(ex, "Failed to relay {MessageType}", controlMessage.GetType());
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            subscriptionLogger.Information("Control message subscription canceled");
         }
     }
 

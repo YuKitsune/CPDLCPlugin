@@ -183,9 +183,9 @@ public class UpdateNextDataAuthorityRequestHandlerTests
         await _acarsStationStore.Populate(["YBBB", "YMMM"]);
 
         var configuration = CreateConfiguration(
-            new AtsuCodeMapping("YBBB", [BrisbaneSector]),
-            new AtsuCodeMapping("YMMM", [MelbourneSector]),
-            new AtsuCodeMapping("YPPP", [MelbourneSector]));
+            new AtsuCodeMapping { AtsuCode = "YBBB", Sectors = [BrisbaneSector] },
+            new AtsuCodeMapping { AtsuCode = "YMMM", Sectors = [MelbourneSector] },
+            new AtsuCodeMapping { AtsuCode = "YPPP", Sectors = [MelbourneSector] });
 
         var handler = CreateHandler(configuration);
         var request = new UpdateNextDataAuthorityRequest(
@@ -326,9 +326,9 @@ public class UpdateNextDataAuthorityRequestHandlerTests
             _aircraftConnectionStore,
             _acarsStationStore,
             configuration ?? CreateConfiguration(
-                new AtsuCodeMapping("YBBB", [BrisbaneSector, AustraliaSectorGroup]),
-                new AtsuCodeMapping("YMMM", [MelbourneSector]),
-                new AtsuCodeMapping("NZZO", [AucklandSector])),
+                new AtsuCodeMapping { AtsuCode = "YBBB", Sectors = [BrisbaneSector, AustraliaSectorGroup] },
+                new AtsuCodeMapping { AtsuCode = "YMMM", Sectors = [MelbourneSector] },
+                new AtsuCodeMapping { AtsuCode = "NZZO", Sectors = [AucklandSector] }),
             _errorReporter,
             Logger.None);
     }
@@ -341,7 +341,6 @@ public class UpdateNextDataAuthorityRequestHandlerTests
             Stations = [],
             UplinkMessages = new UplinkMessagesConfiguration
             {
-                MasterMessages = [],
                 QuickAccessMessages = [],
                 Groups = []
             },

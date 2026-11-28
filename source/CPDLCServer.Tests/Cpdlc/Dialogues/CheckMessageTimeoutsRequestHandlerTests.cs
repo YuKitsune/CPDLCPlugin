@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -26,9 +27,8 @@ public class CheckMessageTimeoutsRequestHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMB TO FL410",
+            [new UplinkMessageElement(20, ["FL410"])],
+            false,
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -62,9 +62,8 @@ public class CheckMessageTimeoutsRequestHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMB TO FL410",
+            [new UplinkMessageElement(20, ["FL410"])],
+            false,
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -97,9 +96,8 @@ public class CheckMessageTimeoutsRequestHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "ROGER",
+            [new UplinkMessageElement(3, [])],
+            false,
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -132,8 +130,7 @@ public class CheckMessageTimeoutsRequestHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST CLIMB FL410",
+            [new DownlinkMessageElement(9, ["FL410"])],
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -167,9 +164,8 @@ public class CheckMessageTimeoutsRequestHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLIMB TO FL410",
+            [new UplinkMessageElement(20, ["FL410"])],
+            false,
             startTime);
 
         // Close the message
@@ -206,9 +202,8 @@ public class CheckMessageTimeoutsRequestHandlerTests
             null,
             "UAL123",
             "BN-TSN_FSS",
-            CpdlcUplinkResponseType.NoResponse,
-            AlertType.None,
-            "ROGER",
+            [new UplinkMessageElement(3, [])],
+            false,
             startTime);
         await repository.Add(dialogue, CancellationToken.None);
 
@@ -236,10 +231,10 @@ public class CheckMessageTimeoutsRequestHandlerTests
 
         // Create multiple dialogues with different aircraft
         var dialogue1 = new Dialogue("UAL123", "YBBB");
-        var uplink1 = dialogue1.AddUplink(1, null, "UAL123", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "CLIMB", startTime);
+        var uplink1 = dialogue1.AddUplink(1, null, "UAL123", "BN-TSN_FSS", [new UplinkMessageElement(20, ["FL410"])], false, startTime);
 
         var dialogue2 = new Dialogue("DAL456", "YBBB");
-        var uplink2 = dialogue2.AddUplink(2, null, "DAL456", "BN-TSN_FSS", CpdlcUplinkResponseType.WilcoUnable, AlertType.None, "DESCEND", startTime);
+        var uplink2 = dialogue2.AddUplink(2, null, "DAL456", "BN-TSN_FSS", [new UplinkMessageElement(23, ["FL350"])], false, startTime);
 
         await repository.Add(dialogue1, CancellationToken.None);
         await repository.Add(dialogue2, CancellationToken.None);

@@ -1,5 +1,6 @@
 using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CPDLCPlugin.Extensions;
 using CPDLCServer.Contracts;
 
 namespace CPDLCPlugin.ViewModels;
@@ -13,7 +14,7 @@ public partial class DownlinkMessageViewModel : ObservableObject
         Received = message.Received;
         StandbySent = StandbyReceived(dialogue, message);
         Deferred = DeferredReceived(dialogue, message);
-        Message = message.Content;
+        Message = message.Text();
         MaxCharacters = 250; // TODO: Calculate based on view width
         DisplayText = GetDisplayText(Message, Received, StandbySent, Deferred, MaxCharacters);
         FullDisplayText = GetDisplayText(Message, Received, StandbySent, Deferred, int.MaxValue);
@@ -88,13 +89,13 @@ public partial class DownlinkMessageViewModel : ObservableObject
     {
         return dialogue.Messages.OfType<UplinkMessageDto>()
             .Where(d => d.MessageReference == downlinkMessageDto.MessageId)
-            .Any(m => m.Content.Equals("STANDBY"));
+            .Any(m => m.HasElement(UplinkElementIds.Standby));
     }
 
     static bool DeferredReceived(DialogueDto dialogue, DownlinkMessageDto downlinkMessageDto)
     {
         return dialogue.Messages.OfType<UplinkMessageDto>()
             .Where(d => d.MessageReference == downlinkMessageDto.MessageId)
-            .Any(m => m.Content.Equals("REQUEST DEFERRED"));
+            .Any(m => m.HasElement(UplinkElementIds.RequestDeferred));
     }
 }

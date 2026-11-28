@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -22,9 +23,8 @@ public class AcknowledgeUplinkCommandHandlerTests
             null,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLEARED DESCEND FL350",
+            [new UplinkMessageElement(23, ["FL350"])],
+            false,
             clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
@@ -63,9 +63,8 @@ public class AcknowledgeUplinkCommandHandlerTests
             null,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLEARED DESCEND FL350",
+            [new UplinkMessageElement(23, ["FL350"])],
+            false,
             clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
@@ -101,9 +100,8 @@ public class AcknowledgeUplinkCommandHandlerTests
             null,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLEARED DESCEND FL350",
+            [new UplinkMessageElement(23, ["FL350"])],
+            false,
             clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
@@ -141,9 +139,8 @@ public class AcknowledgeUplinkCommandHandlerTests
             null,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLEARED DESCEND FL350",
+            [new UplinkMessageElement(23, ["FL350"])],
+            false,
             clock.UtcNow());
 
         var uplink2 = dialogue.AddUplink(
@@ -151,9 +148,8 @@ public class AcknowledgeUplinkCommandHandlerTests
             null,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLEARED DIRECT WAYPOINT",
+            [new UplinkMessageElement(74, ["WAYPOINT"])],
+            false,
             clock.UtcNow());
 
         await dialogueRepository.Add(dialogue, CancellationToken.None);
@@ -217,9 +213,8 @@ public class AcknowledgeUplinkCommandHandlerTests
             null,
             "UAL123",
             "SYSTEM",
-            CpdlcUplinkResponseType.WilcoUnable,
-            AlertType.None,
-            "CLEARED DESCEND FL350",
+            [new UplinkMessageElement(23, ["FL350"])],
+            false,
             clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 
@@ -252,8 +247,7 @@ public class AcknowledgeUplinkCommandHandlerTests
             null,
             "UAL123",
             CpdlcDownlinkResponseType.ResponseRequired,
-            AlertType.None,
-            "REQUEST DESCENT FL350",
+            [new DownlinkMessageElement(10, ["FL350"])],
             clock.UtcNow());
         await dialogueRepository.Add(dialogue, CancellationToken.None);
 

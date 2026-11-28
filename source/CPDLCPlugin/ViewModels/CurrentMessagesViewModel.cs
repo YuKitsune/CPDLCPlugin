@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using CPDLC.Messages;
 using CPDLCPlugin.Configuration;
 using CPDLCPlugin.Messages;
 using CPDLCServer.Contracts;
@@ -21,6 +22,7 @@ public partial class CurrentMessagesViewModel :
     IDisposable
 {
     readonly PluginConfiguration _configuration;
+    readonly int[] _flaggedElementIds = [];
     readonly DialogueStore _dialogueStore;
     readonly IMediator _mediator;
     readonly IGuiInvoker _guiInvoker;
@@ -42,6 +44,7 @@ public partial class CurrentMessagesViewModel :
         bool closeWhenEmpty)
     {
         _configuration = configuration;
+        _flaggedElementIds = configuration.FlaggedElementIds.Select(ElementReference.ParseDownlink).ToArray();
         _dialogueStore = dialogueStore;
         _mediator = mediator;
         _guiInvoker = guiInvoker;
@@ -101,7 +104,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST1",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK REGULAR",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK REGULAR"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-48),
             IsPilotLate = false,
             IsTransmissionFailed = false,
@@ -114,7 +119,7 @@ public partial class CurrentMessagesViewModel :
             AlertType = AlertType.None,
             Sender = "TEST1",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK REGULAR",
+            Elements = [new DownlinkMessageElement(DownlinkElementIds.FreeText, ["DOWNLINK REGULAR"])],
             Received = DateTimeOffset.UtcNow.AddMinutes(-47),
             IsControllerLate = false
         };
@@ -124,8 +129,8 @@ public partial class CurrentMessagesViewModel :
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-48),
             Messages =
             [
-                new(group1Dialogue, group1Uplink, mexMessageDisplayLength),
-                new(group1Dialogue, group1Downlink, mexMessageDisplayLength)
+                new(group1Dialogue, group1Uplink, mexMessageDisplayLength, []),
+                new(group1Dialogue, group1Downlink, mexMessageDisplayLength, [])
             ]
         });
 
@@ -138,7 +143,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST3",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK URGENT",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK URGENT"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-45),
             IsPilotLate = false,
             IsTransmissionFailed = false,
@@ -151,7 +158,7 @@ public partial class CurrentMessagesViewModel :
             AlertType = AlertType.High,
             Sender = "TEST3",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK URGENT",
+            Elements = [new DownlinkMessageElement(DownlinkElementIds.FreeText, ["DOWNLINK URGENT"])],
             Received = DateTimeOffset.UtcNow.AddMinutes(-44),
             IsControllerLate = false
         };
@@ -161,8 +168,8 @@ public partial class CurrentMessagesViewModel :
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-45),
             Messages =
             [
-                new(group3Dialogue, group3Uplink, mexMessageDisplayLength),
-                new(group3Dialogue, group3Downlink, mexMessageDisplayLength)
+                new(group3Dialogue, group3Uplink, mexMessageDisplayLength, []),
+                new(group3Dialogue, group3Downlink, mexMessageDisplayLength, [])
             ]
         });
 
@@ -175,7 +182,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST5",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.Roger,
-            Content = "UPLINK CLOSED",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK CLOSED"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-42),
             Closed = DateTimeOffset.UtcNow.AddMinutes(-42),
             IsPilotLate = false,
@@ -189,7 +198,7 @@ public partial class CurrentMessagesViewModel :
             AlertType = AlertType.None,
             Sender = "TEST5",
             ResponseType = CpdlcDownlinkResponseType.NoResponse,
-            Content = "DOWNLINK CLOSED",
+            Elements = [new DownlinkMessageElement(DownlinkElementIds.FreeText, ["DOWNLINK CLOSED"])],
             Received = DateTimeOffset.UtcNow.AddMinutes(-41),
             Closed = DateTimeOffset.UtcNow.AddMinutes(-41),
             IsControllerLate = false
@@ -200,8 +209,8 @@ public partial class CurrentMessagesViewModel :
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-42),
             Messages =
             [
-                new(group5Dialogue, group5Uplink, mexMessageDisplayLength),
-                new(group5Dialogue, group5Downlink, mexMessageDisplayLength)
+                new(group5Dialogue, group5Uplink, mexMessageDisplayLength, []),
+                new(group5Dialogue, group5Downlink, mexMessageDisplayLength, [])
             ]
         });
 
@@ -214,7 +223,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST7",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.Roger,
-            Content = "STANDBY",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["STANDBY"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-39),
             Closed = DateTimeOffset.UtcNow.AddMinutes(-39),
             IsPilotLate = false,
@@ -225,7 +236,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-39),
-            Messages = [new(group7Dialogue, group7Uplink, mexMessageDisplayLength)]
+            Messages = [new(group7Dialogue, group7Uplink, mexMessageDisplayLength, [])]
         });
 
         // Group 9: Failed messages (not acknowledged)
@@ -237,7 +248,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST9",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK FAILED",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK FAILED"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-37),
             IsPilotLate = false,
             IsTransmissionFailed = true,
@@ -247,7 +260,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-37),
-            Messages = [new(group9Dialogue, group9Uplink, mexMessageDisplayLength)]
+            Messages = [new(group9Dialogue, group9Uplink, mexMessageDisplayLength, [])]
         });
 
         // Group 11: Pilot Late messages (not acknowledged)
@@ -259,7 +272,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST11",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK PILOT LATE",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK PILOT LATE"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-35),
             IsPilotLate = true,
             IsTransmissionFailed = false,
@@ -269,7 +284,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-35),
-            Messages = [new(group11Dialogue, group11Uplink, mexMessageDisplayLength)]
+            Messages = [new(group11Dialogue, group11Uplink, mexMessageDisplayLength, [])]
         });
 
         // Group 13: Controller Late messages (not acknowledged)
@@ -280,7 +295,7 @@ public partial class CurrentMessagesViewModel :
             AlertType = AlertType.None,
             Sender = "TEST13",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK CONTROLLER LATE",
+            Elements = [new DownlinkMessageElement(DownlinkElementIds.FreeText, ["DOWNLINK CONTROLLER LATE"])],
             Received = DateTimeOffset.UtcNow.AddMinutes(-33),
             IsControllerLate = true
         };
@@ -288,7 +303,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-33),
-            Messages = [new(group13Dialogue, group13Downlink, mexMessageDisplayLength)]
+            Messages = [new(group13Dialogue, group13Downlink, mexMessageDisplayLength, [])]
         });
 
         // Group 15: Special Closed Timeout (pilot late special - Normal video)
@@ -300,7 +315,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST15",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.Roger,
-            Content = "STANDBY",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["STANDBY"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-31),
             Closed = DateTimeOffset.UtcNow.AddMinutes(-31),
             IsPilotLate = true,
@@ -311,7 +328,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-31),
-            Messages = [new(group15Dialogue, group15Uplink, mexMessageDisplayLength)]
+            Messages = [new(group15Dialogue, group15Uplink, mexMessageDisplayLength, [])]
         });
 
         // Group 16: Overflow message (shows asterisk prefix)
@@ -322,7 +339,7 @@ public partial class CurrentMessagesViewModel :
             AlertType = AlertType.None,
             Sender = "TEST16",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK OVERFLOW MESSAGE SHOWING ASTERISK PREFIX NOT ACKNOWLEDGED VERY LONG TEXT THAT EXCEEDS MAX LENGTH",
+            Elements = [new DownlinkMessageElement(DownlinkElementIds.FreeText, ["DOWNLINK OVERFLOW MESSAGE SHOWING ASTERISK PREFIX NOT ACKNOWLEDGED VERY LONG TEXT THAT EXCEEDS MAX LENGTH"])],
             Received = DateTimeOffset.UtcNow.AddMinutes(-29),
             IsControllerLate = false
         };
@@ -330,7 +347,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-29),
-            Messages = [new(group16Dialogue, group16Downlink, mexMessageDisplayLength)]
+            Messages = [new(group16Dialogue, group16Downlink, mexMessageDisplayLength, [])]
         });
 
         // Group 2: Regular messages (acknowledged)
@@ -342,7 +359,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST2",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK REGULAR ACK",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK REGULAR ACK"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-27),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-26),
             IsPilotLate = false,
@@ -356,7 +375,7 @@ public partial class CurrentMessagesViewModel :
             AlertType = AlertType.None,
             Sender = "TEST2",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK REGULAR ACK",
+            Elements = [new DownlinkMessageElement(DownlinkElementIds.FreeText, ["DOWNLINK REGULAR ACK"])],
             Received = DateTimeOffset.UtcNow.AddMinutes(-26),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-25),
             IsControllerLate = false
@@ -367,8 +386,8 @@ public partial class CurrentMessagesViewModel :
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-27),
             Messages =
             [
-                new(group2Dialogue, group2Uplink, mexMessageDisplayLength),
-                new(group2Dialogue, group2Downlink, mexMessageDisplayLength)
+                new(group2Dialogue, group2Uplink, mexMessageDisplayLength, []),
+                new(group2Dialogue, group2Downlink, mexMessageDisplayLength, [])
             ]
         });
 
@@ -381,7 +400,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST4",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK URGENT ACK",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK URGENT ACK"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-24),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-23),
             IsPilotLate = false,
@@ -395,7 +416,7 @@ public partial class CurrentMessagesViewModel :
             AlertType = AlertType.High,
             Sender = "TEST4",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK URGENT ACK",
+            Elements = [new DownlinkMessageElement(DownlinkElementIds.FreeText, ["DOWNLINK URGENT ACK"])],
             Received = DateTimeOffset.UtcNow.AddMinutes(-23),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-22),
             IsControllerLate = false
@@ -406,8 +427,8 @@ public partial class CurrentMessagesViewModel :
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-24),
             Messages =
             [
-                new(group4Dialogue, group4Uplink, mexMessageDisplayLength),
-                new(group4Dialogue, group4Downlink, mexMessageDisplayLength)
+                new(group4Dialogue, group4Uplink, mexMessageDisplayLength, []),
+                new(group4Dialogue, group4Downlink, mexMessageDisplayLength, [])
             ]
         });
 
@@ -420,7 +441,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST6",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.Roger,
-            Content = "UPLINK CLOSED ACK",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK CLOSED ACK"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-21),
             Closed = DateTimeOffset.UtcNow.AddMinutes(-21),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-20),
@@ -435,7 +458,7 @@ public partial class CurrentMessagesViewModel :
             AlertType = AlertType.None,
             Sender = "TEST6",
             ResponseType = CpdlcDownlinkResponseType.NoResponse,
-            Content = "DOWNLINK CLOSED ACK",
+            Elements = [new DownlinkMessageElement(DownlinkElementIds.FreeText, ["DOWNLINK CLOSED ACK"])],
             Received = DateTimeOffset.UtcNow.AddMinutes(-20),
             Closed = DateTimeOffset.UtcNow.AddMinutes(-20),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-19),
@@ -447,8 +470,8 @@ public partial class CurrentMessagesViewModel :
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-21),
             Messages =
             [
-                new(group6Dialogue, group6Uplink, mexMessageDisplayLength),
-                new(group6Dialogue, group6Downlink, mexMessageDisplayLength)
+                new(group6Dialogue, group6Uplink, mexMessageDisplayLength, []),
+                new(group6Dialogue, group6Downlink, mexMessageDisplayLength, [])
             ]
         });
 
@@ -461,7 +484,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST8",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.Roger,
-            Content = "STANDBY",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["STANDBY"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-18),
             Closed = DateTimeOffset.UtcNow.AddMinutes(-18),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-17),
@@ -473,7 +498,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-18),
-            Messages = [new(group8Dialogue, group8Uplink, mexMessageDisplayLength)]
+            Messages = [new(group8Dialogue, group8Uplink, mexMessageDisplayLength, [])]
         });
 
         // Group 10: Failed messages (acknowledged)
@@ -485,7 +510,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST10",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK FAILED ACK",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK FAILED ACK"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-16),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-15),
             IsPilotLate = false,
@@ -496,7 +523,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-16),
-            Messages = [new(group10Dialogue, group10Uplink, mexMessageDisplayLength)]
+            Messages = [new(group10Dialogue, group10Uplink, mexMessageDisplayLength, [])]
         });
 
         // Group 12: Pilot Late messages (acknowledged)
@@ -508,7 +535,9 @@ public partial class CurrentMessagesViewModel :
             Recipient = "TEST12",
             SenderCallsign = "CONTROLLER",
             ResponseType = CpdlcUplinkResponseType.WilcoUnable,
-            Content = "UPLINK PILOT LATE ACK",
+            Elements = [new UplinkMessageElement(UplinkElementIds.FreeText, ["UPLINK PILOT LATE ACK"])],
+            CanAction = false,
+            Actioned = false,
             Sent = DateTimeOffset.UtcNow.AddMinutes(-14),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-13),
             IsPilotLate = true,
@@ -519,7 +548,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-14),
-            Messages = [new(group12Dialogue, group12Uplink, mexMessageDisplayLength)]
+            Messages = [new(group12Dialogue, group12Uplink, mexMessageDisplayLength, [])]
         });
 
         // Group 14: Controller Late messages (acknowledged)
@@ -530,7 +559,7 @@ public partial class CurrentMessagesViewModel :
             AlertType = AlertType.None,
             Sender = "TEST14",
             ResponseType = CpdlcDownlinkResponseType.ResponseRequired,
-            Content = "DOWNLINK CONTROLLER LATE ACK",
+            Elements = [new DownlinkMessageElement(DownlinkElementIds.FreeText, ["DOWNLINK CONTROLLER LATE ACK"])],
             Received = DateTimeOffset.UtcNow.AddMinutes(-12),
             Acknowledged = DateTimeOffset.UtcNow.AddMinutes(-11),
             IsControllerLate = true
@@ -539,7 +568,7 @@ public partial class CurrentMessagesViewModel :
         testGroups.Add(new DialogueViewModel
         {
             FirstMessageTime = DateTimeOffset.UtcNow.AddMinutes(-12),
-            Messages = [new(group14Dialogue, group14Downlink, mexMessageDisplayLength)]
+            Messages = [new(group14Dialogue, group14Downlink, mexMessageDisplayLength, [])]
         });
 
         Dialogues = testGroups;
@@ -566,7 +595,7 @@ public partial class CurrentMessagesViewModel :
                 .Select(d => new DialogueViewModel
                 {
                     Messages = new ObservableCollection<CurrentMessageViewModel>(d.Messages.Select(m =>
-                        new CurrentMessageViewModel(d, m, _configuration.MaxDisplayMessageLength))),
+                        new CurrentMessageViewModel(d, m, _configuration.MaxDisplayMessageLength, _flaggedElementIds))),
                     FirstMessageTime = d.Messages.OrderBy(m => m.Time).First().Time
                 });
 
@@ -704,7 +733,7 @@ public partial class CurrentMessagesViewModel :
             if (currentMessageViewModel.Message is not DownlinkMessageDto downlink)
                 return;
 
-            await _mediator.Send(new SendUnableUplinkRequest(downlink.DialogueId, downlink.MessageId, downlink.Sender, Reason: "DUE TO TRAFFIC"));
+            await _mediator.Send(new SendUnableUplinkRequest(downlink.DialogueId, downlink.MessageId, downlink.Sender, ReasonElementId: UplinkElementIds.DueToTraffic));
         }
         catch (Exception ex)
         {
@@ -720,7 +749,7 @@ public partial class CurrentMessagesViewModel :
             if (currentMessageViewModel.Message is not DownlinkMessageDto downlink)
                 return;
 
-            await _mediator.Send(new SendUnableUplinkRequest(downlink.DialogueId, downlink.MessageId, downlink.Sender, Reason: "DUE TO AIRSPACE RESTRICTION"));
+            await _mediator.Send(new SendUnableUplinkRequest(downlink.DialogueId, downlink.MessageId, downlink.Sender, ReasonElementId: UplinkElementIds.DueToAirspaceRestriction));
         }
         catch (Exception ex)
         {

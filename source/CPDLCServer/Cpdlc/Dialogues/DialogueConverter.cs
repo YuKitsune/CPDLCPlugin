@@ -75,10 +75,12 @@ public static class DialogueConverter
             Recipient = uplink.Recipient,
             SenderCallsign = uplink.SenderCallsign,
             ResponseType = ToDto(uplink.ResponseType),
-            Content = uplink.Content,
+            Elements = uplink.Elements,
             Sent = uplink.Sent,
             IsPilotLate = uplink.IsPilotLate,
-            IsTransmissionFailed = uplink.DidTransmissionFail
+            IsTransmissionFailed = uplink.DidTransmissionFail,
+            CanAction = uplink.CanAction,
+            Actioned = uplink.Actioned
         };
     }
 
@@ -94,7 +96,7 @@ public static class DialogueConverter
             Acknowledged = downlink.Acknowledged,
             Sender = downlink.Sender,
             ResponseType = ToDto(downlink.ResponseType),
-            Content = downlink.Content,
+            Elements = downlink.Elements,
             Received = downlink.Received,
             IsControllerLate = downlink.IsControllerLate
         };

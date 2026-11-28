@@ -8,6 +8,7 @@
         xmlns:local="clr-namespace:CPDLCPlugin"
         xmlns:viewModels="clr-namespace:CPDLCPlugin.ViewModels"
         xmlns:converters="clr-namespace:CPDLCPlugin.Converters"
+        xmlns:popups="clr-namespace:CPDLCPlugin.Popups"
         Background="{toolbox:VatSysColour WindowBackground}"
         d:DataContext="{d:DesignInstance Type=viewModels:EditorViewModel}"
         mc:Ignorable="d"
@@ -191,7 +192,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <toolboxControls:BeveledLine Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Height="{x:Static toolboxControls:Bevel.LineWidth}" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Height="2"/>
 
             <!-- Delay Response section -->
             <Grid Grid.Row="1" Grid.Column="0">
@@ -208,7 +209,7 @@
                 </WrapPanel>
             </Grid>
 
-            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="1" Width="{x:Static toolboxControls:Bevel.LineWidth}" Orientation="Vertical" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="1" Width="2" Orientation="Vertical"/>
 
             <!-- To Editor section -->
             <Grid Grid.Row="1" Grid.Column="2">
@@ -224,7 +225,7 @@
                 </WrapPanel>
             </Grid>
 
-            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="3" Width="{x:Static toolboxControls:Bevel.LineWidth}" Orientation="Vertical" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="1" Grid.Column="3" Width="2" Orientation="Vertical"/>
 
             <!-- Unable section -->
             <Grid Grid.Row="1" Grid.Column="4">
@@ -241,13 +242,11 @@
                 </WrapPanel>
             </Grid>
 
-            <toolboxControls:BeveledLine Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Height="{x:Static toolboxControls:Bevel.LineWidth}" Flipped="true"/>
+            <toolboxControls:BeveledLine Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Height="2"/>
         </Grid>
 
         <!-- Class Elements Display Area -->
         <!-- TODO: Prefix with * if the text needs to overflow. Right-click to extend the display area. -->
-        <!-- TODO: Prefix with F if uplink id is 169 -->
-        <!-- TODO: Prefix with E if uplink id is 170 -->
         <ScrollViewer
             Grid.Row="2"
             Margin="8"
@@ -380,6 +379,7 @@
                                                 <!-- Button shown when not editing -->
                                                 <Button Style="{StaticResource TemplateButton}"
                                                         PreviewMouseDown="TemplatePartButton_MouseDown"
+                                                        Click="TemplatePartButton_Click"
                                                         Visibility="{Binding IsEditing, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                                                     <TextBlock>
                                                         <TextBlock.Style>
@@ -406,7 +406,10 @@
                                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityConverter}}"
                                                     IsVisibleChanged="TemplatePartTextBox_IsVisibleChanged"
                                                     PreviewKeyDown="TemplatePartTextBox_PreviewKeyDown"
+                                                    PreviewTextInput="TemplatePartTextBox_PreviewTextInput"
+                                                    DataObject.Pasting="TemplatePartTextBox_Pasting"
                                                     LostFocus="TemplatePartTextBox_LostFocus"
+                                                    MaxLength="{Binding MaxLength}"
                                                     CharacterCasing="Upper"
                                                     MinWidth="60"
                                                     VerticalContentAlignment="Center"/>
@@ -443,5 +446,27 @@
             </Grid>
         </Border>
         </Grid>
+
+        <!-- Parameter Popups -->
+        <Popup x:Name="FixedValuesPopupHost"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True">
+            <popups:FixedValuesPopup x:Name="FixedValuesPopup"/>
+        </Popup>
+
+        <Popup x:Name="LevelPopupHost"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True">
+            <popups:LevelPopup x:Name="LevelPopup"/>
+        </Popup>
+
+        <Popup x:Name="SpeedPopupHost"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True">
+            <popups:SpeedPopup x:Name="SpeedPopup"/>
+        </Popup>
     </Grid>
 </UserControl>

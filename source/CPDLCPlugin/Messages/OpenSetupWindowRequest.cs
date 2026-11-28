@@ -16,7 +16,7 @@ public class OpenSetupWindowRequestHandler(
     IMediator mediator,
     Plugin plugin,
     IErrorReporter errorReporter,
-    AuthenticationState authenticationState,
+    AuthenticationStore authenticationStore,
     IGuiInvoker guiInvoker,
     WindowEvents windowEvents)
     : IRequestHandler<OpenSetupWindowRequest>
@@ -36,7 +36,7 @@ public class OpenSetupWindowRequestHandler(
                     mediator,
                     errorReporter,
                     windowHandle,
-                    authenticationState,
+                    authenticationStore,
                     guiInvoker,
                     plugin.ConnectionManager?.ServerEndpoint ?? pluginConfiguration.ServerEndpoint,
                     pluginConfiguration.Stations,

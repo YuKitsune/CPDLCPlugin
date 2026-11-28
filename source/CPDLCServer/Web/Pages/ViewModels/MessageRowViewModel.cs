@@ -1,3 +1,4 @@
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Connections;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
@@ -24,7 +25,7 @@ public record MessageRowViewModel(
     {
         var aircraft = aircraftLookup.GetValueOrDefault(dialogue.AircraftCallsign);
         var acarsNetwork = aircraft?.AcarsConnectionId ?? "Unknown";
-        var stationId = aircraft?.StationId ?? "Unknown";
+        var stationId = dialogue.StationId;
 
         return message switch
         {
@@ -37,7 +38,7 @@ public record MessageRowViewModel(
                 Receiver: uplink.Recipient,
                 AlertType: uplink.AlertType.ToString(),
                 ResponseType: uplink.ResponseType.ToString(),
-                Content: uplink.Content,
+                Content: MessageText.Format(uplink.Elements),
                 IsClosed: uplink.IsClosed),
 
             DownlinkMessage downlink => new MessageRowViewModel(
@@ -49,7 +50,7 @@ public record MessageRowViewModel(
                 Receiver: stationId,
                 AlertType: downlink.AlertType.ToString(),
                 ResponseType: downlink.ResponseType.ToString(),
-                Content: downlink.Content,
+                Content: MessageText.Format(downlink.Elements),
                 IsClosed: downlink.IsClosed),
 
             _ => throw new InvalidOperationException("Unknown message type")

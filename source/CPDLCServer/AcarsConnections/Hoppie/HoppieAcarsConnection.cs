@@ -1,10 +1,13 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading.Channels;
 using CPDLCServer.AcarsConnections.Traffic;
+using CPDLC.Messages;
 using CPDLCServer.AdscContracts;
 using CPDLCServer.AdscContracts.MessageLog;
 using CPDLCServer.AdscContracts.Reports;
+using CPDLCServer.Cpdlc;
 using CPDLCServer.Cpdlc.Dialogues;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
@@ -13,27 +16,28 @@ using CPDLCServer.Logging;
 
 namespace CPDLCServer.AcarsConnections.Hoppie;
 
-// TODO: Accept encoded messages via the API (i.e. UMxxx), translate from within the connection.
-
 public class HoppieAcarsConnection : IAcarsConnection
 {
     // The server is only for VATSIM
     const string FlightSimulationNetwork = "VATSIM";
 
-    readonly Dictionary<string, string> _uplinkMessageTranslations = new()
-    {
-        { "END SERVICE", "LOGOFF" }
-    };
-
     readonly HoppiesConfiguration _configuration;
     readonly HttpClient _httpClient;
     readonly IClock _clock;
+    readonly IMessageIdProvider _messageIdProvider;
     readonly IAdscMessageLogRepository _adscMessageLogRepository;
     readonly AcarsTrafficLog _trafficLog;
     readonly ILogger _logger;
 
     readonly Channel<ReceivedDownlink> _messageChannel = Channel.CreateUnbounded<ReceivedDownlink>();
     readonly Channel<ReceivedAdscMessage> _adscMessageChannel = Channel.CreateUnbounded<ReceivedAdscMessage>();
+    readonly Channel<ReceivedControlMessage> _controlMessageChannel = Channel.CreateUnbounded<ReceivedControlMessage>();
+
+    // The message ID of the last logon request from each aircraft. The reply to the logon request refers to it.
+    readonly ConcurrentDictionary<string, int> _logonRequestMessageIds = new();
+
+    // The message ID of the END SERVICE uplink to each aircraft that gets a LOGOFF after the response
+    readonly ConcurrentDictionary<string, int> _queuedLogoffs = new();
     readonly Random _random = Random.Shared;
 
     CancellationTokenSource? _pollCancellationTokenSource;
@@ -44,12 +48,14 @@ public class HoppieAcarsConnection : IAcarsConnection
 
     public ChannelReader<ReceivedDownlink> MessageReader => _messageChannel.Reader;
     public ChannelReader<ReceivedAdscMessage> AdscMessageReader => _adscMessageChannel.Reader;
+    public ChannelReader<ReceivedControlMessage> ControlMessageReader => _controlMessageChannel.Reader;
     public string StationId => _configuration.StationIdentifier;
 
     public HoppieAcarsConnection(
         HoppiesConfiguration configuration,
         HttpClient httpClient,
         IClock clock,
+        IMessageIdProvider messageIdProvider,
         IAdscMessageLogRepository adscMessageLogRepository,
         AcarsTrafficLog trafficLog,
         ILogger logger)
@@ -58,6 +64,7 @@ public class HoppieAcarsConnection : IAcarsConnection
         _httpClient = httpClient;
         _httpClient.Timeout = TimeSpan.FromSeconds(15);
         _clock = clock;
+        _messageIdProvider = messageIdProvider;
         _adscMessageLogRepository = adscMessageLogRepository;
         _trafficLog = trafficLog;
         _logger = logger
@@ -83,8 +90,100 @@ public class HoppieAcarsConnection : IAcarsConnection
         if (_disposed)
             throw new ObjectDisposedException(nameof(HoppieAcarsConnection));
 
-        var packet = SerializeCpdlcMessage(message);
-        await SendPacket(message.Recipient, "cpdlc", packet, cancellationToken);
+        // Hoppie has no END SERVICE. The aircraft ends the connection when it receives LOGOFF.
+        // If the END SERVICE is with other elements that need a response, remove it, and send the LOGOFF after the
+        // response, so that the pilot can respond to the other elements. If not, the END SERVICE element is LOGOFF.
+        var logoffIsQueued = ControlMessages.NeedsLogoffAfterResponse(message);
+        if (logoffIsQueued)
+            _queuedLogoffs[message.Recipient] = message.MessageId;
+
+        try
+        {
+            var packet = SerializeCpdlcMessage(message, logoffIsQueued);
+            await SendPacket(message.Recipient, "cpdlc", packet, cancellationToken);
+        }
+        catch
+        {
+            _queuedLogoffs.TryRemove(message.Recipient, out _);
+            throw;
+        }
+    }
+
+    public async Task SendConnectionRequest(string callsign, int messageId, CancellationToken cancellationToken)
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(HoppieAcarsConnection));
+
+        await SendPacket(callsign, "cpdlc", $"/data2/{messageId}//NE/CONNECTION REQUESTED @{StationId}@", cancellationToken);
+    }
+
+    public async Task AcceptLogon(string callsign, int messageId, CancellationToken cancellationToken)
+    {
+        await SendLogonReply(callsign, messageId, "LOGON ACCEPTED", cancellationToken);
+    }
+
+    public async Task RejectLogon(string callsign, int messageId, CancellationToken cancellationToken)
+    {
+        await SendLogonReply(callsign, messageId, "LOGON REJECTED. NO ATS AVBL.", cancellationToken);
+    }
+
+    async Task SendLogonReply(string callsign, int messageId, string text, CancellationToken cancellationToken)
+    {
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(HoppieAcarsConnection));
+
+        var replyToId = _logonRequestMessageIds.TryRemove(callsign, out var logonRequestMessageId)
+            ? logonRequestMessageId.ToString()
+            : string.Empty;
+
+        await SendPacket(callsign, "cpdlc", $"/data2/{messageId}/{replyToId}/NE/{text}", cancellationToken);
+    }
+
+    // Sends the queued LOGOFF when the aircraft responds to the END SERVICE uplink. A negative response keeps the
+    // connection, so the logoff is removed and not sent.
+    async Task SendQueuedLogoff(ReceivedDownlink downlink, CancellationToken cancellationToken)
+    {
+        if (!_queuedLogoffs.TryGetValue(downlink.Sender, out var endServiceMessageId) ||
+            downlink.MessageReference != endServiceMessageId)
+            return;
+
+        var elementIds = downlink.Elements.Select(e => e.Id).ToArray();
+        var isPositive = elementIds.Any(id => id is DownlinkElementIds.Wilco or DownlinkElementIds.Roger or DownlinkElementIds.Affirm);
+        var isNegative = elementIds.Any(id => id is DownlinkElementIds.Unable or DownlinkElementIds.Negative);
+
+        // For example, STANDBY. The aircraft responds again later.
+        if (!isPositive && !isNegative)
+            return;
+
+        if (!_queuedLogoffs.TryRemove(downlink.Sender, out _))
+            return;
+
+        if (isNegative)
+        {
+            _logger.Information("{Callsign} did not accept END SERVICE {MessageId}, so the connection stays open", downlink.Sender, endServiceMessageId);
+            return;
+        }
+
+        _logger.Information("Sending LOGOFF to {Callsign} after the response to END SERVICE {MessageId}", downlink.Sender, endServiceMessageId);
+
+        // A failure must not stop the other received messages
+        try
+        {
+            var logoffMessageId = await _messageIdProvider.GetNextMessageId(
+                _configuration.AcarsConnectionId,
+                downlink.Sender,
+                cancellationToken);
+
+            await SendPacket(
+                downlink.Sender,
+                "cpdlc",
+                $"/data2/{logoffMessageId}//NE/LOGOFF",
+                cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.Error(ex, "Failed to send LOGOFF to {Callsign}", downlink.Sender);
+        }
     }
 
     public async Task RequestPeriodicAdscContract(string callsign, TimeSpan reportingInterval, CancellationToken cancellationToken)
@@ -368,9 +467,19 @@ public class HoppieAcarsConnection : IAcarsConnection
                 switch (type.ToLowerInvariant())
                 {
                     case "cpdlc":
+                        var controlMessage = ParseControlMessage(from, packet);
+                        if (controlMessage is not null)
+                        {
+                            _logger.Information("Received {ControlMessage} from {From}", controlMessage.GetType().Name, from);
+                            _controlMessageChannel.Writer.TryWrite(controlMessage);
+                            break;
+                        }
+
                         var downlink = ParseCpdlcDownlink(from, packet);
                         _logger.Information("Received {MessageType} from {From}", type, from);
                         _messageChannel.Writer.TryWrite(downlink);
+
+                        await SendQueuedLogoff(downlink, cancellationToken);
                         break;
 
                     case "ads-c":
@@ -456,11 +565,51 @@ public class HoppieAcarsConnection : IAcarsConnection
         return (headerParts[0], headerParts[1], packet);
     }
 
+    // Logon requests and logoffs are Hoppie messages, and not CPDLC elements, so they do not leave the connection
+    ReceivedControlMessage? ParseControlMessage(string from, string packet)
+    {
+        if (packet.StartsWith("/DATA1/", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var (messageId, _, _, text) = SplitCpdlcPacket(packet);
+
+        if (text.Contains("REQUEST LOGON") || text.Contains("REQUEST LOG ON"))
+        {
+            _logonRequestMessageIds[from] = messageId;
+
+            // The message IDs start again with a new connection, so a queued logoff of the old connection must not match
+            _queuedLogoffs.TryRemove(from, out _);
+            return new ReceivedLogonRequest(from, _clock.UtcNow());
+        }
+
+        if (text.Contains("LOGOFF") || text.Contains("LOG OFF"))
+        {
+            _queuedLogoffs.TryRemove(from, out _);
+            return new ReceivedLogoff(from, _clock.UtcNow());
+        }
+
+        return null;
+    }
+
     ReceivedDownlink ParseCpdlcDownlink(string from, string packet)
     {
         if (packet.StartsWith("/DATA1/", StringComparison.OrdinalIgnoreCase))
             return ParseData1Downlink(from, packet);
 
+        var (messageId, replyToId, responseType, text) = SplitCpdlcPacket(packet);
+
+        return new ReceivedDownlink(
+            messageId,
+            replyToId,
+            from,
+            responseType,
+            HoppieDownlinkParser.Parse(text),
+            _clock.UtcNow());
+    }
+
+    // Packet format: /data2/<message ID>/<reply to ID>/<response type>/<text>
+    static (int MessageId, int? ReplyToId, CpdlcDownlinkResponseType ResponseType, string Text) SplitCpdlcPacket(string packet)
+    {
         var parts = packet.Split('/', 6);
         if (parts.Length != 6)
             throw new MessageParseException($"Invalid CPDLC packet: Expected 6 components, got {parts.Length}: \"{packet}\"");
@@ -474,16 +623,7 @@ public class HoppieAcarsConnection : IAcarsConnection
             _ => throw new NotSupportedException($"Unsupported CPDLC downlink response type: {parts[4]}")
         };
 
-        var content = parts[5];
-
-        return new ReceivedDownlink(
-            messageId,
-            replyToId,
-            from,
-            responseType,
-            AlertType.None,
-            content,
-            _clock.UtcNow());
+        return (messageId, replyToId, responseType, parts[5]);
     }
 
     // Some aircraft (for example, PMDG) send position reports in this format:
@@ -493,10 +633,11 @@ public class HoppieAcarsConnection : IAcarsConnection
     //   ESTIMATING ISTEM AT 0533Z,
     //   ...
     // The first line is a header. The lines after the header contain the text of the report.
+    // The report is not a FANS 1/A element, so it is kept as free text.
     ReceivedDownlink ParseData1Downlink(string from, string packet)
     {
         var lines = packet.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var content = lines.Length > 1
+        var text = lines.Length > 1
             ? string.Join(" ", lines[1..])
             : packet;
 
@@ -505,8 +646,7 @@ public class HoppieAcarsConnection : IAcarsConnection
             null,
             from,
             CpdlcDownlinkResponseType.NoResponse,
-            AlertType.None,
-            content,
+            [new DownlinkMessageElement(DownlinkElementIds.FreeText, [text])],
             _clock.UtcNow());
     }
 
@@ -617,7 +757,8 @@ public class HoppieAcarsConnection : IAcarsConnection
         return TimeSpan.FromSeconds(_random.Next(45, 76));
     }
 
-    string SerializeCpdlcMessage(UplinkMessage uplinkMessage)
+    // If a logoff is queued, the END SERVICE element is not in the text. If not, the END SERVICE element is LOGOFF.
+    string SerializeCpdlcMessage(UplinkMessage uplinkMessage, bool logoffIsQueued)
     {
         var responseType = uplinkMessage.ResponseType switch
         {
@@ -632,20 +773,13 @@ public class HoppieAcarsConnection : IAcarsConnection
             ? uplinkMessage.MessageReference.ToString()
             : string.Empty;
 
-        var content = GetTranslatedContent(uplinkMessage);
+        var elements = logoffIsQueued
+            ? uplinkMessage.Elements.Where(e => e.Id != UplinkElementIds.EndService).ToArray()
+            : uplinkMessage.Elements;
 
-        return $"/data2/{uplinkMessage.MessageId}/{replyToId}/{responseType}/{content}";
-    }
+        var text = HoppieUplinkFormatter.Format(elements);
 
-    string GetTranslatedContent(UplinkMessage uplinkMessage)
-    {
-        var translatedContent = uplinkMessage.Content;
-        foreach (var uplinkMessageTranslation in _uplinkMessageTranslations)
-        {
-            translatedContent = translatedContent.Replace(uplinkMessageTranslation.Key, uplinkMessageTranslation.Value);
-        }
-
-        return translatedContent;
+        return $"/data2/{uplinkMessage.MessageId}/{replyToId}/{responseType}/{text}";
     }
 
     public async ValueTask DisposeAsync()

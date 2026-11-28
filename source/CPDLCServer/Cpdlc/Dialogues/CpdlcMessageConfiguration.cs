@@ -1,7 +1,11 @@
+using System.Text.Json;
+using CPDLC.Messages;
 using CPDLCServer.Cpdlc.Downlinks;
 using CPDLCServer.Cpdlc.Uplinks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace CPDLCServer.Cpdlc.Dialogues;
 
@@ -40,11 +44,15 @@ public class UplinkMessageConfiguration : IEntityTypeConfiguration<UplinkMessage
         builder.Property(m => m.Recipient);
         builder.Property(m => m.SenderCallsign);
         builder.Property(m => m.ResponseType).HasColumnName("UplinkResponseType");
-        builder.Property(m => m.Content).HasColumnName("Content");
+        builder.Property(m => m.Elements)
+            .HasColumnName("Elements")
+            .HasConversion(ElementsConversion.Converter<UplinkMessageElement>(), ElementsConversion.Comparer<UplinkMessageElement>());
         builder.Property(m => m.Sent);
         builder.Property(m => m.ClosedManually);
         builder.Property(m => m.IsPilotLate);
         builder.Property(m => m.DidTransmissionFail);
+        builder.Property(m => m.CanAction);
+        builder.Property(m => m.Actioned);
     }
 }
 
@@ -54,8 +62,30 @@ public class DownlinkMessageConfiguration : IEntityTypeConfiguration<DownlinkMes
     {
         builder.Property(m => m.Sender);
         builder.Property(m => m.ResponseType).HasColumnName("DownlinkResponseType");
-        builder.Property(m => m.Content).HasColumnName("Content");
+        builder.Property(m => m.Elements)
+            .HasColumnName("Elements")
+            .HasConversion(ElementsConversion.Converter<DownlinkMessageElement>(), ElementsConversion.Comparer<DownlinkMessageElement>());
         builder.Property(m => m.Received);
         builder.Property(m => m.IsControllerLate);
+    }
+}
+
+// The elements of a message are kept as JSON text, so that SQLite and PostgreSQL keep them in the same way
+static class ElementsConversion
+{
+    public static ValueConverter<IReadOnlyList<T>, string> Converter<T>()
+    {
+        return new ValueConverter<IReadOnlyList<T>, string>(
+            elements => JsonSerializer.Serialize(elements, (JsonSerializerOptions?)null),
+            json => JsonSerializer.Deserialize<T[]>(json, (JsonSerializerOptions?)null)!);
+    }
+
+    // The elements do not change after the message is made, so the JSON text is enough to compare them
+    public static ValueComparer<IReadOnlyList<T>> Comparer<T>()
+    {
+        return new ValueComparer<IReadOnlyList<T>>(
+            (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
+            elements => JsonSerializer.Serialize(elements, (JsonSerializerOptions?)null).GetHashCode(),
+            elements => elements);
     }
 }

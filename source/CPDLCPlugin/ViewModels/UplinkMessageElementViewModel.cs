@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CPDLCPlugin.Configuration;
 
 namespace CPDLCPlugin.ViewModels;
 
@@ -7,53 +6,31 @@ public partial class UplinkMessageElementViewModel : ObservableObject
 {
     public UplinkMessageElementViewModel()
     {
+        ElementId = null;
         Parts = [];
-        ResponseType = UplinkResponseType.NoResponse;
-        Prefix = GetPrefix(false, false);
     }
 
-    public UplinkMessageElementViewModel(IUplinkMessageElementComponentViewModel[] parts, UplinkResponseType responseType)
+    public UplinkMessageElementViewModel(int elementId, IUplinkMessageElementComponentViewModel[] parts)
     {
+        ElementId = elementId;
         Parts = parts;
-        ResponseType = responseType;
-        Prefix = GetPrefix(false, false);
     }
 
+    // The FANS 1/A uplink element ID. It is null when the element is empty.
+    [ObservableProperty] int? elementId;
     [ObservableProperty] IUplinkMessageElementComponentViewModel[] parts = [];
-    [ObservableProperty] UplinkResponseType responseType = UplinkResponseType.NoResponse;
-
-    // TODO: Make these message types and indicators configurable
-    [ObservableProperty] bool isFreeText;
-    [ObservableProperty] bool isRevision;
-
-    [ObservableProperty] string prefix;
 
     public bool IsEmpty => Parts.Length == 0;
 
-    public void Replace(IUplinkMessageElementComponentViewModel[] parts, UplinkResponseType responseType)
+    public void Replace(int elementId, IUplinkMessageElementComponentViewModel[] parts)
     {
+        ElementId = elementId;
         Parts = parts;
-        ResponseType = responseType;
     }
 
     public void Clear()
     {
+        ElementId = null;
         Parts = [];
-        ResponseType =  UplinkResponseType.NoResponse;
-    }
-
-    static string GetPrefix(bool isFreeText, bool isRevision)
-    {
-        if (isRevision)
-        {
-            return "R:";
-        }
-
-        if (isFreeText)
-        {
-            return "F:";
-        }
-
-        return "  ";
     }
 }
